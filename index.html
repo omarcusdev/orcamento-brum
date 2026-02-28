@@ -15,17 +15,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="dist/output.css">
 </head>
-<body class="font-sans bg-white text-slate-900 antialiased">
+<body class="bg-white text-slate-900 antialiased">
 
-  <a href="#cta" class="sr-only focus:not-sr-only">Ir para aprovação</a>
+  <a href="#cta" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-green-600 focus:text-white focus:px-4 focus:py-2 focus:rounded">Ir para aprovação</a>
 
-  <section id="hero">
-    <div>
-      <p>Proposta Comercial · Fevereiro 2026</p>
-      <h1>Seu delivery de chopp, automatizado</h1>
-      <p>Sistema completo de pedidos online, confirmação automática via WhatsApp e painel de gestão para você focar no que importa: atender eventos com eficiência.</p>
+  <section id="hero" class="bg-slate-900 text-white py-20 md:py-32">
+    <div class="max-w-2xl mx-auto px-6 text-center md:text-left">
+      <p class="text-slate-400 text-sm uppercase tracking-widest mb-4">Proposta Comercial · Fevereiro 2026</p>
+      <h1 class="text-3xl font-semibold leading-tight mb-6 md:text-5xl md:leading-tight">Seu delivery de chopp, automatizado</h1>
+      <p class="text-slate-300 text-base leading-relaxed mb-10 md:text-lg">Sistema completo de pedidos online, confirmação automática via WhatsApp e painel de gestão para você focar no que importa: atender eventos com eficiência.</p>
       <a href="https://wa.me/5551999999999?text=Ol%C3%A1%20Marcus%2C%20quero%20aprovar%20a%20proposta"
-         target="_blank" rel="noopener noreferrer">
+         target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center justify-center gap-2 bg-green-600 text-white font-semibold px-8 py-4 rounded-full text-base min-h-[48px] w-full hover:bg-green-700 transition-colors md:w-auto">
         Aprovar proposta pelo WhatsApp
       </a>
     </div>

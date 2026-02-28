@@ -4,5 +4,10 @@
   --color-brand-primary: #0f172a;
   --color-brand-accent: #16a34a;
   --color-brand-muted: #64748b;
+  --color-brand-surface: #f8fafc;
   --font-sans: 'Inter', sans-serif;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
 }
