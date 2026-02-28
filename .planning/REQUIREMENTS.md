@@ -9,23 +9,23 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Conteúdo e Estrutura
 
-- [ ] **CONT-01**: Página exibe hero/cover com nome "Marcus Gonçalves", título do projeto, data e tagline profissional
-- [ ] **CONT-02**: Página exibe seção de entendimento do problema que espelha o brief do cliente (delivery de chopp, eventos, automação)
-- [ ] **CONT-03**: Página exibe escopo detalhado com os 6 módulos do MVP (landing page, formulário, WhatsApp, pagamentos, painel, escalabilidade)
-- [ ] **CONT-04**: Página exibe timeline visual de 45 dias dividida em fases com marcos de entrega
-- [ ] **CONT-05**: Página exibe valor fechado de R$ 10.000 com framing de valor (após demonstrar escopo e benefícios)
-- [ ] **CONT-06**: Página exibe condições de pagamento (percentual de entrada + restante na entrega)
-- [ ] **CONT-07**: Página exibe seção "Sobre" com apresentação profissional de Marcus Gonçalves e experiência relevante
-- [ ] **CONT-08**: Página exibe informações de contato (WhatsApp + email)
-- [ ] **CONT-09**: Página usa headers orientados a resultado ("O que você terá em 45 dias" ao invés de "Escopo")
-- [ ] **CONT-10**: Página exibe seção de rationale tecnológico explicando por que código > no-code para o caso do cliente
-- [ ] **CONT-11**: Página exibe referência de projeto passado relevante (social proof) como sinal de confiança
+- [x] **CONT-01**: Página exibe hero/cover com nome "Marcus Gonçalves", título do projeto, data e tagline profissional
+- [x] **CONT-02**: Página exibe seção de entendimento do problema que espelha o brief do cliente (delivery de chopp, eventos, automação)
+- [x] **CONT-03**: Página exibe escopo detalhado com os 6 módulos do MVP (landing page, formulário, WhatsApp, pagamentos, painel, escalabilidade)
+- [x] **CONT-04**: Página exibe timeline visual de 45 dias dividida em fases com marcos de entrega
+- [x] **CONT-05**: Página exibe valor fechado de R$ 10.000 com framing de valor (após demonstrar escopo e benefícios)
+- [x] **CONT-06**: Página exibe condições de pagamento (percentual de entrada + restante na entrega)
+- [x] **CONT-07**: Página exibe seção "Sobre" com apresentação profissional de Marcus Gonçalves e experiência relevante
+- [x] **CONT-08**: Página exibe informações de contato (WhatsApp + email)
+- [x] **CONT-09**: Página usa headers orientados a resultado ("O que você terá em 45 dias" ao invés de "Escopo")
+- [x] **CONT-10**: Página exibe seção de rationale tecnológico explicando por que código > no-code para o caso do cliente
+- [x] **CONT-11**: Página exibe referência de projeto passado relevante (social proof) como sinal de confiança
 
 ### Conversão e UX
 
-- [ ] **CONV-01**: Página exibe CTA primário para WhatsApp visível no hero e no final da página
-- [ ] **CONV-02**: Página é mobile-first responsiva, testada a partir de 375px de largura
-- [ ] **CONV-03**: Página usa tipografia profissional (Inter ou equivalente) com espaçamento adequado
+- [x] **CONV-01**: Página exibe CTA primário para WhatsApp visível no hero e no final da página
+- [x] **CONV-02**: Página é mobile-first responsiva, testada a partir de 375px de largura
+- [x] **CONV-03**: Página usa tipografia profissional (Inter ou equivalente) com espaçamento adequado
 - [ ] **CONV-04**: Página exibe sticky bottom CTA bar no mobile que aparece após rolar o hero
 - [ ] **CONV-05**: Página implementa smooth scroll com anchor links entre seções
 - [ ] **CONV-06**: Página exibe scroll progress indicator (barra fina no topo da viewport)
@@ -72,20 +72,20 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONT-01 | Phase 1 | Pending |
-| CONT-02 | Phase 1 | Pending |
-| CONT-03 | Phase 1 | Pending |
-| CONT-04 | Phase 1 | Pending |
-| CONT-05 | Phase 1 | Pending |
-| CONT-06 | Phase 1 | Pending |
-| CONT-07 | Phase 1 | Pending |
-| CONT-08 | Phase 1 | Pending |
-| CONT-09 | Phase 1 | Pending |
-| CONT-10 | Phase 1 | Pending |
-| CONT-11 | Phase 1 | Pending |
-| CONV-01 | Phase 1 | Pending |
-| CONV-02 | Phase 1 | Pending |
-| CONV-03 | Phase 1 | Pending |
+| CONT-01 | Phase 1 | Complete |
+| CONT-02 | Phase 1 | Complete |
+| CONT-03 | Phase 1 | Complete |
+| CONT-04 | Phase 1 | Complete |
+| CONT-05 | Phase 1 | Complete |
+| CONT-06 | Phase 1 | Complete |
+| CONT-07 | Phase 1 | Complete |
+| CONT-08 | Phase 1 | Complete |
+| CONT-09 | Phase 1 | Complete |
+| CONT-10 | Phase 1 | Complete |
+| CONT-11 | Phase 1 | Complete |
+| CONV-01 | Phase 1 | Complete |
+| CONV-02 | Phase 1 | Complete |
+| CONV-03 | Phase 1 | Complete |
 | CONV-04 | Phase 2 | Pending |
 | CONV-05 | Phase 2 | Pending |
 | CONV-06 | Phase 2 | Pending |

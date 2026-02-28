@@ -10,24 +10,24 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 1 of 2 (Foundation and Content)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: Executing phase 1
-Last activity: 2026-02-27 — Completed 01-01 Project Setup
+Last activity: 2026-02-28 — Completed 01-02 HTML Foundation
 
-Progress: [█░░░░░░░░░] 12%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 2min
-- Total execution time: 2min
+- Total plans completed: 2
+- Average duration: 2.5min
+- Total execution time: 5min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 1 | 2min | 2min |
+| 01 | 2 | 5min | 2.5min |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -48,6 +48,9 @@ Recent decisions affecting current work:
 - [01-01]: Pinned exact tailwindcss versions for reproducible builds
 - [01-01]: Committed dist/output.css to git for minimal Vercel deploy config
 - [01-01]: Production URL confirmed: https://orcamento-brum.vercel.app
+- [01-02]: OG tags use confirmed Vercel URL https://orcamento-brum.vercel.app
+- [01-02]: Investimento section placed after escopo and timeline per AIDA funnel
+- [01-02]: CONT-10 rationale tecnico integrated as subsection of solucao, not standalone section
 
 ### Pending Todos
 
@@ -59,6 +62,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-02-28
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

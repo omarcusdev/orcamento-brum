@@ -30,8 +30,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Setup do projeto — estrutura de arquivos, Tailwind CLI, vercel.json, deploy inicial
-- [ ] 01-02: HTML foundation — index.html completo com todas as seções, Open Graph tags, semântica, anchors
+- [x] 01-01: Setup do projeto — estrutura de arquivos, Tailwind CLI, vercel.json, deploy inicial
+- [x] 01-02: HTML foundation — index.html completo com todas as seções, Open Graph tags, semântica, anchors
 - [ ] 01-03: Conteúdo e copywriting — textos de todas as seções (hero, problema, escopo, timeline, valor, pagamento, sobre, contato, rationale técnico)
 - [ ] 01-04: CSS mobile-first — design system completo via Tailwind, todas as seções estilizadas, responsividade de 375px+
 
@@ -59,5 +59,5 @@ Phases execute in numeric order: 1 → 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation and Content | 0/4 | Not started | - |
+| 1. Foundation and Content | 2/4 | In progress | - |
 | 2. Polish and Performance | 0/3 | Not started | - |
