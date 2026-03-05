@@ -1,16 +1,9 @@
 {
-  "name": "orcamento-brum",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "alfa-chopp",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@tailwindcss/cli": "4.2.1",
-    "tailwindcss": "4.2.1"
+    "dev": "npm run dev --prefix app",
+    "dev:whatsapp": "npm run dev --prefix whatsapp-api",
+    "build": "npm run build --prefix app"
   }
 }
