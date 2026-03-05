@@ -4,6 +4,7 @@ import { useState } from "react"
 import type { Produto, CartItem } from "@/lib/types"
 import Catalog from "@/components/catalog"
 import Cart from "@/components/cart"
+import CheckoutForm from "@/components/checkout-form"
 
 type StorefrontProps = {
   produtos: Produto[]
@@ -58,11 +59,7 @@ const Storefront = ({ produtos }: StorefrontProps) => {
   const totalItems = cart.reduce((sum, item) => sum + item.quantidade, 0)
 
   if (checkoutMode) {
-    return (
-      <div className="py-16 px-4 max-w-2xl mx-auto">
-        <p className="text-center text-gray-500">Checkout form coming in Task 7...</p>
-      </div>
-    )
+    return <CheckoutForm items={cart} onBack={() => setCheckoutMode(false)} />
   }
 
   return (
