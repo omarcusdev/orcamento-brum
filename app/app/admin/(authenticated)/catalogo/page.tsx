@@ -1,8 +1,15 @@
-const CatalogoPage = () => (
-  <div>
-    <h1 className="text-2xl font-bold text-brand-black mb-6">Catalogo</h1>
-    <p className="text-gray-500">Gerenciamento de produtos (em construcao)</p>
-  </div>
-)
+import { createClient } from "@/lib/supabase/server"
+import ProductList from "@/components/admin/product-list"
 
-export default CatalogoPage
+const CatalogoAdminPage = async () => {
+  const supabase = await createClient()
+
+  const { data: produtos } = await supabase
+    .from("produtos")
+    .select("*")
+    .order("marca", { ascending: true })
+
+  return <ProductList produtos={produtos ?? []} />
+}
+
+export default CatalogoAdminPage
