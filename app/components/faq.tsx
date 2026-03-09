@@ -1,81 +1,100 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
 const faqs = [
   {
-    question: "Qual a área de entrega?",
-    answer:
-      "Entregamos em quase todo o Rio de Janeiro e Baixada Fluminense. Consulte disponibilidade para sua região.",
+    question: "Qual a area de entrega?",
+    answer: "Entregamos em quase todo o Rio de Janeiro e Baixada Fluminense. Consulte disponibilidade para sua regiao.",
   },
   {
-    question: "O gelo está incluso?",
-    answer:
-      "Não, o gelo não está incluso no preço. Caso precise, podemos orientar sobre a quantidade ideal para seu evento.",
+    question: "O gelo esta incluso?",
+    answer: "Nao, o gelo nao esta incluso no preco. Caso precise, podemos orientar sobre a quantidade ideal para seu evento.",
   },
   {
     question: "Quais formas de pagamento?",
-    answer:
-      "Aceitamos Pix, cartão de crédito/débito e dinheiro. Os preços do catálogo são para pagamento à vista (Pix ou dinheiro).",
+    answer: "Aceitamos Pix, cartao de credito/debito e dinheiro. Os precos do catalogo sao para pagamento a vista (Pix ou dinheiro).",
   },
   {
-    question: "Com quanto tempo de antecedência devo fazer o pedido?",
-    answer:
-      "Recomendamos pelo menos 3 dias de antecedência para garantir a disponibilidade do chopp e equipamento.",
+    question: "Com quanto tempo de antecedencia devo fazer o pedido?",
+    answer: "Recomendamos pelo menos 3 dias de antecedencia para garantir a disponibilidade do chopp e equipamento.",
   },
   {
     question: "Posso cancelar meu pedido?",
-    answer:
-      "Sim, o cancelamento pode ser feito entrando em contato pelo WhatsApp. Consulte nossa política de cancelamento.",
+    answer: "Sim, o cancelamento pode ser feito entrando em contato pelo WhatsApp. Consulte nossa politica de cancelamento.",
   },
   {
-    question: "A chopeira está inclusa no preço?",
-    answer:
-      "Sim! A chopeira (a gelo ou elétrica) está inclusa em todos os pedidos, sem taxa de instalação.",
+    question: "A chopeira esta inclusa no preco?",
+    answer: "Sim! A chopeira (a gelo ou eletrica) esta inclusa em todos os pedidos, sem taxa de instalacao.",
   },
 ]
 
-const FaqItem = ({
-  question,
-  answer,
-}: {
-  question: string
-  answer: string
-}) => {
+const FaqItem = ({ question, answer, index }: { question: string; answer: string; index: number }) => {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="border-b border-gray-100 last:border-0">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className="border-b border-gray-100 last:border-0"
+    >
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-4 text-left cursor-pointer"
+        className="w-full flex items-center justify-between py-5 text-left cursor-pointer group"
       >
-        <span className="font-medium text-brand-black">{question}</span>
-        <span className="text-gray-400 text-xl ml-4 shrink-0">
-          {open ? "−" : "+"}
-        </span>
+        <span className="font-medium text-brand-black group-hover:text-brand-amber transition-colors duration-200">{question}</span>
+        <motion.span
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="text-brand-warm-gray text-xl ml-4 shrink-0"
+        >
+          +
+        </motion.span>
       </button>
-      {open && <p className="text-gray-500 text-sm pb-4">{answer}</p>}
-    </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <p className="text-brand-warm-gray text-sm pb-5 leading-relaxed">{answer}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
 const Faq = () => (
-  <section className="py-16 px-4 bg-gray-50">
+  <section className="py-20 px-4 bg-brand-cream/30">
     <div className="max-w-2xl mx-auto">
-      <h2 className="text-3xl md:text-4xl font-bold text-brand-black text-center mb-2">
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="font-display text-3xl md:text-5xl font-bold text-brand-black text-center mb-3"
+      >
         Perguntas Frequentes
-      </h2>
-      <p className="text-gray-500 text-center mb-8">
-        Tire suas dúvidas sobre nosso serviço
-      </p>
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        {faqs.map((faq) => (
-          <FaqItem
-            key={faq.question}
-            question={faq.question}
-            answer={faq.answer}
-          />
+      </motion.h2>
+      <motion.p
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="text-brand-warm-gray text-center mb-10"
+      >
+        Tire suas duvidas sobre nosso servico
+      </motion.p>
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100/80">
+        {faqs.map((faq, idx) => (
+          <FaqItem key={faq.question} question={faq.question} answer={faq.answer} index={idx} />
         ))}
       </div>
     </div>

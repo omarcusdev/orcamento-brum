@@ -13,10 +13,10 @@ const HomePage = async () => {
     <>
       <Header />
       <main>
-        <Hero />
-        <Storefront produtos={produtos} />
-        <Features />
-        <Faq />
+        <Storefront produtos={produtos} hero={<Hero />}>
+          <Features />
+          <Faq />
+        </Storefront>
       </main>
       <Footer />
     </>

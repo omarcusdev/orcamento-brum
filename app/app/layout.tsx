@@ -1,8 +1,18 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Playfair_Display, DM_Sans } from "next/font/google"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+})
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "ALFA Chopp Delivery — Chopp para seu evento",
@@ -15,8 +25,8 @@ export const metadata: Metadata = {
 }
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => (
-  <html lang="pt-BR">
-    <body className={`${inter.className} antialiased`}>{children}</body>
+  <html lang="pt-BR" className={`${playfair.variable} ${dmSans.variable}`}>
+    <body className="font-body antialiased">{children}</body>
   </html>
 )
 

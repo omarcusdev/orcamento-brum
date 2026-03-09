@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 import type { CartItem } from "@/lib/types"
 import { createOrder } from "@/lib/actions"
 
@@ -12,6 +13,11 @@ type CheckoutFormProps = {
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+
+const inputClassName =
+  "w-full px-4 py-3 rounded-md border border-gray-200 bg-white text-brand-black text-sm focus:border-brand-amber focus:ring-1 focus:ring-brand-amber outline-none transition-colors duration-200 placeholder:text-brand-warm-gray/50"
+
+const labelClassName = "block text-sm font-medium text-brand-black mb-1.5"
 
 const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
   const router = useRouter()
@@ -53,163 +59,199 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
   }
 
   return (
-    <section className="py-16 px-4">
+    <section className="py-20 px-4 bg-brand-cream/30">
       <div className="max-w-2xl mx-auto">
-        <button
+        <motion.button
           onClick={onBack}
-          className="text-brand-yellow font-medium mb-6 flex items-center gap-1 cursor-pointer hover:underline"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          whileHover={{ opacity: 0.7 }}
+          className="text-brand-amber font-medium mb-8 flex items-center gap-2 cursor-pointer text-sm tracking-wide"
         >
-          ← Voltar ao catalogo
-        </button>
+          <span>←</span> Voltar ao catalogo
+        </motion.button>
 
-        <h2 className="text-3xl font-bold text-brand-black mb-2">Finalizar Pedido</h2>
-        <p className="text-gray-500 mb-8">Preencha os dados do seu evento</p>
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="font-display text-3xl md:text-4xl font-bold text-brand-black mb-2"
+        >
+          Finalizar Pedido
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-brand-warm-gray mb-10"
+        >
+          Preencha os dados do seu evento
+        </motion.p>
 
-        <div className="bg-gray-50 rounded-xl p-4 mb-8">
-          <h3 className="font-semibold text-brand-black mb-3">Resumo do pedido</h3>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="bg-white rounded-lg p-5 mb-10 border border-gray-100/80 shadow-sm"
+        >
+          <h3 className="font-display font-bold text-brand-black mb-4">Resumo do pedido</h3>
           {items.map((item) => (
-            <div key={item.produto.id} className="flex justify-between text-sm py-1">
-              <span className="text-gray-600">
+            <div key={item.produto.id} className="flex justify-between text-sm py-1.5">
+              <span className="text-brand-warm-gray">
                 {item.quantidade}x {item.produto.marca} {item.produto.volume_litros}L
               </span>
-              <span className="font-medium">
+              <span className="font-medium text-brand-black">
                 {formatPrice(item.produto.preco_avista * item.quantidade)}
               </span>
             </div>
           ))}
-          <div className="flex justify-between font-bold text-lg mt-3 pt-3 border-t border-gray-200">
-            <span>Total</span>
-            <span>{formatPrice(total)}</span>
+          <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t border-gray-100">
+            <span className="text-brand-black">Total</span>
+            <span className="font-display text-brand-black">{formatPrice(total)}</span>
           </div>
-        </div>
+        </motion.div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <motion.form
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="space-y-6"
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+              <label htmlFor="nome" className={labelClassName}>Nome *</label>
               <input
                 id="nome"
                 name="nome"
                 type="text"
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none"
+                className={inputClassName}
                 placeholder="Seu nome completo"
               />
             </div>
             <div>
-              <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-1">Telefone (WhatsApp) *</label>
+              <label htmlFor="telefone" className={labelClassName}>Telefone (WhatsApp) *</label>
               <input
                 id="telefone"
                 name="telefone"
                 type="tel"
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none"
+                className={inputClassName}
                 placeholder="(21) 99999-9999"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email (opcional)</label>
+            <label htmlFor="email" className={labelClassName}>Email (opcional)</label>
             <input
               id="email"
               name="email"
               type="email"
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none"
+              className={inputClassName}
               placeholder="seu@email.com"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="data_evento" className="block text-sm font-medium text-gray-700 mb-1">Data do evento *</label>
+              <label htmlFor="data_evento" className={labelClassName}>Data do evento *</label>
               <input
                 id="data_evento"
                 name="data_evento"
                 type="date"
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none"
+                className={inputClassName}
               />
             </div>
             <div>
-              <label htmlFor="horario_evento" className="block text-sm font-medium text-gray-700 mb-1">Horario do evento *</label>
+              <label htmlFor="horario_evento" className={labelClassName}>Horario do evento *</label>
               <input
                 id="horario_evento"
                 name="horario_evento"
                 type="time"
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none"
+                className={inputClassName}
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="endereco" className="block text-sm font-medium text-gray-700 mb-1">Endereco completo *</label>
+            <label htmlFor="endereco" className={labelClassName}>Endereco completo *</label>
             <textarea
               id="endereco"
               name="endereco"
               required
               rows={3}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none resize-none"
+              className={`${inputClassName} resize-none`}
               placeholder="Rua, numero, bairro, cidade..."
             />
           </div>
 
           <div>
-            <label htmlFor="observacoes" className="block text-sm font-medium text-gray-700 mb-1">Observacoes (opcional)</label>
+            <label htmlFor="observacoes" className={labelClassName}>Observacoes (opcional)</label>
             <textarea
               id="observacoes"
               name="observacoes"
               rows={2}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none resize-none"
+              className={`${inputClassName} resize-none`}
               placeholder="Escadas, portao, ponto de referencia..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de chopeira *</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="tipo_chopeira" value="gelo" defaultChecked className="accent-brand-yellow" />
-                <span>A gelo</span>
+            <label className="block text-sm font-medium text-brand-black mb-3">Tipo de chopeira *</label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
+                <input type="radio" name="tipo_chopeira" value="gelo" defaultChecked className="accent-brand-amber" />
+                A gelo
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="tipo_chopeira" value="eletrica" className="accent-brand-yellow" />
-                <span>Eletrica</span>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
+                <input type="radio" name="tipo_chopeira" value="eletrica" className="accent-brand-amber" />
+                Eletrica
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Forma de pagamento *</label>
-            <div className="flex gap-4 flex-wrap">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="metodo_pagamento" value="pix" defaultChecked className="accent-brand-yellow" />
-                <span>Pix</span>
+            <label className="block text-sm font-medium text-brand-black mb-3">Forma de pagamento *</label>
+            <div className="flex gap-6 flex-wrap">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
+                <input type="radio" name="metodo_pagamento" value="pix" defaultChecked className="accent-brand-amber" />
+                Pix
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="metodo_pagamento" value="cartao" className="accent-brand-yellow" />
-                <span>Cartao</span>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
+                <input type="radio" name="metodo_pagamento" value="cartao" className="accent-brand-amber" />
+                Cartao
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="metodo_pagamento" value="dinheiro" className="accent-brand-yellow" />
-                <span>Dinheiro</span>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
+                <input type="radio" name="metodo_pagamento" value="dinheiro" className="accent-brand-amber" />
+                Dinheiro
               </label>
             </div>
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm">{error}</p>
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {error}
+            </motion.p>
           )}
 
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-yellow text-brand-black font-bold py-4 rounded-lg text-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            whileHover={{ opacity: 0.85 }}
+            whileTap={{ scale: 0.97 }}
+            className="w-full bg-brand-dark text-white font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-black disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Enviando..." : `Confirmar Pedido — ${formatPrice(total)}`}
-          </button>
-        </form>
+          </motion.button>
+        </motion.form>
       </div>
     </section>
   )

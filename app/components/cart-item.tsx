@@ -1,3 +1,6 @@
+"use client"
+
+import { motion } from "framer-motion"
 import type { CartItem } from "@/lib/types"
 
 type CartItemRowProps = {
@@ -11,33 +14,49 @@ const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProps) => (
-  <div className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0">
+  <motion.div
+    layout
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -8 }}
+    transition={{ duration: 0.2 }}
+    className="flex items-center gap-3 py-4 border-b border-gray-100 last:border-0"
+  >
     <div className="flex-1 min-w-0">
       <p className="font-medium text-sm text-brand-black truncate">{item.produto.marca}</p>
-      <p className="text-xs text-gray-400">{item.produto.volume_litros}L</p>
+      <p className="text-xs text-brand-warm-gray">{item.produto.volume_litros}L</p>
     </div>
     <div className="flex items-center gap-2">
-      <button
+      <motion.button
         onClick={onDecrease}
-        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-sm hover:bg-gray-50 cursor-pointer"
+        whileHover={{ opacity: 0.7 }}
+        whileTap={{ scale: 0.9 }}
+        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-sm text-brand-warm-gray hover:border-brand-dark/30 cursor-pointer transition-colors duration-200"
       >
         −
-      </button>
-      <span className="text-sm font-medium w-5 text-center">{item.quantidade}</span>
-      <button
+      </motion.button>
+      <span className="text-sm font-medium w-5 text-center text-brand-black">{item.quantidade}</span>
+      <motion.button
         onClick={onIncrease}
-        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-sm hover:bg-gray-50 cursor-pointer"
+        whileHover={{ opacity: 0.7 }}
+        whileTap={{ scale: 0.9 }}
+        className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-sm text-brand-warm-gray hover:border-brand-dark/30 cursor-pointer transition-colors duration-200"
       >
         +
-      </button>
+      </motion.button>
     </div>
-    <p className="font-semibold text-sm w-20 text-right">
+    <p className="font-display font-semibold text-sm w-20 text-right text-brand-black">
       {formatPrice(item.produto.preco_avista * item.quantidade)}
     </p>
-    <button onClick={onRemove} className="text-gray-300 hover:text-red-500 text-lg cursor-pointer">
+    <motion.button
+      onClick={onRemove}
+      whileHover={{ opacity: 0.6 }}
+      whileTap={{ scale: 0.9 }}
+      className="text-brand-warm-gray/40 hover:text-red-500 text-lg cursor-pointer transition-colors duration-200"
+    >
       ×
-    </button>
-  </div>
+    </motion.button>
+  </motion.div>
 )
 
 export default CartItemRow

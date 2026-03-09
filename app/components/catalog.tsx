@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import type { Produto } from "@/lib/types"
 import ProductCard from "@/components/product-card"
 
@@ -17,34 +18,57 @@ const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
     : produtos.filter((p) => p.tipo === filter)
 
   return (
-    <section id="catalogo" className="py-16 px-4 bg-gray-50">
+    <section id="catalogo" className="py-20 px-4 bg-brand-cream/50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-brand-black text-center mb-2">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="font-display text-3xl md:text-5xl font-bold text-brand-black text-center mb-3"
+        >
           Nossos Chopps
-        </h2>
-        <p className="text-gray-500 text-center mb-8">
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-brand-warm-gray text-center mb-10"
+        >
           Escolha seus chopps e monte seu pedido
-        </p>
-        <div className="flex justify-center gap-2 mb-8">
+        </motion.p>
+        <div className="flex justify-center gap-2 mb-10">
           {(["todos", "chopp", "vinho"] as const).map((tipo) => (
-            <button
+            <motion.button
               key={tipo}
               onClick={() => setFilter(tipo)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition cursor-pointer ${
+              whileHover={{ opacity: 0.85 }}
+              whileTap={{ scale: 0.95 }}
+              className={`px-5 py-2 rounded-md text-sm font-medium tracking-wide uppercase transition-all duration-200 cursor-pointer ${
                 filter === tipo
-                  ? "bg-brand-yellow text-brand-black"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-brand-yellow"
+                  ? "bg-brand-dark text-white"
+                  : "bg-white text-brand-warm-gray border border-gray-200 hover:border-brand-dark/30"
               }`}
             >
               {tipo === "todos" ? "Todos" : tipo === "chopp" ? "Chopp" : "Vinho"}
-            </button>
+            </motion.button>
           ))}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((produto) => (
-            <ProductCard key={produto.id} produto={produto} onAdd={onAddToCart} />
-          ))}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={filter}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {filtered.map((produto, idx) => (
+              <ProductCard key={produto.id} produto={produto} onAdd={onAddToCart} index={idx} />
+            ))}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </section>
   )

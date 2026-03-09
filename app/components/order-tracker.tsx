@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import { createClient } from "@/lib/supabase/client"
 import type { Pedido, PedidoStatusLog, PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
@@ -44,56 +45,85 @@ const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: Order
   }, [pedido.id])
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12">
+    <div className="min-h-screen bg-brand-cream/30 px-4 py-16">
       <div className="max-w-lg mx-auto">
-        <h1 className="text-2xl font-bold text-brand-black mb-1">Acompanhar Pedido</h1>
-        <p className="text-sm text-gray-400 font-mono mb-6">{pedido.id.slice(0, 8)}</p>
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="font-display text-2xl md:text-3xl font-bold text-brand-black mb-1"
+        >
+          Acompanhar Pedido
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-sm text-brand-warm-gray font-mono mb-8"
+        >
+          {pedido.id.slice(0, 8)}
+        </motion.p>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-gray-500">Status atual</span>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="bg-white rounded-lg shadow-sm border border-gray-100/80 p-6 mb-6"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <span className="text-sm text-brand-warm-gray">Status atual</span>
             <OrderStatusBadge status={pedido.status as PedidoStatus} />
           </div>
 
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Cliente</span>
-              <span className="font-medium">{pedido.clientes.nome}</span>
+              <span className="text-brand-warm-gray">Cliente</span>
+              <span className="font-medium text-brand-black">{pedido.clientes.nome}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Evento</span>
-              <span>{new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")} às {pedido.horario_evento.slice(0, 5)}</span>
+              <span className="text-brand-warm-gray">Evento</span>
+              <span className="text-brand-black">{new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")} às {pedido.horario_evento.slice(0, 5)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Endereço</span>
-              <span className="text-right max-w-[200px]">{pedido.endereco}</span>
+              <span className="text-brand-warm-gray">Endereço</span>
+              <span className="text-right max-w-[200px] text-brand-black">{pedido.endereco}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Chopeira</span>
-              <span className="capitalize">{pedido.tipo_chopeira}</span>
+              <span className="text-brand-warm-gray">Chopeira</span>
+              <span className="capitalize text-brand-black">{pedido.tipo_chopeira}</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h2 className="font-bold text-brand-black mb-3">Itens</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="bg-white rounded-lg shadow-sm border border-gray-100/80 p-6 mb-6"
+        >
+          <h2 className="font-display font-bold text-brand-black mb-4">Itens</h2>
           {items.map((item, idx) => (
-            <div key={idx} className="flex justify-between text-sm py-1">
-              <span className="text-gray-600">{item.quantidade}x {item.produtos.marca} {item.produtos.volume_litros}L</span>
-              <span className="font-medium">{formatPrice(item.preco_unitario * item.quantidade)}</span>
+            <div key={idx} className="flex justify-between text-sm py-1.5">
+              <span className="text-brand-warm-gray">{item.quantidade}x {item.produtos.marca} {item.produtos.volume_litros}L</span>
+              <span className="font-medium text-brand-black">{formatPrice(item.preco_unitario * item.quantidade)}</span>
             </div>
           ))}
-          <div className="flex justify-between font-bold mt-3 pt-3 border-t border-gray-100">
-            <span>Total</span>
-            <span>{formatPrice(pedido.total)}</span>
+          <div className="flex justify-between font-bold mt-4 pt-4 border-t border-gray-100">
+            <span className="text-brand-black">Total</span>
+            <span className="font-display text-brand-black">{formatPrice(pedido.total)}</span>
           </div>
-        </div>
+        </motion.div>
 
         {logs.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="font-bold text-brand-black mb-4">Histórico</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="bg-white rounded-lg shadow-sm border border-gray-100/80 p-6"
+          >
+            <h2 className="font-display font-bold text-brand-black mb-5">Histórico</h2>
             <OrderTimeline logs={logs} />
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
