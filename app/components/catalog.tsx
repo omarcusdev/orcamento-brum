@@ -18,14 +18,14 @@ const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
     : produtos.filter((p) => p.tipo === filter)
 
   return (
-    <section id="catalogo" className="py-20 px-4 bg-brand-cream/50">
+    <section id="catalogo" className="py-20 px-4 bg-brand-dark">
       <div className="max-w-6xl mx-auto">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="font-display text-3xl md:text-5xl font-bold text-brand-black text-center mb-3"
+          className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3"
         >
           Nossos Chopps
         </motion.h2>
@@ -34,7 +34,7 @@ const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-brand-warm-gray text-center mb-10"
+          className="text-brand-gray-light text-center mb-10"
         >
           Escolha seus chopps e monte seu pedido
         </motion.p>
@@ -47,8 +47,8 @@ const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
               whileTap={{ scale: 0.95 }}
               className={`px-5 py-2 rounded-md text-sm font-medium tracking-wide uppercase transition-all duration-200 cursor-pointer ${
                 filter === tipo
-                  ? "bg-brand-dark text-white"
-                  : "bg-white text-brand-warm-gray border border-gray-200 hover:border-brand-dark/30"
+                  ? "bg-brand-yellow text-brand-black"
+                  : "bg-brand-black text-brand-warm-gray border border-white/10 hover:border-brand-yellow/30"
               }`}
             >
               {tipo === "todos" ? "Todos" : tipo === "chopp" ? "Chopp" : "Vinho"}
