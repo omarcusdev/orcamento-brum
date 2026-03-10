@@ -22,9 +22,9 @@ const Hero = () => (
         <Image
           src="/logo-color.png"
           alt="ALFA Chopp Delivery"
-          width={100}
-          height={100}
-          className="mx-auto mb-10"
+          width={160}
+          height={160}
+          className="mx-auto mb-8 drop-shadow-[0_0_30px_rgba(232,185,18,0.3)]"
           priority
         />
       </motion.div>
