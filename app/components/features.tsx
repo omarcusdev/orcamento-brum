@@ -42,14 +42,14 @@ const features = [
 ]
 
 const Features = () => (
-  <section className="py-20 px-4 bg-white">
+  <section className="py-20 px-4 bg-brand-black">
     <div className="max-w-6xl mx-auto">
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="font-display text-3xl md:text-5xl font-bold text-brand-black text-center mb-3"
+        className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3"
       >
         Por que escolher a ALFA?
       </motion.h2>
@@ -58,7 +58,7 @@ const Features = () => (
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="text-brand-warm-gray text-center mb-14"
+        className="text-brand-gray-light text-center mb-14"
       >
         Tudo que voce precisa para seu evento, sem complicacao
       </motion.p>
@@ -72,11 +72,11 @@ const Features = () => (
             transition={{ duration: 0.4, delay: idx * 0.1 }}
             className="text-center p-6"
           >
-            <div className="w-12 h-12 rounded-full bg-brand-yellow/15 flex items-center justify-center mx-auto mb-5 text-brand-amber">
+            <div className="w-12 h-12 rounded-full bg-brand-yellow/20 flex items-center justify-center mx-auto mb-5 text-brand-yellow">
               {feature.icon}
             </div>
-            <h3 className="font-display font-bold text-brand-black text-lg mb-2">{feature.title}</h3>
-            <p className="text-sm text-brand-warm-gray leading-relaxed">{feature.description}</p>
+            <h3 className="font-display font-bold text-white text-lg mb-2">{feature.title}</h3>
+            <p className="text-sm text-brand-gray-light leading-relaxed">{feature.description}</p>
           </motion.div>
         ))}
       </div>

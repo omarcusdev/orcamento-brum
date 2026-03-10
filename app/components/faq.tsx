@@ -39,17 +39,17 @@ const FaqItem = ({ question, answer, index }: { question: string; answer: string
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className="border-b border-gray-100 last:border-0"
+      className="border-b border-white/5 last:border-0"
     >
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-5 text-left cursor-pointer group"
       >
-        <span className="font-medium text-brand-black group-hover:text-brand-amber transition-colors duration-200">{question}</span>
+        <span className="font-medium text-white group-hover:text-brand-amber transition-colors duration-200">{question}</span>
         <motion.span
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ duration: 0.2 }}
-          className="text-brand-warm-gray text-xl ml-4 shrink-0"
+          className="text-brand-yellow text-xl ml-4 shrink-0"
         >
           +
         </motion.span>
@@ -63,7 +63,7 @@ const FaqItem = ({ question, answer, index }: { question: string; answer: string
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <p className="text-brand-warm-gray text-sm pb-5 leading-relaxed">{answer}</p>
+            <p className="text-brand-gray-light text-sm pb-5 leading-relaxed">{answer}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -72,14 +72,14 @@ const FaqItem = ({ question, answer, index }: { question: string; answer: string
 }
 
 const Faq = () => (
-  <section className="py-20 px-4 bg-brand-cream/30">
+  <section className="py-20 px-4 bg-brand-dark">
     <div className="max-w-2xl mx-auto">
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="font-display text-3xl md:text-5xl font-bold text-brand-black text-center mb-3"
+        className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3"
       >
         Perguntas Frequentes
       </motion.h2>
@@ -88,11 +88,11 @@ const Faq = () => (
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="text-brand-warm-gray text-center mb-10"
+        className="text-brand-gray-light text-center mb-10"
       >
         Tire suas duvidas sobre nosso servico
       </motion.p>
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100/80">
+      <div className="bg-brand-black rounded-lg p-6 shadow-sm border border-white/5">
         {faqs.map((faq, idx) => (
           <FaqItem key={faq.question} question={faq.question} answer={faq.answer} index={idx} />
         ))}
