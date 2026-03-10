@@ -38,17 +38,17 @@ const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onChecko
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed bottom-0 left-0 right-0 md:right-0 md:left-auto md:top-0 md:w-96 bg-brand-white z-50 rounded-t-2xl md:rounded-none shadow-2xl flex flex-col max-h-[85vh] md:max-h-full"
+            className="fixed bottom-0 left-0 right-0 md:right-0 md:left-auto md:top-0 md:w-96 bg-brand-dark z-50 rounded-t-2xl md:rounded-none shadow-2xl flex flex-col max-h-[85vh] md:max-h-full"
           >
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-display font-bold text-lg text-brand-black">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <h3 className="font-display font-bold text-lg text-white">
                 Carrinho ({totalItems})
               </h3>
               <motion.button
                 onClick={onClose}
                 whileHover={{ opacity: 0.6 }}
                 whileTap={{ scale: 0.9 }}
-                className="text-brand-warm-gray hover:text-brand-black text-2xl cursor-pointer"
+                className="text-brand-warm-gray hover:text-white text-2xl cursor-pointer"
               >
                 ×
               </motion.button>
@@ -69,17 +69,17 @@ const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onChecko
               )}
             </div>
             {items.length > 0 && (
-              <div className="p-5 border-t border-gray-100">
+              <div className="p-5 border-t border-white/10">
                 <div className="flex justify-between mb-4">
                   <span className="font-medium text-brand-warm-gray text-sm">Total</span>
-                  <span className="font-display font-bold text-xl text-brand-black">{formatPrice(total)}</span>
+                  <span className="font-display font-bold text-xl text-brand-yellow">{formatPrice(total)}</span>
                 </div>
                 <p className="text-xs text-brand-warm-gray mb-4">Chopeira inclusa. Gelo nao incluso.</p>
                 <motion.button
                   onClick={onCheckout}
                   whileHover={{ opacity: 0.85 }}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full bg-brand-dark text-white font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-black"
+                  className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber"
                 >
                   Finalizar Pedido
                 </motion.button>
