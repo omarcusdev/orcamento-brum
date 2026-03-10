@@ -72,14 +72,14 @@ const FaqItem = ({ question, answer, index }: { question: string; answer: string
 }
 
 const Faq = () => (
-  <section className="py-20 px-4 bg-brand-dark">
+  <section className="py-20 px-4 bg-brand-surface">
     <div className="max-w-2xl mx-auto">
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3"
+        className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3 uppercase tracking-wider"
       >
         Perguntas Frequentes
       </motion.h2>

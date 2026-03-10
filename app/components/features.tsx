@@ -42,14 +42,15 @@ const features = [
 ]
 
 const Features = () => (
-  <section className="py-20 px-4 bg-brand-black">
+  <section className="relative py-20 px-4 bg-brand-dark">
+    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-yellow/60 to-transparent" />
     <div className="max-w-6xl mx-auto">
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3"
+        className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3 uppercase tracking-wider"
       >
         Por que escolher a ALFA?
       </motion.h2>

@@ -23,7 +23,7 @@ const Footer = () => (
             width={40}
             height={40}
           />
-          <span className="font-display text-white font-bold text-lg tracking-tight">ALFA Chopp Delivery</span>
+          <span className="font-display text-white font-bold text-xl tracking-wider">ALFA Chopp Delivery</span>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}

@@ -36,7 +36,7 @@ const Hero = () => (
         className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight leading-[1.1]"
       >
         Chopp gelado no seu{" "}
-        <span className="text-brand-yellow italic">evento</span>
+        <span className="text-brand-yellow">evento</span>
       </motion.h1>
       <motion.p
         custom={2}

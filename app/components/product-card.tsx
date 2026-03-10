@@ -45,10 +45,10 @@ const ProductCard = ({ produto, onAdd, index = 0 }: ProductCardProps) => (
           </span>
         )}
       </div>
-      <h3 className="font-display font-bold text-white text-xl mb-1">{produto.marca}</h3>
+      <h3 className="font-display text-white text-2xl mb-1">{produto.marca}</h3>
       <p className="text-sm text-brand-warm-gray mb-4">Barril {produto.volume_litros}L com chopeira</p>
       <div className="mt-auto">
-        <p className="font-display text-2xl font-bold text-brand-yellow">{formatPrice(produto.preco_avista)}</p>
+        <p className="font-display text-3xl font-bold text-brand-yellow">{formatPrice(produto.preco_avista)}</p>
         <p className="text-xs text-brand-warm-gray mt-0.5">no pix/dinheiro</p>
       </div>
       <motion.button

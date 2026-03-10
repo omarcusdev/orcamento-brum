@@ -41,7 +41,7 @@ const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onChecko
             className="fixed bottom-0 left-0 right-0 md:right-0 md:left-auto md:top-0 md:w-96 bg-brand-dark z-50 rounded-t-2xl md:rounded-none shadow-2xl flex flex-col max-h-[85vh] md:max-h-full"
           >
             <div className="flex items-center justify-between p-5 border-b border-white/10">
-              <h3 className="font-display font-bold text-lg text-white">
+              <h3 className="font-display font-bold text-xl tracking-wide text-white">
                 Carrinho ({totalItems})
               </h3>
               <motion.button

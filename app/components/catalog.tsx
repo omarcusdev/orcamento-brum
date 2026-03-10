@@ -18,14 +18,15 @@ const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
     : produtos.filter((p) => p.tipo === filter)
 
   return (
-    <section id="catalogo" className="py-20 px-4 bg-brand-dark">
+    <section id="catalogo" className="relative py-20 px-4 bg-brand-surface">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-yellow/60 to-transparent" />
       <div className="max-w-6xl mx-auto">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3"
+          className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3 uppercase tracking-wider"
         >
           Nossos Chopps
         </motion.h2>
