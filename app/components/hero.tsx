@@ -15,7 +15,8 @@ const fadeUp = {
 const Hero = () => (
   <section className="relative bg-brand-dark text-white py-24 md:py-32 px-4 overflow-hidden">
     <div className="noise-overlay" />
-    <div className="absolute inset-0 bg-gradient-to-b from-brand-yellow/5 via-transparent to-transparent" />
+    <div className="absolute inset-0 bg-gradient-to-b from-brand-yellow/10 via-transparent to-transparent" />
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-yellow/5 rounded-full blur-3xl" />
     <div className="relative max-w-5xl mx-auto text-center">
       <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible">
         <Image
@@ -68,7 +69,7 @@ const Hero = () => (
           rel="noopener noreferrer"
           whileHover={{ opacity: 0.85, scale: 0.98 }}
           whileTap={{ scale: 0.95 }}
-          className="border border-brand-yellow/40 text-brand-yellow font-semibold px-8 py-4 rounded-md text-sm tracking-widest uppercase hover:border-brand-yellow/70 transition-colors duration-300"
+          className="border border-brand-yellow/60 text-brand-yellow font-semibold px-8 py-4 rounded-md text-sm tracking-widest uppercase hover:border-brand-yellow/70 transition-colors duration-300"
         >
           WhatsApp
         </motion.a>

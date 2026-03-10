@@ -9,7 +9,7 @@ const Header = () => (
     initial={{ y: -20, opacity: 0 }}
     animate={{ y: 0, opacity: 1 }}
     transition={{ duration: 0.5, ease: "easeOut" }}
-    className="sticky top-0 z-50 bg-brand-dark/95 backdrop-blur-md border-b border-brand-yellow/10"
+    className="sticky top-0 z-50 bg-brand-dark/95 backdrop-blur-md border-b border-brand-yellow/20"
   >
     <nav className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
       <Link href="/" className="opacity-90 hover:opacity-100 transition-opacity duration-300">
