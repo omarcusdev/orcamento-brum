@@ -122,3 +122,16 @@ export const toggleProductActive = async (id: string, ativo: boolean) => {
   if (error) throw error
   revalidatePath("/admin/catalogo")
 }
+
+export const updateConfig = async (chave: string, valor: string) => {
+  const { supabase } = await requireAdmin()
+
+  const { error } = await supabase
+    .from("configuracoes")
+    .update({ valor, updated_at: new Date().toISOString() })
+    .eq("chave", chave)
+
+  if (error) throw error
+  revalidatePath("/")
+  revalidatePath("/admin/configuracoes")
+}
