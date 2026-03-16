@@ -207,12 +207,11 @@ const CheckoutForm = () => {
           </div>
 
           <div>
-            <label htmlFor="email" className={labelClassName}>Email *</label>
+            <label htmlFor="email" className={labelClassName}>Email <span className="text-brand-warm-gray">(opcional)</span></label>
             <input
               id="email"
               name="email"
               type="email"
-              required
               className={inputClassName}
               placeholder="seu@email.com"
             />
