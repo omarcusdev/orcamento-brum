@@ -12,11 +12,34 @@ type CreateOrderInput = {
   observacoes?: string
   tipo_chopeira: "gelo" | "eletrica"
   metodo_pagamento: "pix" | "cartao" | "dinheiro"
-  items: { produto_id: string; quantidade: number; preco_unitario: number }[]
+  items: { produto_id: string; quantidade: number }[]
 }
 
 export const createOrder = async (input: CreateOrderInput) => {
   const supabase = await createClient()
+
+  if (!input.items.length) {
+    throw new Error("Pedido deve ter pelo menos um item")
+  }
+
+  const productIds = input.items.map((item) => item.produto_id)
+  const { data: products, error: productsError } = await supabase
+    .from("produtos")
+    .select("id, preco_avista, ativo")
+    .in("id", productIds)
+
+  if (productsError || !products) {
+    throw new Error("Erro ao buscar produtos")
+  }
+
+  const priceMap = new Map(products.map((p) => [p.id, p]))
+
+  for (const item of input.items) {
+    const product = priceMap.get(item.produto_id)
+    if (!product) throw new Error("Produto nao encontrado")
+    if (!product.ativo) throw new Error("Produto indisponivel")
+    if (item.quantidade < 1) throw new Error("Quantidade invalida")
+  }
 
   const { data: existingClient } = await supabase
     .from("clientes")
@@ -39,7 +62,17 @@ export const createOrder = async (input: CreateOrderInput) => {
     clienteId = newClient.id
   }
 
-  const subtotal = input.items.reduce((sum, item) => sum + item.preco_unitario * item.quantidade, 0)
+  const itemsWithServerPrice = input.items.map((item) => {
+    const serverPrice = priceMap.get(item.produto_id)!.preco_avista
+    return {
+      produto_id: item.produto_id,
+      quantidade: item.quantidade,
+      preco_unitario: serverPrice,
+      subtotal: serverPrice * item.quantidade,
+    }
+  })
+
+  const subtotal = itemsWithServerPrice.reduce((sum, item) => sum + item.subtotal, 0)
 
   const { data: pedido, error: pedidoError } = await supabase
     .from("pedidos")
@@ -59,12 +92,9 @@ export const createOrder = async (input: CreateOrderInput) => {
 
   if (pedidoError || !pedido) throw new Error("Erro ao criar pedido")
 
-  const itemsToInsert = input.items.map((item) => ({
+  const itemsToInsert = itemsWithServerPrice.map((item) => ({
+    ...item,
     pedido_id: pedido.id,
-    produto_id: item.produto_id,
-    quantidade: item.quantidade,
-    preco_unitario: item.preco_unitario,
-    subtotal: item.preco_unitario * item.quantidade,
   }))
 
   const { error: itensError } = await supabase.from("pedido_itens").insert(itemsToInsert)

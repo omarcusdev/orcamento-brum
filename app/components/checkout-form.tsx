@@ -3,26 +3,71 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import type { CartItem } from "@/lib/types"
+import Link from "next/link"
+import { useCart } from "@/lib/cart-context"
 import { createOrder } from "@/lib/actions"
-
-type CheckoutFormProps = {
-  items: CartItem[]
-  onBack: () => void
-}
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const inputClassName =
-  "w-full px-4 py-3 rounded-md border border-gray-200 bg-white text-brand-black text-sm focus:border-brand-amber focus:ring-1 focus:ring-brand-amber outline-none transition-colors duration-200 placeholder:text-brand-warm-gray/50"
+  "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 placeholder:text-brand-warm-gray/40"
 
-const labelClassName = "block text-sm font-medium text-brand-black mb-1.5"
+const labelClassName = "block text-sm font-medium text-brand-gray-light mb-1.5"
 
-const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11)
+  if (digits.length <= 2) return digits.length ? `(${digits}` : ""
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+const selectClassName =
+  "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22%23B5AFA6%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m2%204%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat"
+
+const MESES = [
+  "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+]
+
+const buildDayOptions = (month: number, year: number) => {
+  const daysInMonth = new Date(year, month, 0).getDate()
+  return Array.from({ length: daysInMonth }, (_, i) => i + 1)
+}
+
+const buildYearOptions = () => {
+  const currentYear = new Date().getFullYear()
+  return [currentYear, currentYear + 1]
+}
+
+const HORAS = Array.from({ length: 15 }, (_, i) => i + 8)
+const MINUTOS = [0, 15, 30, 45]
+
+const CheckoutForm = () => {
   const router = useRouter()
+  const { items, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const now = new Date()
+  const [dia, setDia] = useState("")
+  const [mes, setMes] = useState("")
+  const [ano, setAno] = useState(String(now.getFullYear()))
+  const [hora, setHora] = useState("")
+  const [minuto, setMinuto] = useState("")
+  const [tipoChopeira, setTipoChopeira] = useState<"gelo" | "eletrica">("gelo")
+  const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao" | "dinheiro">("pix")
+
+  const selectedMonth = mes ? parseInt(mes) : now.getMonth() + 1
+  const selectedYear = parseInt(ano)
+  const dayOptions = buildDayOptions(selectedMonth, selectedYear)
+
+  const dataEvento = dia && mes && ano
+    ? `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`
+    : ""
+  const horarioEvento = hora && minuto !== ""
+    ? `${hora.padStart(2, "0")}:${minuto.padStart(2, "0")}`
+    : ""
 
   const total = items.reduce((sum, item) => sum + item.produto.preco_avista * item.quantidade, 0)
 
@@ -38,19 +83,19 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
         nome: formData.get("nome") as string,
         telefone: formData.get("telefone") as string,
         email: (formData.get("email") as string) || undefined,
-        data_evento: formData.get("data_evento") as string,
-        horario_evento: formData.get("horario_evento") as string,
+        data_evento: dataEvento,
+        horario_evento: horarioEvento,
         endereco: formData.get("endereco") as string,
         observacoes: (formData.get("observacoes") as string) || undefined,
-        tipo_chopeira: formData.get("tipo_chopeira") as "gelo" | "eletrica",
-        metodo_pagamento: formData.get("metodo_pagamento") as "pix" | "cartao" | "dinheiro",
+        tipo_chopeira: tipoChopeira,
+        metodo_pagamento: metodoPagamento,
         items: items.map((item) => ({
           produto_id: item.produto.id,
           quantidade: item.quantidade,
-          preco_unitario: item.produto.preco_avista,
         })),
       })
 
+      clearCart()
       router.push(`/pedido/${result.pedidoId}/confirmacao`)
     } catch {
       setError("Erro ao enviar pedido. Tente novamente.")
@@ -58,24 +103,40 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
     }
   }
 
+  if (items.length === 0) {
+    return (
+      <section className="py-20 px-4 bg-brand-dark min-h-screen">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4 uppercase tracking-wider">
+            Carrinho vazio
+          </h2>
+          <p className="text-brand-warm-gray mb-8">Adicione produtos antes de finalizar o pedido.</p>
+          <Link
+            href="/"
+            className="inline-block bg-brand-yellow text-brand-black font-medium px-8 py-3 rounded-md text-sm tracking-wide uppercase hover:bg-brand-amber transition-colors duration-200"
+          >
+            Ver catalogo
+          </Link>
+        </div>
+      </section>
+    )
+  }
+
   return (
-    <section className="py-20 px-4 bg-brand-cream/30">
+    <section className="py-12 md:py-20 px-4 bg-brand-dark min-h-screen">
       <div className="max-w-2xl mx-auto">
-        <motion.button
-          onClick={onBack}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          whileHover={{ opacity: 0.7 }}
-          className="text-brand-amber font-medium mb-8 flex items-center gap-2 cursor-pointer text-sm tracking-wide"
+        <Link
+          href="/"
+          className="text-brand-yellow font-medium mb-8 flex items-center gap-2 text-sm tracking-wide hover:text-brand-amber transition-colors duration-200"
         >
           <span>←</span> Voltar ao catalogo
-        </motion.button>
+        </Link>
 
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="font-display text-3xl md:text-4xl font-bold text-brand-black mb-2"
+          className="font-display text-3xl md:text-5xl font-bold text-white mb-2 uppercase tracking-wider"
         >
           Finalizar Pedido
         </motion.h2>
@@ -83,7 +144,7 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-brand-warm-gray mb-10"
+          className="text-brand-gray-light mb-10"
         >
           Preencha os dados do seu evento
         </motion.p>
@@ -92,22 +153,22 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="bg-white rounded-lg p-5 mb-10 border border-gray-100/80 shadow-sm"
+          className="bg-brand-surface rounded-lg p-5 mb-10 border border-white/5"
         >
-          <h3 className="font-display font-bold text-brand-black mb-4">Resumo do pedido</h3>
+          <h3 className="font-display font-bold text-white mb-4 text-lg">Resumo do pedido</h3>
           {items.map((item) => (
             <div key={item.produto.id} className="flex justify-between text-sm py-1.5">
-              <span className="text-brand-warm-gray">
+              <span className="text-brand-gray-light">
                 {item.quantidade}x {item.produto.marca} {item.produto.volume_litros}L
               </span>
-              <span className="font-medium text-brand-black">
+              <span className="font-medium text-white">
                 {formatPrice(item.produto.preco_avista * item.quantidade)}
               </span>
             </div>
           ))}
-          <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t border-gray-100">
-            <span className="text-brand-black">Total</span>
-            <span className="font-display text-brand-black">{formatPrice(total)}</span>
+          <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t border-white/10">
+            <span className="text-white">Total</span>
+            <span className="font-display text-brand-yellow">{formatPrice(total)}</span>
           </div>
         </motion.div>
 
@@ -137,43 +198,89 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
                 name="telefone"
                 type="tel"
                 required
+                maxLength={15}
                 className={inputClassName}
                 placeholder="(21) 99999-9999"
+                onChange={(e) => { e.target.value = formatPhone(e.target.value) }}
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="email" className={labelClassName}>Email (opcional)</label>
+            <label htmlFor="email" className={labelClassName}>Email *</label>
             <input
               id="email"
               name="email"
               type="email"
+              required
               className={inputClassName}
               placeholder="seu@email.com"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="data_evento" className={labelClassName}>Data do evento *</label>
-              <input
-                id="data_evento"
-                name="data_evento"
-                type="date"
+          <div>
+            <label className={labelClassName}>Data do evento *</label>
+            <div className="grid grid-cols-3 gap-3">
+              <select
                 required
-                className={inputClassName}
-              />
+                value={dia}
+                onChange={(e) => setDia(e.target.value)}
+                className={selectClassName}
+              >
+                <option value="" disabled>Dia</option>
+                {dayOptions.map((d) => (
+                  <option key={d} value={String(d)}>{d}</option>
+                ))}
+              </select>
+              <select
+                required
+                value={mes}
+                onChange={(e) => { setMes(e.target.value); setDia("") }}
+                className={selectClassName}
+              >
+                <option value="" disabled>Mes</option>
+                {MESES.map((nome, idx) => (
+                  <option key={nome} value={String(idx + 1)}>{nome}</option>
+                ))}
+              </select>
+              <select
+                required
+                value={ano}
+                onChange={(e) => { setAno(e.target.value); setDia("") }}
+                className={selectClassName}
+              >
+                {buildYearOptions().map((y) => (
+                  <option key={y} value={String(y)}>{y}</option>
+                ))}
+              </select>
             </div>
-            <div>
-              <label htmlFor="horario_evento" className={labelClassName}>Horario do evento *</label>
-              <input
-                id="horario_evento"
-                name="horario_evento"
-                type="time"
+          </div>
+
+          <div>
+            <label className={labelClassName}>Horario do evento *</label>
+            <div className="grid grid-cols-2 gap-3">
+              <select
                 required
-                className={inputClassName}
-              />
+                value={hora}
+                onChange={(e) => setHora(e.target.value)}
+                className={selectClassName}
+              >
+                <option value="" disabled>Hora</option>
+                {HORAS.map((h) => (
+                  <option key={h} value={String(h)}>{String(h).padStart(2, "0")}h</option>
+                ))}
+              </select>
+              <select
+                required
+                value={minuto}
+                onChange={(e) => setMinuto(e.target.value)}
+                className={selectClassName}
+              >
+                <option value="" disabled>Minuto</option>
+                {MINUTOS.map((m) => (
+                  <option key={m} value={String(m)}>{String(m).padStart(2, "0")}min</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -201,32 +308,32 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-brand-black mb-3">Tipo de chopeira *</label>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
-                <input type="radio" name="tipo_chopeira" value="gelo" defaultChecked className="accent-brand-amber" />
+            <label className={labelClassName}>Tipo de chopeira *</label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "gelo" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                <input type="radio" name="tipo_chopeira" value="gelo" checked={tipoChopeira === "gelo"} onChange={() => setTipoChopeira("gelo")} className="sr-only" />
                 A gelo
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
-                <input type="radio" name="tipo_chopeira" value="eletrica" className="accent-brand-amber" />
+              <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "eletrica" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                <input type="radio" name="tipo_chopeira" value="eletrica" checked={tipoChopeira === "eletrica"} onChange={() => setTipoChopeira("eletrica")} className="sr-only" />
                 Eletrica
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-brand-black mb-3">Forma de pagamento *</label>
-            <div className="flex gap-6 flex-wrap">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
-                <input type="radio" name="metodo_pagamento" value="pix" defaultChecked className="accent-brand-amber" />
+            <label className={labelClassName}>Forma de pagamento *</label>
+            <div className="grid grid-cols-3 gap-3">
+              <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${metodoPagamento === "pix" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                <input type="radio" name="metodo_pagamento" value="pix" checked={metodoPagamento === "pix"} onChange={() => setMetodoPagamento("pix")} className="sr-only" />
                 Pix
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
-                <input type="radio" name="metodo_pagamento" value="cartao" className="accent-brand-amber" />
+              <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${metodoPagamento === "cartao" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                <input type="radio" name="metodo_pagamento" value="cartao" checked={metodoPagamento === "cartao"} onChange={() => setMetodoPagamento("cartao")} className="sr-only" />
                 Cartao
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-black">
-                <input type="radio" name="metodo_pagamento" value="dinheiro" className="accent-brand-amber" />
+              <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${metodoPagamento === "dinheiro" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                <input type="radio" name="metodo_pagamento" value="dinheiro" checked={metodoPagamento === "dinheiro"} onChange={() => setMetodoPagamento("dinheiro")} className="sr-only" />
                 Dinheiro
               </label>
             </div>
@@ -236,7 +343,7 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
             <motion.p
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-red-500 text-sm"
+              className="text-red-400 text-sm"
             >
               {error}
             </motion.p>
@@ -247,7 +354,7 @@ const CheckoutForm = ({ items, onBack }: CheckoutFormProps) => {
             disabled={loading}
             whileHover={{ opacity: 0.85 }}
             whileTap={{ scale: 0.97 }}
-            className="w-full bg-brand-dark text-white font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-black disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Enviando..." : `Confirmar Pedido — ${formatPrice(total)}`}
           </motion.button>
