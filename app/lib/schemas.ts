@@ -6,7 +6,12 @@ export const createOrderSchema = z.object({
   nome: z.string().min(2).max(200),
   telefone: z.string().regex(phoneRegex, "Telefone invalido"),
   email: z.string().email().max(254).optional().or(z.literal("")),
-  data_evento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  data_evento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((val) => {
+    const event = new Date(val + "T00:00:00")
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return event >= today
+  }, "Data do evento nao pode ser no passado"),
   horario_evento: z.string().regex(/^\d{2}:\d{2}$/),
   endereco: z.string().min(5).max(500),
   observacoes: z.string().max(1000).optional().or(z.literal("")),

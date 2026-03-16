@@ -76,6 +76,16 @@ const CheckoutForm = () => {
     setLoading(true)
     setError(null)
 
+    const eventDate = new Date(dataEvento + "T00:00:00")
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    if (eventDate < today) {
+      setError("A data do evento não pode ser no passado")
+      setLoading(false)
+      return
+    }
+
     const formData = new FormData(e.currentTarget)
 
     try {
