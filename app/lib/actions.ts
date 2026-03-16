@@ -37,20 +37,17 @@ export const createOrder = async (input: unknown) => {
     .eq("telefone", data.telefone)
     .single()
 
-  let clienteId: string
-
-  if (existingClient) {
-    clienteId = existingClient.id
-  } else {
-    const { data: newClient, error: clientError } = await supabase
-      .from("clientes")
-      .insert({ nome: data.nome, telefone: data.telefone, email: data.email || null })
-      .select("id")
-      .single()
-
-    if (clientError || !newClient) throw new Error("Erro ao criar cliente")
-    clienteId = newClient.id
-  }
+  const clienteId = existingClient
+    ? existingClient.id
+    : await (async () => {
+        const { data: newClient, error: clientError } = await supabase
+          .from("clientes")
+          .insert({ nome: data.nome, telefone: data.telefone, email: data.email || null })
+          .select("id")
+          .single()
+        if (clientError || !newClient) throw new Error("Erro ao criar cliente")
+        return newClient.id
+      })()
 
   const itemsWithServerPrice = data.items.map((item) => {
     const serverPrice = priceMap.get(item.produto_id)!.preco_avista
