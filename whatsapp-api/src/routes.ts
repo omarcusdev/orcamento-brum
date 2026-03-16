@@ -1,17 +1,21 @@
-import { FastifyInstance } from "fastify"
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
 import { sendMessage, getStatus } from "./baileys.js"
 
-const API_KEY = process.env.WHATSAPP_API_KEY || "dev-api-key"
+const API_KEY = process.env.WHATSAPP_API_KEY
 
-const authMiddleware = async (request: any, reply: any) => {
+if (!API_KEY) {
+  throw new Error("WHATSAPP_API_KEY environment variable is required")
+}
+
+const authMiddleware = async (request: FastifyRequest, reply: FastifyReply) => {
   const apiKey = request.headers["x-api-key"]
   if (apiKey !== API_KEY) {
-    reply.code(401).send({ error: "Unauthorized" })
+    return reply.code(401).send({ error: "Unauthorized" })
   }
 }
 
 const registerRoutes = (app: FastifyInstance) => {
-  app.get("/status", async () => ({
+  app.get("/status", { preHandler: authMiddleware }, async () => ({
     status: getStatus(),
     timestamp: new Date().toISOString(),
   }))
@@ -28,8 +32,8 @@ const registerRoutes = (app: FastifyInstance) => {
     try {
       await sendMessage(telefone, mensagem)
       return { success: true, telefone }
-    } catch (error: any) {
-      return reply.code(500).send({ error: error.message })
+    } catch {
+      return reply.code(500).send({ error: "Failed to send message" })
     }
   })
 }
