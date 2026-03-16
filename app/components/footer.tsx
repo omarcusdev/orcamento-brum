@@ -1,10 +1,9 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
 import { motion } from "framer-motion"
 
-const Footer = () => (
+const Footer = ({ whatsappNumber = "5521999999999" }: { whatsappNumber?: string }) => (
   <footer className="relative bg-brand-dark text-brand-warm-gray py-16 px-4 overflow-hidden border-t border-brand-yellow/20">
     <div className="noise-overlay" />
     <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
@@ -33,7 +32,7 @@ const Footer = () => (
           className="flex items-center gap-8 text-sm"
         >
           <motion.a
-            href="https://wa.me/5521999999999"
+            href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noopener noreferrer"
             whileHover={{ opacity: 0.7 }}
@@ -41,9 +40,6 @@ const Footer = () => (
           >
             WhatsApp
           </motion.a>
-          <Link href="/admin" className="hover:text-brand-yellow transition-colors duration-200 tracking-wide uppercase font-medium">
-            Painel
-          </Link>
         </motion.div>
       </div>
       <motion.div
