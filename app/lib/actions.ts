@@ -16,7 +16,7 @@ export const createOrder = async (input: unknown) => {
   const productIds = data.items.map((item) => item.produto_id)
   const { data: products, error: productsError } = await supabase
     .from("produtos")
-    .select("id, preco_avista, ativo")
+    .select("id, preco_avista, preco_cartao, ativo")
     .in("id", productIds)
 
   if (productsError || !products) {
@@ -49,8 +49,11 @@ export const createOrder = async (input: unknown) => {
         return newClient.id
       })()
 
+  const useCardPrice = data.metodo_pagamento === "cartao"
+
   const itemsWithServerPrice = data.items.map((item) => {
-    const serverPrice = priceMap.get(item.produto_id)!.preco_avista
+    const product = priceMap.get(item.produto_id)!
+    const serverPrice = (useCardPrice && product.preco_cartao) ? product.preco_cartao : product.preco_avista
     return {
       produto_id: item.produto_id,
       quantidade: item.quantidade,

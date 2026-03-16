@@ -69,7 +69,10 @@ const CheckoutForm = () => {
     ? `${hora.padStart(2, "0")}:${minuto.padStart(2, "0")}`
     : ""
 
-  const total = items.reduce((sum, item) => sum + item.produto.preco_avista * item.quantidade, 0)
+  const total = items.reduce((sum, item) => {
+    const price = (metodoPagamento === "cartao" && item.produto.preco_cartao) ? item.produto.preco_cartao : item.produto.preco_avista
+    return sum + price * item.quantidade
+  }, 0)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
