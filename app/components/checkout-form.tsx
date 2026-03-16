@@ -55,7 +55,6 @@ const CheckoutForm = () => {
   const [ano, setAno] = useState(String(now.getFullYear()))
   const [hora, setHora] = useState("")
   const [minuto, setMinuto] = useState("")
-  const [tipoChopeira, setTipoChopeira] = useState<"gelo" | "eletrica">("gelo")
   const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao" | "dinheiro">("pix")
 
   const selectedMonth = mes ? parseInt(mes) : now.getMonth() + 1
@@ -100,7 +99,7 @@ const CheckoutForm = () => {
         horario_evento: horarioEvento,
         endereco: formData.get("endereco") as string,
         observacoes: (formData.get("observacoes") as string) || undefined,
-        tipo_chopeira: tipoChopeira,
+        tipo_chopeira: "gelo",
         metodo_pagamento: metodoPagamento,
         items: items.map((item) => ({
           produto_id: item.produto.id,
@@ -317,20 +316,6 @@ const CheckoutForm = () => {
               className={`${inputClassName} resize-none`}
               placeholder="Escadas, portao, ponto de referencia..."
             />
-          </div>
-
-          <div>
-            <label className={labelClassName}>Tipo de chopeira *</label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "gelo" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
-                <input type="radio" name="tipo_chopeira" value="gelo" checked={tipoChopeira === "gelo"} onChange={() => setTipoChopeira("gelo")} className="sr-only" />
-                A gelo
-              </label>
-              <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "eletrica" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
-                <input type="radio" name="tipo_chopeira" value="eletrica" checked={tipoChopeira === "eletrica"} onChange={() => setTipoChopeira("eletrica")} className="sr-only" />
-                Eletrica
-              </label>
-            </div>
           </div>
 
           <div>
