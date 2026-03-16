@@ -22,7 +22,10 @@ const registerRoutes = (app: FastifyInstance) => {
 
   app.post<{
     Body: { telefone: string; mensagem: string }
-  }>("/send-message", { preHandler: authMiddleware }, async (request, reply) => {
+  }>("/send-message", {
+    preHandler: authMiddleware,
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, async (request, reply) => {
     const { telefone, mensagem } = request.body
 
     if (!telefone || !mensagem) {

@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@fastify/rate-limit": "^10.3.0",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "fastify": "^5.8.1",
     "pino": "^10.3.1",
