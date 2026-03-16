@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { requireAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
 const statusOrder = [
@@ -14,7 +14,7 @@ const statusOrder = [
 ] as const
 
 export const advanceOrderStatus = async (pedidoId: string, currentStatus: string) => {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const currentIndex = statusOrder.indexOf(currentStatus as typeof statusOrder[number])
 
   if (currentIndex === -1 || currentIndex >= statusOrder.length - 1) {
@@ -37,7 +37,7 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
 }
 
 export const cancelOrder = async (pedidoId: string) => {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase
     .from("pedidos")
@@ -51,7 +51,7 @@ export const cancelOrder = async (pedidoId: string) => {
 }
 
 export const markAsPaid = async (pedidoId: string) => {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase
     .from("pedidos")
@@ -64,7 +64,7 @@ export const markAsPaid = async (pedidoId: string) => {
 }
 
 export const createProduct = async (formData: FormData) => {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase.from("produtos").insert({
     marca: formData.get("marca") as string,
@@ -80,7 +80,7 @@ export const createProduct = async (formData: FormData) => {
 }
 
 export const updateProduct = async (id: string, formData: FormData) => {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase.from("produtos").update({
     marca: formData.get("marca") as string,
@@ -96,7 +96,7 @@ export const updateProduct = async (id: string, formData: FormData) => {
 }
 
 export const toggleProductActive = async (id: string, ativo: boolean) => {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase.from("produtos").update({ ativo }).eq("id", id)
 
