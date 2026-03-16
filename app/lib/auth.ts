@@ -9,9 +9,13 @@ export const requireAdmin = async () => {
     redirect("/admin")
   }
 
-  const { data: isAdmin } = await supabase.rpc("is_admin")
+  const { data: adminRecord } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .single()
 
-  if (!isAdmin) {
+  if (!adminRecord) {
     throw new Error("Acesso negado")
   }
 
