@@ -1,28 +1,19 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createOrderSchema } from "@/lib/schemas"
 
-type CreateOrderInput = {
-  nome: string
-  telefone: string
-  email?: string
-  data_evento: string
-  horario_evento: string
-  endereco: string
-  observacoes?: string
-  tipo_chopeira: "gelo" | "eletrica"
-  metodo_pagamento: "pix" | "cartao" | "dinheiro"
-  items: { produto_id: string; quantidade: number }[]
-}
+export const createOrder = async (input: unknown) => {
+  const parsed = createOrderSchema.safeParse(input)
 
-export const createOrder = async (input: CreateOrderInput) => {
-  const supabase = await createClient()
-
-  if (!input.items.length) {
-    throw new Error("Pedido deve ter pelo menos um item")
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
   }
 
-  const productIds = input.items.map((item) => item.produto_id)
+  const data = parsed.data
+  const supabase = await createClient()
+
+  const productIds = data.items.map((item) => item.produto_id)
   const { data: products, error: productsError } = await supabase
     .from("produtos")
     .select("id, preco_avista, ativo")
@@ -34,17 +25,16 @@ export const createOrder = async (input: CreateOrderInput) => {
 
   const priceMap = new Map(products.map((p) => [p.id, p]))
 
-  for (const item of input.items) {
+  for (const item of data.items) {
     const product = priceMap.get(item.produto_id)
     if (!product) throw new Error("Produto nao encontrado")
     if (!product.ativo) throw new Error("Produto indisponivel")
-    if (item.quantidade < 1) throw new Error("Quantidade invalida")
   }
 
   const { data: existingClient } = await supabase
     .from("clientes")
     .select("id")
-    .eq("telefone", input.telefone)
+    .eq("telefone", data.telefone)
     .single()
 
   let clienteId: string
@@ -54,7 +44,7 @@ export const createOrder = async (input: CreateOrderInput) => {
   } else {
     const { data: newClient, error: clientError } = await supabase
       .from("clientes")
-      .insert({ nome: input.nome, telefone: input.telefone, email: input.email || null })
+      .insert({ nome: data.nome, telefone: data.telefone, email: data.email || null })
       .select("id")
       .single()
 
@@ -62,7 +52,7 @@ export const createOrder = async (input: CreateOrderInput) => {
     clienteId = newClient.id
   }
 
-  const itemsWithServerPrice = input.items.map((item) => {
+  const itemsWithServerPrice = data.items.map((item) => {
     const serverPrice = priceMap.get(item.produto_id)!.preco_avista
     return {
       produto_id: item.produto_id,
@@ -78,12 +68,12 @@ export const createOrder = async (input: CreateOrderInput) => {
     .from("pedidos")
     .insert({
       cliente_id: clienteId,
-      endereco: input.endereco,
-      data_evento: input.data_evento,
-      horario_evento: input.horario_evento,
-      observacoes: input.observacoes || null,
-      tipo_chopeira: input.tipo_chopeira,
-      metodo_pagamento: input.metodo_pagamento,
+      endereco: data.endereco,
+      data_evento: data.data_evento,
+      horario_evento: data.horario_evento,
+      observacoes: data.observacoes || null,
+      tipo_chopeira: data.tipo_chopeira,
+      metodo_pagamento: data.metodo_pagamento,
       subtotal,
       total: subtotal,
     })

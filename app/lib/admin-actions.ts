@@ -2,6 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { productSchema } from "@/lib/schemas"
 
 const statusOrder = [
   "novo",
@@ -66,13 +67,22 @@ export const markAsPaid = async (pedidoId: string) => {
 export const createProduct = async (formData: FormData) => {
   const { supabase } = await requireAdmin()
 
-  const { error } = await supabase.from("produtos").insert({
-    marca: formData.get("marca") as string,
-    descricao: (formData.get("descricao") as string) || null,
+  const parsed = productSchema.safeParse({
+    marca: formData.get("marca"),
+    descricao: formData.get("descricao") || undefined,
     volume_litros: Number(formData.get("volume_litros")),
     preco_avista: Number(formData.get("preco_avista")),
     preco_cartao: formData.get("preco_cartao") ? Number(formData.get("preco_cartao")) : null,
-    tipo: formData.get("tipo") as string,
+    tipo: formData.get("tipo"),
+  })
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
+  }
+
+  const { error } = await supabase.from("produtos").insert({
+    ...parsed.data,
+    descricao: parsed.data.descricao || null,
   })
 
   if (error) throw error
@@ -82,13 +92,22 @@ export const createProduct = async (formData: FormData) => {
 export const updateProduct = async (id: string, formData: FormData) => {
   const { supabase } = await requireAdmin()
 
-  const { error } = await supabase.from("produtos").update({
-    marca: formData.get("marca") as string,
-    descricao: (formData.get("descricao") as string) || null,
+  const parsed = productSchema.safeParse({
+    marca: formData.get("marca"),
+    descricao: formData.get("descricao") || undefined,
     volume_litros: Number(formData.get("volume_litros")),
     preco_avista: Number(formData.get("preco_avista")),
     preco_cartao: formData.get("preco_cartao") ? Number(formData.get("preco_cartao")) : null,
-    tipo: formData.get("tipo") as string,
+    tipo: formData.get("tipo"),
+  })
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
+  }
+
+  const { error } = await supabase.from("produtos").update({
+    ...parsed.data,
+    descricao: parsed.data.descricao || null,
   }).eq("id", id)
 
   if (error) throw error
