@@ -5,7 +5,23 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useCart } from "@/lib/cart-context"
-import { createOrder } from "@/lib/actions"
+import { createOrder, uploadDocument } from "@/lib/actions"
+import { formatCpf } from "@/lib/cpf"
+import { isAddressInDeliveryArea } from "@/lib/geo"
+import AddressAutocomplete from "@/components/address-autocomplete"
+import type { AddressData } from "@/components/address-autocomplete"
+import DocumentUpload from "@/components/document-upload"
+
+type DeliveryConfig = {
+  raioKm: number
+  centroLat: number
+  centroLng: number
+}
+
+type CheckoutFormProps = {
+  deliveryConfig: DeliveryConfig
+  exclusionZones: { lat: number; lng: number }[][]
+}
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
@@ -43,7 +59,7 @@ const buildYearOptions = () => {
 const HORAS = Array.from({ length: 15 }, (_, i) => i + 8)
 const MINUTOS = [0, 15, 30, 45]
 
-const CheckoutForm = () => {
+const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => {
   const router = useRouter()
   const { items, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
@@ -56,6 +72,13 @@ const CheckoutForm = () => {
   const [hora, setHora] = useState("")
   const [minuto, setMinuto] = useState("")
   const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao" | "dinheiro">("pix")
+
+  const [cpf, setCpf] = useState("")
+  const [address, setAddress] = useState<AddressData | null>(null)
+  const [complemento, setComplemento] = useState("")
+  const [documentFile, setDocumentFile] = useState<File | null>(null)
+  const [clientVerified, setClientVerified] = useState(false)
+  const [addressInArea, setAddressInArea] = useState<boolean | null>(null)
 
   const selectedMonth = mes ? parseInt(mes) : now.getMonth() + 1
   const selectedYear = parseInt(ano)
@@ -73,17 +96,50 @@ const CheckoutForm = () => {
     return sum + price * item.quantidade
   }, 0)
 
+  const handleAddressSelect = (addr: AddressData) => {
+    setAddress(addr)
+    const inArea = isAddressInDeliveryArea(
+      addr.lat, addr.lng,
+      deliveryConfig.centroLat, deliveryConfig.centroLng,
+      deliveryConfig.raioKm,
+      exclusionZones
+    )
+    setAddressInArea(inArea)
+  }
+
+  const checkExistingClient = async (cpfValue: string) => {
+    const digits = cpfValue.replace(/\D/g, "")
+    if (digits.length !== 11) return
+    try {
+      const res = await fetch(`/api/client-check?cpf=${digits}`)
+      const data = await res.json()
+      setClientVerified(data.verified ?? false)
+    } catch { /* ignore */ }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    if (!address) {
+      setError("Selecione um endereco valido")
+      setLoading(false)
+      return
+    }
+
+    if (addressInArea === false) {
+      setError("Infelizmente nao atendemos essa regiao")
+      setLoading(false)
+      return
+    }
 
     const eventDate = new Date(dataEvento + "T00:00:00")
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     if (eventDate < today) {
-      setError("A data do evento não pode ser no passado")
+      setError("A data do evento nao pode ser no passado")
       setLoading(false)
       return
     }
@@ -95,11 +151,20 @@ const CheckoutForm = () => {
         nome: formData.get("nome") as string,
         telefone: formData.get("telefone") as string,
         email: (formData.get("email") as string) || undefined,
+        cpf: cpf,
         data_evento: dataEvento,
         horario_evento: horarioEvento,
-        endereco: formData.get("endereco") as string,
+        endereco_rua: address.rua,
+        endereco_numero: address.numero,
+        endereco_bairro: address.bairro,
+        endereco_cidade: address.cidade,
+        endereco_estado: address.estado,
+        endereco_cep: address.cep,
+        endereco_complemento: complemento || undefined,
+        endereco_lat: address.lat,
+        endereco_lng: address.lng,
         observacoes: (formData.get("observacoes") as string) || undefined,
-        tipo_chopeira: "gelo",
+        tipo_chopeira: "gelo" as const,
         metodo_pagamento: metodoPagamento,
         items: items.map((item) => ({
           produto_id: item.produto.id,
@@ -107,10 +172,17 @@ const CheckoutForm = () => {
         })),
       })
 
+      if (documentFile && !clientVerified) {
+        const docFormData = new FormData()
+        docFormData.set("clienteId", result.clienteId)
+        docFormData.set("documento", documentFile)
+        await uploadDocument(docFormData)
+      }
+
       clearCart()
       router.push(`/pedido/${result.pedidoId}/confirmacao`)
-    } catch {
-      setError("Erro ao enviar pedido. Tente novamente.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao enviar pedido.")
       setLoading(false)
     }
   }
@@ -174,7 +246,7 @@ const CheckoutForm = () => {
                 {item.quantidade}x {item.produto.marca} {item.produto.volume_litros}L
               </span>
               <span className="font-medium text-white">
-                {formatPrice(item.produto.preco_avista * item.quantidade)}
+                {formatPrice(((metodoPagamento === "cartao" && item.produto.preco_cartao) ? item.produto.preco_cartao : item.produto.preco_avista) * item.quantidade)}
               </span>
             </div>
           ))}
@@ -204,6 +276,24 @@ const CheckoutForm = () => {
               />
             </div>
             <div>
+              <label htmlFor="cpf" className={labelClassName}>CPF *</label>
+              <input
+                id="cpf"
+                name="cpf"
+                type="text"
+                required
+                maxLength={14}
+                value={cpf}
+                onChange={(e) => setCpf(formatCpf(e.target.value))}
+                onBlur={() => checkExistingClient(cpf)}
+                className={inputClassName}
+                placeholder="000.000.000-00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
               <label htmlFor="telefone" className={labelClassName}>Telefone (WhatsApp) *</label>
               <input
                 id="telefone"
@@ -216,18 +306,72 @@ const CheckoutForm = () => {
                 onChange={(e) => { e.target.value = formatPhone(e.target.value) }}
               />
             </div>
+            <div>
+              <label htmlFor="email" className={labelClassName}>Email <span className="text-brand-warm-gray">(opcional)</span></label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                className={inputClassName}
+                placeholder="seu@email.com"
+              />
+            </div>
           </div>
 
           <div>
-            <label htmlFor="email" className={labelClassName}>Email <span className="text-brand-warm-gray">(opcional)</span></label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              className={inputClassName}
-              placeholder="seu@email.com"
+            <label className={labelClassName}>Endereco do evento *</label>
+            <AddressAutocomplete
+              onAddressSelect={handleAddressSelect}
+              inputClassName={inputClassName}
             />
+            {addressInArea === false && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-400 text-sm mt-2"
+              >
+                Infelizmente nao atendemos essa regiao
+              </motion.p>
+            )}
+            {addressInArea === true && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-green-400 text-sm mt-2"
+              >
+                Atendemos sua regiao!
+              </motion.p>
+            )}
           </div>
+
+          {address && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+            >
+              <div>
+                <label htmlFor="complemento" className={labelClassName}>Complemento <span className="text-brand-warm-gray">(opcional)</span></label>
+                <input
+                  id="complemento"
+                  type="text"
+                  value={complemento}
+                  onChange={(e) => setComplemento(e.target.value)}
+                  className={inputClassName}
+                  placeholder="Apartamento, bloco, ponto de referencia..."
+                />
+              </div>
+              <div>
+                <label className={labelClassName}>Numero</label>
+                <input
+                  type="text"
+                  value={address.numero}
+                  readOnly
+                  className={`${inputClassName} opacity-60`}
+                />
+              </div>
+            </motion.div>
+          )}
 
           <div>
             <label className={labelClassName}>Data do evento *</label>
@@ -296,18 +440,6 @@ const CheckoutForm = () => {
           </div>
 
           <div>
-            <label htmlFor="endereco" className={labelClassName}>Endereco completo *</label>
-            <textarea
-              id="endereco"
-              name="endereco"
-              required
-              rows={3}
-              className={`${inputClassName} resize-none`}
-              placeholder="Rua, numero, bairro, cidade..."
-            />
-          </div>
-
-          <div>
             <label htmlFor="observacoes" className={labelClassName}>Observacoes (opcional)</label>
             <textarea
               id="observacoes"
@@ -315,6 +447,14 @@ const CheckoutForm = () => {
               rows={2}
               className={`${inputClassName} resize-none`}
               placeholder="Escadas, portao, ponto de referencia..."
+            />
+          </div>
+
+          <div>
+            <label className={labelClassName}>Documento de identidade (RG ou CNH) *</label>
+            <DocumentUpload
+              onFileSelect={setDocumentFile}
+              verified={clientVerified}
             />
           </div>
 
@@ -348,7 +488,7 @@ const CheckoutForm = () => {
 
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={loading || addressInArea === false}
             whileHover={{ opacity: 0.85 }}
             whileTap={{ scale: 0.97 }}
             className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber disabled:opacity-50 disabled:cursor-not-allowed"

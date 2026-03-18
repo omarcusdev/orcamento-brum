@@ -2,15 +2,16 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import type { FaqContent } from "@/lib/types"
 
-const faqs = [
+const defaultFaqs = [
   {
     question: "Qual a area de entrega?",
     answer: "Entregamos em quase todo o Rio de Janeiro e Baixada Fluminense. Consulte disponibilidade para sua regiao.",
   },
   {
-    question: "O gelo esta incluso?",
-    answer: "Nao, o gelo nao esta incluso no preco. Caso precise, podemos orientar sobre a quantidade ideal para seu evento.",
+    question: "Preciso providenciar algo alem do chopp?",
+    answer: "Entre em contato pelo WhatsApp para saber o que esta incluso no seu pedido.",
   },
   {
     question: "Quais formas de pagamento?",
@@ -25,12 +26,12 @@ const faqs = [
     answer: "Sim, o cancelamento pode ser feito entrando em contato pelo WhatsApp. Consulte nossa politica de cancelamento.",
   },
   {
-    question: "A chopeira esta inclusa no preco?",
-    answer: "Sim! A chopeira (a gelo ou eletrica) esta inclusa em todos os pedidos, sem taxa de instalacao.",
+    question: "Como funciona a chopeira?",
+    answer: "Entre em contato pelo WhatsApp para saber os detalhes sobre chopeira e equipamentos.",
   },
 ]
 
-const FaqItem = ({ question, answer, index }: { question: string; answer: string; index: number }) => {
+const FaqItemComponent = ({ question, answer, index }: { question: string; answer: string; index: number }) => {
   const [open, setOpen] = useState(false)
 
   return (
@@ -71,34 +72,46 @@ const FaqItem = ({ question, answer, index }: { question: string; answer: string
   )
 }
 
-const Faq = () => (
-  <section className="py-20 px-4 bg-brand-surface">
-    <div className="max-w-2xl mx-auto">
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3 uppercase tracking-wider"
-      >
-        Perguntas Frequentes
-      </motion.h2>
-      <motion.p
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="text-brand-gray-light text-center mb-10"
-      >
-        Tire suas duvidas sobre nosso servico
-      </motion.p>
-      <div className="bg-brand-black rounded-lg p-6 shadow-sm border border-white/5">
-        {faqs.map((faq, idx) => (
-          <FaqItem key={faq.question} question={faq.question} answer={faq.answer} index={idx} />
-        ))}
+type FaqProps = {
+  content?: FaqContent | null
+}
+
+const Faq = ({ content }: FaqProps) => {
+  const titulo = content?.titulo ?? "Perguntas Frequentes"
+  const subtitulo = content?.subtitulo ?? "Tire suas duvidas sobre nosso servico"
+  const items = content?.items && content.items.length > 0
+    ? content.items.map((item) => ({ question: item.pergunta, answer: item.resposta }))
+    : defaultFaqs
+
+  return (
+    <section className="py-20 px-4 bg-brand-surface">
+      <div className="max-w-2xl mx-auto">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="font-display text-3xl md:text-5xl font-bold text-white text-center mb-3 uppercase tracking-wider"
+        >
+          {titulo}
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-brand-gray-light text-center mb-10"
+        >
+          {subtitulo}
+        </motion.p>
+        <div className="bg-brand-black rounded-lg p-6 shadow-sm border border-white/5">
+          {items.map((faq, idx) => (
+            <FaqItemComponent key={idx} question={faq.question} answer={faq.answer} index={idx} />
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
-)
+    </section>
+  )
+}
 
 export default Faq
