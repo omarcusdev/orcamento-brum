@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { validateCpf } from "@/lib/cpf"
 
 const phoneRegex = /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/
 
@@ -6,6 +7,7 @@ export const createOrderSchema = z.object({
   nome: z.string().min(2).max(200),
   telefone: z.string().regex(phoneRegex, "Telefone invalido"),
   email: z.string().email().max(254).optional().or(z.literal("")),
+  cpf: z.string().refine(validateCpf, "CPF invalido"),
   data_evento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((val) => {
     const event = new Date(val + "T00:00:00")
     const today = new Date()
@@ -13,7 +15,15 @@ export const createOrderSchema = z.object({
     return event >= today
   }, "Data do evento nao pode ser no passado"),
   horario_evento: z.string().regex(/^\d{2}:\d{2}$/),
-  endereco: z.string().min(5).max(500),
+  endereco_rua: z.string().min(2).max(300),
+  endereco_numero: z.string().max(20),
+  endereco_bairro: z.string().min(1).max(200),
+  endereco_cidade: z.string().min(1).max(200),
+  endereco_estado: z.string().length(2),
+  endereco_cep: z.string().regex(/^\d{5}-?\d{3}$/),
+  endereco_complemento: z.string().max(200).optional().or(z.literal("")),
+  endereco_lat: z.number().min(-90).max(90),
+  endereco_lng: z.number().min(-180).max(180),
   observacoes: z.string().max(1000).optional().or(z.literal("")),
   tipo_chopeira: z.enum(["gelo", "eletrica"]),
   metodo_pagamento: z.enum(["pix", "cartao", "dinheiro"]),

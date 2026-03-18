@@ -16,6 +16,11 @@ export type Cliente = {
   nome: string
   telefone: string
   email: string | null
+  cpf: string | null
+  documento_url: string | null
+  documento_verificado: boolean
+  documento_verificado_em: string | null
+  documento_verificado_por: string | null
   created_at: string
 }
 
@@ -34,6 +39,7 @@ export type Pedido = {
   cliente_id: string
   status: PedidoStatus
   endereco: string
+  endereco_completo: EnderecoCompleto | null
   data_evento: string
   horario_evento: string
   observacoes: string | null
@@ -63,6 +69,60 @@ export type PedidoStatusLog = {
   status_novo: string
   changed_at: string
   changed_by: string | null
+}
+
+export type EnderecoCompleto = {
+  rua: string
+  numero: string
+  bairro: string
+  cidade: string
+  estado: string
+  cep: string
+  complemento: string
+  lat: number
+  lng: number
+}
+
+export type ZonaExclusao = {
+  id: string
+  nome: string | null
+  poligono: { lat: number; lng: number }[]
+  created_at: string
+}
+
+export type HeroContent = {
+  titulo: string
+  subtitulo: string
+  cta_texto: string
+  cta_whatsapp_texto: string
+}
+
+export type FeatureItem = {
+  titulo: string
+  descricao: string
+  icone: string
+}
+
+export type FeaturesContent = {
+  titulo: string
+  subtitulo: string
+  items: FeatureItem[]
+}
+
+export type FaqItem = {
+  pergunta: string
+  resposta: string
+}
+
+export type FaqContent = {
+  titulo: string
+  subtitulo: string
+  items: FaqItem[]
+}
+
+export type FooterContent = {
+  texto: string
+  links: { label: string; url: string }[]
 }
 
 export type CartItem = {
