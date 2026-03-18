@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import FadeIn from "@/components/admin/fade-in"
 import OrdersList from "@/components/admin/orders-list"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,7 +32,9 @@ const PedidosPage = async () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-black mb-6">Pedidos</h1>
+      <FadeIn>
+        <h1 className="font-display text-3xl font-bold text-white tracking-wide mb-6">PEDIDOS</h1>
+      </FadeIn>
       <OrdersList initialOrders={orders} />
     </div>
   )

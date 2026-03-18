@@ -20,7 +20,7 @@ const OrderTimeline = ({ logs }: OrderTimelineProps) => (
       <div key={log.id} className="flex items-start gap-3">
         <div className="w-2.5 h-2.5 rounded-full bg-brand-amber mt-1.5 shrink-0" />
         <div>
-          <p className="font-medium text-sm text-brand-black">
+          <p className="font-medium text-sm text-white">
             {statusConfig[log.status_novo as PedidoStatus]?.label ?? log.status_novo}
           </p>
           <p className="text-xs text-brand-warm-gray">{formatDate(log.changed_at)}</p>

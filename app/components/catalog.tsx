@@ -18,8 +18,7 @@ const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
     : produtos.filter((p) => p.tipo === filter)
 
   return (
-    <section id="catalogo" className="relative py-20 px-4 bg-brand-surface">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand-yellow/60 to-transparent" />
+    <section id="catalogo" className="py-20 px-4 bg-[#2A2A2A]">
       <div className="max-w-6xl mx-auto">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}

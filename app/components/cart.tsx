@@ -1,29 +1,27 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import type { CartItem } from "@/lib/types"
+import { useCart } from "@/lib/cart-context"
 import CartItemRow from "@/components/cart-item"
-
-type CartProps = {
-  items: CartItem[]
-  open: boolean
-  onClose: () => void
-  onIncrease: (produtoId: string) => void
-  onDecrease: (produtoId: string) => void
-  onRemove: (produtoId: string) => void
-  onCheckout: () => void
-}
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
-const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onCheckout }: CartProps) => {
+const Cart = () => {
+  const router = useRouter()
+  const { items, cartOpen, totalItems, closeCart, increaseItem, decreaseItem, removeItem } = useCart()
+
   const total = items.reduce((sum, item) => sum + item.produto.preco_avista * item.quantidade, 0)
-  const totalItems = items.reduce((sum, item) => sum + item.quantidade, 0)
+
+  const handleCheckout = () => {
+    closeCart()
+    router.push("/checkout")
+  }
 
   return (
     <AnimatePresence>
-      {open && (
+      {cartOpen && (
         <>
           <motion.div
             initial={{ opacity: 0 }}
@@ -31,7 +29,7 @@ const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onChecko
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black/50 z-40 backdrop-blur-[2px]"
-            onClick={onClose}
+            onClick={closeCart}
           />
           <motion.div
             initial={{ x: "100%" }}
@@ -45,7 +43,7 @@ const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onChecko
                 Carrinho ({totalItems})
               </h3>
               <motion.button
-                onClick={onClose}
+                onClick={closeCart}
                 whileHover={{ opacity: 0.6 }}
                 whileTap={{ scale: 0.9 }}
                 className="text-brand-warm-gray hover:text-white text-2xl cursor-pointer"
@@ -61,9 +59,9 @@ const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onChecko
                   <CartItemRow
                     key={item.produto.id}
                     item={item}
-                    onIncrease={() => onIncrease(item.produto.id)}
-                    onDecrease={() => onDecrease(item.produto.id)}
-                    onRemove={() => onRemove(item.produto.id)}
+                    onIncrease={() => increaseItem(item.produto.id)}
+                    onDecrease={() => decreaseItem(item.produto.id)}
+                    onRemove={() => removeItem(item.produto.id)}
                   />
                 ))
               )}
@@ -74,9 +72,8 @@ const Cart = ({ items, open, onClose, onIncrease, onDecrease, onRemove, onChecko
                   <span className="font-medium text-brand-warm-gray text-sm">Total</span>
                   <span className="font-display font-bold text-xl text-brand-yellow">{formatPrice(total)}</span>
                 </div>
-                <p className="text-xs text-brand-warm-gray mb-4">Chopeira inclusa. Gelo nao incluso.</p>
                 <motion.button
-                  onClick={onCheckout}
+                  onClick={handleCheckout}
                   whileHover={{ opacity: 0.85 }}
                   whileTap={{ scale: 0.97 }}
                   className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber"

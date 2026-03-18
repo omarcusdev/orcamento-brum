@@ -19,11 +19,11 @@ const ProductCard = ({ produto, onAdd, index = 0 }: ProductCardProps) => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
     whileHover={{ y: -4, transition: { duration: 0.25 } }}
-    className="bg-brand-black rounded-lg overflow-hidden border border-white/5 flex flex-col shadow-sm hover:shadow-lg hover:shadow-brand-yellow/5 transition-shadow duration-300"
+    className="bg-[#333333] rounded-lg overflow-hidden border border-white/10 flex flex-col shadow-sm hover:shadow-lg hover:shadow-brand-yellow/5 transition-shadow duration-300"
   >
     {produto.foto_url ? (
-      <div className="relative h-44 bg-brand-cream">
-        <Image src={produto.foto_url} alt={produto.marca} fill className="object-cover" />
+      <div className="relative h-44 bg-[#2A2A2A]">
+        <Image src={produto.foto_url} alt={produto.marca} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
       </div>
     ) : (
       <div className="h-44 bg-gradient-to-br from-brand-yellow/10 to-brand-dark flex items-center justify-center">
@@ -46,7 +46,7 @@ const ProductCard = ({ produto, onAdd, index = 0 }: ProductCardProps) => (
         )}
       </div>
       <h3 className="font-display text-white text-2xl mb-1">{produto.marca}</h3>
-      <p className="text-sm text-brand-warm-gray mb-4">Barril {produto.volume_litros}L com chopeira</p>
+      <p className="text-sm text-brand-warm-gray mb-4">Barril {produto.volume_litros}L</p>
       <div className="mt-auto">
         <p className="font-display text-3xl font-bold text-brand-yellow">{formatPrice(produto.preco_avista)}</p>
         <p className="text-xs text-brand-warm-gray mt-0.5">no pix/dinheiro</p>

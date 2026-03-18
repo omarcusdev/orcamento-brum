@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import { createClient } from "@/lib/supabase/client"
 import type { PedidoStatus } from "@/lib/types"
 import StatusFilter from "@/components/admin/status-filter"
@@ -72,21 +73,34 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
 
   return (
     <div>
-      <div className="mb-4">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        className="mb-4"
+      >
         <input
           type="text"
           placeholder="Buscar por nome ou endereco..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm"
+          className="w-full px-4 py-2.5 rounded-lg bg-brand-surface border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
         />
-      </div>
+      </motion.div>
       <StatusFilter selected={filter} counts={counts} onChange={setFilter} />
       <div className="mt-4 space-y-3">
         {filtered.length === 0 ? (
-          <p className="text-center text-gray-400 py-8">Nenhum pedido encontrado</p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center text-brand-warm-gray py-8"
+          >
+            Nenhum pedido encontrado
+          </motion.p>
         ) : (
-          filtered.map((order) => <OrderCard key={order.id} pedido={order} />)
+          filtered.map((order, index) => (
+            <OrderCard key={order.id} pedido={order} index={index} />
+          ))
         )}
       </div>
     </div>

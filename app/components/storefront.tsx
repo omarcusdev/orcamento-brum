@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { type ReactNode } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import type { Produto, CartItem } from "@/lib/types"
+import type { Produto } from "@/lib/types"
+import { useCart } from "@/lib/cart-context"
 import Catalog from "@/components/catalog"
 import Cart from "@/components/cart"
-import CheckoutForm from "@/components/checkout-form"
 
 type StorefrontProps = {
   produtos: Produto[]
@@ -14,74 +14,14 @@ type StorefrontProps = {
 }
 
 const Storefront = ({ produtos, hero, children }: StorefrontProps) => {
-  const [cart, setCart] = useState<CartItem[]>([])
-  const [cartOpen, setCartOpen] = useState(false)
-  const [checkoutMode, setCheckoutMode] = useState(false)
-
-  const addToCart = (produto: Produto) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.produto.id === produto.id)
-      if (existing) {
-        return prev.map((item) =>
-          item.produto.id === produto.id
-            ? { ...item, quantidade: item.quantidade + 1 }
-            : item
-        )
-      }
-      return [...prev, { produto, quantidade: 1 }]
-    })
-    setCartOpen(true)
-  }
-
-  const increaseItem = (produtoId: string) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.produto.id === produtoId
-          ? { ...item, quantidade: item.quantidade + 1 }
-          : item
-      )
-    )
-  }
-
-  const decreaseItem = (produtoId: string) => {
-    setCart((prev) =>
-      prev
-        .map((item) =>
-          item.produto.id === produtoId
-            ? { ...item, quantidade: item.quantidade - 1 }
-            : item
-        )
-        .filter((item) => item.quantidade > 0)
-    )
-  }
-
-  const removeItem = (produtoId: string) => {
-    setCart((prev) => prev.filter((item) => item.produto.id !== produtoId))
-  }
-
-  const totalItems = cart.reduce((sum, item) => sum + item.quantidade, 0)
-
-  if (checkoutMode) {
-    return <CheckoutForm items={cart} onBack={() => setCheckoutMode(false)} />
-  }
+  const { addToCart, totalItems, cartOpen, openCart } = useCart()
 
   return (
     <>
       {hero}
       <Catalog produtos={produtos} onAddToCart={addToCart} />
       {children}
-      <Cart
-        items={cart}
-        open={cartOpen}
-        onClose={() => setCartOpen(false)}
-        onIncrease={increaseItem}
-        onDecrease={decreaseItem}
-        onRemove={removeItem}
-        onCheckout={() => {
-          setCartOpen(false)
-          setCheckoutMode(true)
-        }}
-      />
+      <Cart />
       <AnimatePresence>
         {totalItems > 0 && !cartOpen && (
           <motion.div
@@ -92,7 +32,7 @@ const Storefront = ({ produtos, hero, children }: StorefrontProps) => {
             className="fixed bottom-6 right-6 z-30"
           >
             <motion.button
-              onClick={() => setCartOpen(true)}
+              onClick={openCart}
               whileHover={{ scale: 1.05, opacity: 0.9 }}
               whileTap={{ scale: 0.95 }}
               className="bg-brand-yellow text-brand-black font-medium px-6 py-4 rounded-full shadow-lg cursor-pointer flex items-center gap-2 text-sm tracking-wide"
