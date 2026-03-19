@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useCart } from "@/lib/cart-context"
-import { createOrder, uploadDocument } from "@/lib/actions"
+import { createOrder } from "@/lib/actions"
 import { formatCpf } from "@/lib/cpf"
 import { isAddressInDeliveryArea } from "@/lib/geo"
 import AddressAutocomplete from "@/components/address-autocomplete"
 import type { AddressData } from "@/components/address-autocomplete"
-import DocumentUpload from "@/components/document-upload"
 
 type DeliveryConfig = {
   raioKm: number
@@ -76,8 +75,6 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
   const [cpf, setCpf] = useState("")
   const [address, setAddress] = useState<AddressData | null>(null)
   const [complemento, setComplemento] = useState("")
-  const [documentFile, setDocumentFile] = useState<File | null>(null)
-  const [clientVerified, setClientVerified] = useState(false)
   const [addressInArea, setAddressInArea] = useState<boolean | null>(null)
 
   const selectedMonth = mes ? parseInt(mes) : now.getMonth() + 1
@@ -105,16 +102,6 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
       exclusionZones
     )
     setAddressInArea(inArea)
-  }
-
-  const checkExistingClient = async (cpfValue: string) => {
-    const digits = cpfValue.replace(/\D/g, "")
-    if (digits.length !== 11) return
-    try {
-      const res = await fetch(`/api/client-check?cpf=${digits}`)
-      const data = await res.json()
-      setClientVerified(data.verified ?? false)
-    } catch { /* ignore */ }
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -171,13 +158,6 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
           quantidade: item.quantidade,
         })),
       })
-
-      if (documentFile && !clientVerified) {
-        const docFormData = new FormData()
-        docFormData.set("clienteId", result.clienteId)
-        docFormData.set("documento", documentFile)
-        await uploadDocument(docFormData)
-      }
 
       clearCart()
       router.push(`/pedido/${result.pedidoId}/confirmacao`)
@@ -285,7 +265,6 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                 maxLength={14}
                 value={cpf}
                 onChange={(e) => setCpf(formatCpf(e.target.value))}
-                onBlur={() => checkExistingClient(cpf)}
                 className={inputClassName}
                 placeholder="000.000.000-00"
               />
@@ -447,14 +426,6 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
               rows={2}
               className={`${inputClassName} resize-none`}
               placeholder="Escadas, portao, ponto de referencia..."
-            />
-          </div>
-
-          <div>
-            <label className={labelClassName}>Documento de identidade (RG ou CNH) *</label>
-            <DocumentUpload
-              onFileSelect={setDocumentFile}
-              verified={clientVerified}
             />
           </div>
 
