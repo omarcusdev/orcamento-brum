@@ -10,6 +10,7 @@ type StatusActionsProps = {
   pedidoId: string
   currentStatus: PedidoStatus
   pago: boolean
+  documentoStatus: string
 }
 
 const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
@@ -21,7 +22,7 @@ const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
   recolhido: "finalizado",
 }
 
-const StatusActions = ({ pedidoId, currentStatus, pago }: StatusActionsProps) => {
+const StatusActions = ({ pedidoId, currentStatus, pago, documentoStatus }: StatusActionsProps) => {
   const [loading, setLoading] = useState(false)
 
   const nextStatus = nextStatusMap[currentStatus]
@@ -50,15 +51,20 @@ const StatusActions = ({ pedidoId, currentStatus, pago }: StatusActionsProps) =>
   return (
     <div className="space-y-3">
       {nextStatus && (
-        <motion.button
-          onClick={handleAdvance}
-          disabled={loading}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full bg-brand-yellow text-brand-black font-bold py-3 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-        >
-          {loading ? "Atualizando..." : `Mover para: ${statusConfig[nextStatus].label}`}
-        </motion.button>
+        <>
+          <motion.button
+            onClick={handleAdvance}
+            disabled={loading || documentoStatus !== "verificado"}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-brand-yellow text-brand-black font-bold py-3 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
+          >
+            {loading ? "Atualizando..." : `Mover para: ${statusConfig[nextStatus].label}`}
+          </motion.button>
+          {documentoStatus !== "verificado" && (
+            <p className="text-yellow-400 text-xs text-center">Verifique os documentos primeiro</p>
+          )}
+        </>
       )}
       {!pago && (
         <motion.button

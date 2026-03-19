@@ -21,7 +21,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
 
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("*, clientes(id, nome, telefone, email, cpf, documento_pessoal_url, documento_verificado, documento_verificado_em)")
+    .select("*, clientes(id, nome, telefone, email, cpf, documento_pessoal_url, comprovante_residencia_url, documento_verificado, documento_verificado_em)")
     .eq("id", id)
     .single()
 
@@ -94,7 +94,9 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
             <DocumentSection
               clienteId={pedido.clientes.id}
               pedidoId={pedido.id}
-              documentoUrl={pedido.clientes.documento_pessoal_url}
+              documentoStatus={pedido.documento_status}
+              documentoPessoalUrl={pedido.clientes.documento_pessoal_url}
+              comprovanteResidenciaUrl={pedido.clientes.comprovante_residencia_url}
               documentoVerificado={pedido.clientes.documento_verificado}
               documentoVerificadoEm={pedido.clientes.documento_verificado_em}
             />
@@ -159,7 +161,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
           <FadeIn delay={0.12}>
             <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
               <h2 className="font-display text-lg font-bold text-white tracking-wide mb-4">ACOES</h2>
-              <StatusActions pedidoId={pedido.id} currentStatus={pedido.status as PedidoStatus} pago={pedido.pago} />
+              <StatusActions pedidoId={pedido.id} currentStatus={pedido.status as PedidoStatus} pago={pedido.pago} documentoStatus={pedido.documento_status} />
             </div>
           </FadeIn>
 
