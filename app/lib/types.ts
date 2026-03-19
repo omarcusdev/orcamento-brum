@@ -17,12 +17,15 @@ export type Cliente = {
   telefone: string
   email: string | null
   cpf: string | null
-  documento_url: string | null
+  documento_pessoal_url: string | null
+  comprovante_residencia_url: string | null
   documento_verificado: boolean
   documento_verificado_em: string | null
   documento_verificado_por: string | null
   created_at: string
 }
+
+export type DocumentoStatus = "pendente" | "enviado" | "verificado"
 
 export type PedidoStatus =
   | "novo"
@@ -38,6 +41,7 @@ export type Pedido = {
   id: string
   cliente_id: string
   status: PedidoStatus
+  documento_status: DocumentoStatus
   endereco: string
   endereco_completo: EnderecoCompleto | null
   data_evento: string
