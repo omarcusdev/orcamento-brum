@@ -104,6 +104,16 @@ const ConfirmacaoPage = async ({ params }: Props) => {
           )}
         </div>
 
+        <div className="bg-brand-yellow/10 border border-brand-yellow/30 rounded-xl p-4 flex items-start gap-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-yellow mt-0.5 shrink-0">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
+          </svg>
+          <div>
+            <p className="text-brand-yellow text-sm font-medium">Envie seus documentos</p>
+            <p className="text-brand-warm-gray text-xs">Na pagina de acompanhamento, envie seu documento pessoal e comprovante de residencia para agilizar a confirmacao.</p>
+          </div>
+        </div>
+
         <Link
           href={`/pedido/${pedido.id}`}
           className="block w-full bg-brand-yellow text-brand-black font-bold py-3 rounded-lg hover:brightness-110 transition text-center"
