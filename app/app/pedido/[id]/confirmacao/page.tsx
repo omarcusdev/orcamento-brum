@@ -29,8 +29,13 @@ const ConfirmacaoPage = async ({ params }: Props) => {
 
   if (!pedido) notFound()
 
-  const cliente = pedido.clientes as any
-  const itens = (pedido.pedido_itens as any[]) || []
+  const rawCliente = pedido.clientes as unknown
+  const cliente = (Array.isArray(rawCliente) ? rawCliente[0] : rawCliente) as { nome: string; telefone: string } | null
+  const rawItens = (pedido.pedido_itens as unknown[]) || []
+  const itens = rawItens.map((item: any) => ({
+    ...item,
+    produtos: Array.isArray(item.produtos) ? item.produtos[0] : item.produtos,
+  }))
 
   const metodoPagamentoLabel: Record<string, string> = {
     pix: "Pix",
