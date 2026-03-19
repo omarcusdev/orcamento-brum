@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Pedido, PedidoStatusLog, PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
 import OrderTimeline from "@/components/order-timeline"
+import DocumentUploadSection from "@/components/document-upload-section"
 
 type OrderTrackerProps = {
   pedido: Pedido & { clientes: { nome: string } }
@@ -92,6 +93,11 @@ const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: Order
             </div>
           </div>
         </motion.div>
+
+        <DocumentUploadSection
+          pedidoId={pedido.id}
+          documentoStatus={pedido.documento_status}
+        />
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
