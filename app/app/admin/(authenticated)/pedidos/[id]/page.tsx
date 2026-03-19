@@ -21,7 +21,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
 
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("*, clientes(id, nome, telefone, email, cpf, documento_url, documento_verificado, documento_verificado_em)")
+    .select("*, clientes(id, nome, telefone, email, cpf, documento_pessoal_url, documento_verificado, documento_verificado_em)")
     .eq("id", id)
     .single()
 
@@ -93,7 +93,8 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
           <FadeIn delay={0.12}>
             <DocumentSection
               clienteId={pedido.clientes.id}
-              documentoUrl={pedido.clientes.documento_url}
+              pedidoId={pedido.id}
+              documentoUrl={pedido.clientes.documento_pessoal_url}
               documentoVerificado={pedido.clientes.documento_verificado}
               documentoVerificadoEm={pedido.clientes.documento_verificado_em}
             />

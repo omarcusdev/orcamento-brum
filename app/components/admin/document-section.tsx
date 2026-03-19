@@ -5,12 +5,13 @@ import { verifyDocument, getDocumentSignedUrl } from "@/lib/admin-actions"
 
 type DocumentSectionProps = {
   clienteId: string
+  pedidoId: string
   documentoUrl: string | null
   documentoVerificado: boolean
   documentoVerificadoEm: string | null
 }
 
-const DocumentSection = ({ clienteId, documentoUrl, documentoVerificado, documentoVerificadoEm }: DocumentSectionProps) => {
+const DocumentSection = ({ clienteId, pedidoId, documentoUrl, documentoVerificado, documentoVerificadoEm }: DocumentSectionProps) => {
   const [verified, setVerified] = useState(documentoVerificado)
   const [verifiedAt, setVerifiedAt] = useState(documentoVerificadoEm)
   const [verifying, setVerifying] = useState(false)
@@ -20,7 +21,7 @@ const DocumentSection = ({ clienteId, documentoUrl, documentoVerificado, documen
   const handleViewDocument = async () => {
     setLoadingImage(true)
     try {
-      const url = await getDocumentSignedUrl(clienteId)
+      const url = await getDocumentSignedUrl(clienteId, "pessoal")
       setImageUrl(url)
     } catch {
       setImageUrl(null)
@@ -31,7 +32,7 @@ const DocumentSection = ({ clienteId, documentoUrl, documentoVerificado, documen
   const handleVerify = async () => {
     setVerifying(true)
     try {
-      await verifyDocument(clienteId)
+      await verifyDocument(clienteId, pedidoId)
       setVerified(true)
       setVerifiedAt(new Date().toISOString())
     } catch { /* ignore */ }

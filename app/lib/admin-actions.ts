@@ -24,6 +24,16 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
 
   const nextStatus = statusOrder[currentIndex + 1]
 
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("documento_status")
+    .eq("id", pedidoId)
+    .single()
+
+  if (pedido?.documento_status !== "verificado") {
+    throw new Error("Documentos precisam ser verificados antes de avancar o pedido")
+  }
+
   const { error } = await supabase
     .from("pedidos")
     .update({ status: nextStatus })
@@ -176,9 +186,10 @@ export const deleteExclusionZone = async (id: string) => {
   revalidatePath("/checkout")
 }
 
-export const verifyDocument = async (clienteId: string) => {
+export const verifyDocument = async (clienteId: string, pedidoId: string) => {
   const { supabase, user } = await requireAdmin()
-  const { error } = await supabase
+
+  const { error: clienteError } = await supabase
     .from("clientes")
     .update({
       documento_verificado: true,
@@ -186,7 +197,15 @@ export const verifyDocument = async (clienteId: string) => {
       documento_verificado_por: user.id,
     })
     .eq("id", clienteId)
-  if (error) throw error
+  if (clienteError) throw clienteError
+
+  const { error: pedidoError } = await supabase
+    .from("pedidos")
+    .update({ documento_status: "verificado" })
+    .eq("id", pedidoId)
+  if (pedidoError) throw pedidoError
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin/pedidos")
 }
 
@@ -218,11 +237,11 @@ export const uploadProductImage = async (productId: string, formData: FormData) 
   revalidatePath("/")
 }
 
-export const getDocumentSignedUrl = async (clienteId: string) => {
+export const getDocumentSignedUrl = async (clienteId: string, tipo: "pessoal" | "residencia") => {
   const { supabase } = await requireAdmin()
   const { data, error } = await supabase.storage
     .from("documentos")
-    .createSignedUrl(`${clienteId}/documento`, 60)
+    .createSignedUrl(`${clienteId}/${tipo}`, 60)
   if (error) throw error
   return data.signedUrl
 }

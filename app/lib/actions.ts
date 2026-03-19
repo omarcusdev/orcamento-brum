@@ -133,20 +133,44 @@ export const createOrder = async (input: unknown) => {
   return { pedidoId: pedido.id, clienteId }
 }
 
-export const uploadDocument = async (formData: FormData) => {
-  const clienteId = formData.get("clienteId") as string
-  const file = formData.get("documento") as File
-  if (!clienteId || !file) throw new Error("Dados invalidos")
+export const uploadDocuments = async (pedidoId: string, formData: FormData) => {
+  const pessoal = formData.get("documento_pessoal") as File
+  const residencia = formData.get("comprovante_residencia") as File
+  if (!pessoal || !residencia) throw new Error("Ambos os documentos sao obrigatorios")
 
   const supabase = await createClient()
 
-  const { error: uploadError } = await supabase.storage
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("cliente_id, documento_status")
+    .eq("id", pedidoId)
+    .single()
+
+  if (!pedido) throw new Error("Pedido nao encontrado")
+  if (pedido.documento_status !== "pendente") throw new Error("Documentos ja enviados")
+
+  const clienteId = pedido.cliente_id
+
+  const { error: err1 } = await supabase.storage
     .from("documentos")
-    .upload(`${clienteId}/documento`, file, { upsert: true, contentType: file.type })
-  if (uploadError) throw new Error("Erro ao enviar documento")
+    .upload(`${clienteId}/pessoal`, pessoal, { upsert: true, contentType: pessoal.type })
+  if (err1) throw new Error("Erro ao enviar documento pessoal")
+
+  const { error: err2 } = await supabase.storage
+    .from("documentos")
+    .upload(`${clienteId}/residencia`, residencia, { upsert: true, contentType: residencia.type })
+  if (err2) throw new Error("Erro ao enviar comprovante de residencia")
 
   await supabase
     .from("clientes")
-    .update({ documento_url: `${clienteId}/documento` })
+    .update({
+      documento_pessoal_url: `${clienteId}/pessoal`,
+      comprovante_residencia_url: `${clienteId}/residencia`,
+    })
     .eq("id", clienteId)
+
+  await supabase
+    .from("pedidos")
+    .update({ documento_status: "enviado" })
+    .eq("id", pedidoId)
 }
