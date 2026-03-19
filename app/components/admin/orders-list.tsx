@@ -10,6 +10,7 @@ import OrderCard from "@/components/admin/order-card"
 type OrderWithClient = {
   id: string
   status: string
+  documento_status: string
   total: number
   data_evento: string
   horario_evento: string
@@ -49,7 +50,7 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
         async () => {
           const { data } = await supabase
             .from("pedidos")
-            .select("id, status, total, data_evento, horario_evento, endereco, metodo_pagamento, pago, created_at, clientes(nome, telefone)")
+            .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, pago, created_at, clientes(nome, telefone)")
             .order("created_at", { ascending: false })
 
           if (data) setOrders(normalizeOrders(data as unknown[]))
