@@ -45,10 +45,10 @@ const MESES = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ]
 
-const buildDayOptions = (month: number, year: number) => {
-  const daysInMonth = new Date(year, month, 0).getDate()
-  return Array.from({ length: daysInMonth }, (_, i) => i + 1)
-}
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1)
+
+const getDaysInMonth = (month: number, year: number) =>
+  new Date(year, month, 0).getDate()
 
 const buildYearOptions = () => {
   const currentYear = new Date().getFullYear()
@@ -77,11 +77,12 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
   const [complemento, setComplemento] = useState("")
   const [addressInArea, setAddressInArea] = useState<boolean | null>(null)
 
-  const selectedMonth = mes ? parseInt(mes) : now.getMonth() + 1
+  const selectedMonth = mes ? parseInt(mes) : 0
   const selectedYear = parseInt(ano)
-  const dayOptions = buildDayOptions(selectedMonth, selectedYear)
+  const maxDays = selectedMonth ? getDaysInMonth(selectedMonth, selectedYear) : 31
+  const diaInvalida = dia && selectedMonth && parseInt(dia) > maxDays
 
-  const dataEvento = dia && mes && ano
+  const dataEvento = dia && mes && ano && !diaInvalida
     ? `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`
     : ""
   const horarioEvento = hora && minuto !== ""
@@ -133,38 +134,39 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
 
     const formData = new FormData(e.currentTarget)
 
-    try {
-      const result = await createOrder({
-        nome: formData.get("nome") as string,
-        telefone: formData.get("telefone") as string,
-        email: (formData.get("email") as string) || undefined,
-        cpf: cpf,
-        data_evento: dataEvento,
-        horario_evento: horarioEvento,
-        endereco_rua: address.rua,
-        endereco_numero: address.numero,
-        endereco_bairro: address.bairro,
-        endereco_cidade: address.cidade,
-        endereco_estado: address.estado,
-        endereco_cep: address.cep,
-        endereco_complemento: complemento || undefined,
-        endereco_lat: address.lat,
-        endereco_lng: address.lng,
-        observacoes: (formData.get("observacoes") as string) || undefined,
-        tipo_chopeira: "gelo" as const,
-        metodo_pagamento: metodoPagamento,
-        items: items.map((item) => ({
-          produto_id: item.produto.id,
-          quantidade: item.quantidade,
-        })),
-      })
+    const result = await createOrder({
+      nome: formData.get("nome") as string,
+      telefone: formData.get("telefone") as string,
+      email: (formData.get("email") as string) || undefined,
+      cpf: cpf,
+      data_evento: dataEvento,
+      horario_evento: horarioEvento,
+      endereco_rua: address.rua,
+      endereco_numero: address.numero,
+      endereco_bairro: address.bairro,
+      endereco_cidade: address.cidade,
+      endereco_estado: address.estado,
+      endereco_cep: address.cep,
+      endereco_complemento: complemento || undefined,
+      endereco_lat: address.lat,
+      endereco_lng: address.lng,
+      observacoes: (formData.get("observacoes") as string) || undefined,
+      tipo_chopeira: "gelo" as const,
+      metodo_pagamento: metodoPagamento,
+      items: items.map((item) => ({
+        produto_id: item.produto.id,
+        quantidade: item.quantidade,
+      })),
+    })
 
-      clearCart()
-      router.push(`/pedido/${result.pedidoId}/confirmacao`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar pedido.")
+    if (result.error) {
+      setError(result.error)
       setLoading(false)
+      return
     }
+
+    clearCart()
+    router.push(`/pedido/${result.pedidoId}/confirmacao`)
   }
 
   if (items.length === 0) {
@@ -362,14 +364,14 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                 className={selectClassName}
               >
                 <option value="" disabled>Dia</option>
-                {dayOptions.map((d) => (
+                {DAY_OPTIONS.map((d) => (
                   <option key={d} value={String(d)}>{d}</option>
                 ))}
               </select>
               <select
                 required
                 value={mes}
-                onChange={(e) => { setMes(e.target.value); setDia("") }}
+                onChange={(e) => setMes(e.target.value)}
                 className={selectClassName}
               >
                 <option value="" disabled>Mes</option>
@@ -380,7 +382,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
               <select
                 required
                 value={ano}
-                onChange={(e) => { setAno(e.target.value); setDia("") }}
+                onChange={(e) => setAno(e.target.value)}
                 className={selectClassName}
               >
                 {buildYearOptions().map((y) => (
@@ -388,6 +390,15 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                 ))}
               </select>
             </div>
+            {diaInvalida && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-400 text-sm mt-2"
+              >
+                O mes de {MESES[selectedMonth - 1]} nao tem dia {dia} — selecione um dia ate {maxDays}
+              </motion.p>
+            )}
           </div>
 
           <div>
@@ -459,7 +470,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
 
           <motion.button
             type="submit"
-            disabled={loading || addressInArea === false}
+            disabled={loading || addressInArea === false || !!diaInvalida}
             whileHover={{ opacity: 0.85 }}
             whileTap={{ scale: 0.97 }}
             className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber disabled:opacity-50 disabled:cursor-not-allowed"
