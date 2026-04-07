@@ -261,6 +261,44 @@ export const uploadProductImage = async (productId: string, formData: FormData) 
   revalidatePath("/")
 }
 
+export const createEntregador = async (nome: string, telefone: string) => {
+  const { supabase } = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from("entregadores")
+    .insert({ nome, telefone })
+    .select("id")
+    .single()
+
+  if (error) throw error
+  revalidatePath("/admin/entregadores")
+  return data
+}
+
+export const updateEntregador = async (id: string, nome: string, telefone: string) => {
+  const { supabase } = await requireAdmin()
+
+  const { error } = await supabase
+    .from("entregadores")
+    .update({ nome, telefone })
+    .eq("id", id)
+
+  if (error) throw error
+  revalidatePath("/admin/entregadores")
+}
+
+export const toggleEntregadorAtivo = async (id: string, ativo: boolean) => {
+  const { supabase } = await requireAdmin()
+
+  const { error } = await supabase
+    .from("entregadores")
+    .update({ ativo })
+    .eq("id", id)
+
+  if (error) throw error
+  revalidatePath("/admin/entregadores")
+}
+
 export const getDocumentSignedUrl = async (clienteId: string, tipo: "pessoal" | "residencia") => {
   await requireAdmin()
   const serviceClient = createServiceClient()

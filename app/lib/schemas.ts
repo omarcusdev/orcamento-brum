@@ -47,5 +47,11 @@ export const productSchema = z.object({
   tipo: z.enum(["chopp", "vinho"]),
 })
 
+export const entregadorSchema = z.object({
+  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").max(200),
+  telefone: z.string().regex(phoneRegex, "Telefone invalido"),
+})
+
+export type EntregadorInput = z.infer<typeof entregadorSchema>
 export type CreateOrderInput = z.infer<typeof createOrderSchema>
 export type ProductInput = z.infer<typeof productSchema>
