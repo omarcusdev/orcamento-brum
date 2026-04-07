@@ -1,15 +1,17 @@
 "use server"
 
 import { requireAdmin } from "@/lib/auth"
+import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
 import { productSchema } from "@/lib/schemas"
 
 const statusOrder = [
-  "novo",
-  "aguardando_pagamento",
+  "aguardando_documentos",
   "confirmado",
+  "enviar_para_entregador",
   "em_rota",
   "entregue",
+  "aguardando_pagamento",
   "recolhido",
   "finalizado",
 ] as const
@@ -32,6 +34,10 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
 
   if (pedido?.documento_status !== "verificado") {
     throw new Error("Documentos precisam ser verificados antes de avancar o pedido")
+  }
+
+  if (currentStatus === "confirmado") {
+    throw new Error("Use despacho para entregador para avancar pedidos confirmados")
   }
 
   const { error } = await supabase
@@ -59,19 +65,6 @@ export const cancelOrder = async (pedidoId: string) => {
 
   revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin/pedidos")
-}
-
-export const markAsPaid = async (pedidoId: string) => {
-  const { supabase } = await requireAdmin()
-
-  const { error } = await supabase
-    .from("pedidos")
-    .update({ pago: true })
-    .eq("id", pedidoId)
-
-  if (error) throw error
-
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
 }
 
 export const createProduct = async (formData: FormData) => {
@@ -238,10 +231,11 @@ export const uploadProductImage = async (productId: string, formData: FormData) 
 }
 
 export const getDocumentSignedUrl = async (clienteId: string, tipo: "pessoal" | "residencia") => {
-  const { supabase } = await requireAdmin()
-  const { data, error } = await supabase.storage
+  await requireAdmin()
+  const serviceClient = createServiceClient()
+  const { data, error } = await serviceClient.storage
     .from("documentos")
-    .createSignedUrl(`${clienteId}/${tipo}`, 60)
+    .createSignedUrl(`${clienteId}/${tipo}`, 300)
   if (error) throw error
   return data.signedUrl
 }

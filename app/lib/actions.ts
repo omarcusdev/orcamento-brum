@@ -1,13 +1,14 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import { createOrderSchema } from "@/lib/schemas"
 import { isAddressInDeliveryArea } from "@/lib/geo"
 
-export const createOrder = async (input: unknown) => {
+export const createOrder = async (input: unknown): Promise<{ pedidoId: string; clienteId: string; error?: never } | { error: string; pedidoId?: never; clienteId?: never }> => {
   const parsed = createOrderSchema.safeParse(input)
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
+    return { error: parsed.error.issues[0]?.message ?? "Dados invalidos" }
   }
 
   const data = parsed.data
@@ -19,13 +20,13 @@ export const createOrder = async (input: unknown) => {
     .select("id, preco_avista, preco_cartao, ativo")
     .in("id", productIds)
 
-  if (productsError || !products) throw new Error("Erro ao buscar produtos")
+  if (productsError || !products) return { error: "Erro ao buscar produtos" }
 
   const priceMap = new Map(products.map((p) => [p.id, p]))
   for (const item of data.items) {
     const product = priceMap.get(item.produto_id)
-    if (!product) throw new Error("Produto nao encontrado")
-    if (!product.ativo) throw new Error("Produto indisponivel")
+    if (!product) return { error: "Produto nao encontrado" }
+    if (!product.ativo) return { error: "Produto indisponivel" }
   }
 
   const { data: configRows } = await supabase
@@ -46,7 +47,7 @@ export const createOrder = async (input: unknown) => {
     (zones ?? []).map((z) => z.poligono as { lat: number; lng: number }[])
   )
 
-  if (!inArea) throw new Error("Infelizmente nao atendemos essa regiao")
+  if (!inArea) return { error: "Infelizmente nao atendemos essa regiao" }
 
   const cpfDigits = data.cpf.replace(/\D/g, "")
   const { data: existingClient } = await supabase
@@ -55,17 +56,19 @@ export const createOrder = async (input: unknown) => {
     .eq("cpf", cpfDigits)
     .single()
 
-  const clienteId = existingClient
-    ? existingClient.id
-    : await (async () => {
-        const { data: newClient, error: clientError } = await supabase
-          .from("clientes")
-          .insert({ nome: data.nome, telefone: data.telefone, email: data.email || null, cpf: cpfDigits })
-          .select("id")
-          .single()
-        if (clientError || !newClient) throw new Error("Erro ao criar cliente")
-        return newClient.id
-      })()
+  let clienteId: string
+  const docsAlreadyVerified = existingClient?.documento_verificado === true
+  if (existingClient) {
+    clienteId = existingClient.id
+  } else {
+    const { data: newClient, error: clientError } = await supabase
+      .from("clientes")
+      .insert({ nome: data.nome, telefone: data.telefone, email: data.email || null, cpf: cpfDigits })
+      .select("id")
+      .single()
+    if (clientError || !newClient) return { error: "Erro ao criar cliente" }
+    clienteId = newClient.id
+  }
 
   const enderecoDisplay = [
     data.endereco_rua,
@@ -78,12 +81,12 @@ export const createOrder = async (input: unknown) => {
   ].filter(Boolean).join(", ")
 
   const enderecoCompleto = {
-    rua: data.endereco_rua,
-    numero: data.endereco_numero,
+    rua: data.endereco_rua ?? "",
+    numero: data.endereco_numero ?? "",
     bairro: data.endereco_bairro,
     cidade: data.endereco_cidade,
     estado: data.endereco_estado,
-    cep: data.endereco_cep,
+    cep: data.endereco_cep ?? "",
     complemento: data.endereco_complemento ?? "",
     lat: data.endereco_lat,
     lng: data.endereco_lng,
@@ -116,11 +119,15 @@ export const createOrder = async (input: unknown) => {
       metodo_pagamento: data.metodo_pagamento,
       subtotal,
       total: subtotal,
+      ...(docsAlreadyVerified && {
+        documento_status: "verificado",
+        status: "confirmado",
+      }),
     })
     .select("id")
     .single()
 
-  if (pedidoError || !pedido) throw new Error("Erro ao criar pedido")
+  if (pedidoError || !pedido) return { error: "Erro ao criar pedido" }
 
   const itemsToInsert = itemsWithServerPrice.map((item) => ({
     ...item,
@@ -128,17 +135,54 @@ export const createOrder = async (input: unknown) => {
   }))
 
   const { error: itensError } = await supabase.from("pedido_itens").insert(itemsToInsert)
-  if (itensError) throw new Error("Erro ao criar itens do pedido")
+  if (itensError) return { error: "Erro ao criar itens do pedido" }
 
   return { pedidoId: pedido.id, clienteId }
 }
 
-export const uploadDocuments = async (pedidoId: string, formData: FormData) => {
-  const pessoal = formData.get("documento_pessoal") as File
-  const residencia = formData.get("comprovante_residencia") as File
-  if (!pessoal || !residencia) throw new Error("Ambos os documentos sao obrigatorios")
+export const getOrdersByCpf = async (rawCpf: string) => {
+  const digits = rawCpf.replace(/\D/g, "")
+  if (digits.length !== 11) return { error: "CPF invalido" as const, pedidos: [] }
 
   const supabase = await createClient()
+
+  const { data: cliente } = await supabase
+    .from("clientes")
+    .select("id")
+    .eq("cpf", digits)
+    .single()
+
+  if (!cliente) return { error: null, pedidos: [] }
+
+  const { data: pedidos } = await supabase
+    .from("pedidos")
+    .select("id, status, documento_status, data_evento, horario_evento, total, created_at, pedido_itens(quantidade, produtos(marca, volume_litros))")
+    .eq("cliente_id", cliente.id)
+    .order("created_at", { ascending: false })
+
+  const mapped = (pedidos ?? []).map((p) => ({
+    id: p.id,
+    status: p.status,
+    documento_status: p.documento_status,
+    data_evento: p.data_evento,
+    horario_evento: p.horario_evento,
+    total: p.total,
+    created_at: p.created_at,
+    itens: ((p.pedido_itens as unknown[]) ?? []).map((item: any) => {
+      const produto = Array.isArray(item.produtos) ? item.produtos[0] : item.produtos
+      return { quantidade: item.quantidade, marca: produto?.marca, volume: produto?.volume_litros }
+    }),
+  }))
+
+  return { error: null, pedidos: mapped }
+}
+
+export const uploadDocuments = async (pedidoId: string, formData: FormData): Promise<{ error: string | null }> => {
+  const pessoal = formData.get("documento_pessoal") as File
+  const residencia = formData.get("comprovante_residencia") as File
+  if (!pessoal || !residencia) return { error: "Ambos os documentos sao obrigatorios" }
+
+  const supabase = createServiceClient()
 
   const { data: pedido } = await supabase
     .from("pedidos")
@@ -146,20 +190,20 @@ export const uploadDocuments = async (pedidoId: string, formData: FormData) => {
     .eq("id", pedidoId)
     .single()
 
-  if (!pedido) throw new Error("Pedido nao encontrado")
-  if (pedido.documento_status !== "pendente") throw new Error("Documentos ja enviados")
+  if (!pedido) return { error: "Pedido nao encontrado" }
+  if (pedido.documento_status !== "pendente") return { error: "Documentos ja enviados" }
 
   const clienteId = pedido.cliente_id
 
   const { error: err1 } = await supabase.storage
     .from("documentos")
     .upload(`${clienteId}/pessoal`, pessoal, { upsert: true, contentType: pessoal.type })
-  if (err1) throw new Error("Erro ao enviar documento pessoal")
+  if (err1) return { error: "Erro ao enviar documento pessoal" }
 
   const { error: err2 } = await supabase.storage
     .from("documentos")
     .upload(`${clienteId}/residencia`, residencia, { upsert: true, contentType: residencia.type })
-  if (err2) throw new Error("Erro ao enviar comprovante de residencia")
+  if (err2) return { error: "Erro ao enviar comprovante de residencia" }
 
   await supabase
     .from("clientes")
@@ -173,4 +217,6 @@ export const uploadDocuments = async (pedidoId: string, formData: FormData) => {
     .from("pedidos")
     .update({ documento_status: "enviado" })
     .eq("id", pedidoId)
+
+  return { error: null }
 }

@@ -4,25 +4,25 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
 import { statusConfig } from "@/components/order-status-badge"
-import { advanceOrderStatus, cancelOrder, markAsPaid } from "@/lib/admin-actions"
+import { advanceOrderStatus, cancelOrder } from "@/lib/admin-actions"
 
 type StatusActionsProps = {
   pedidoId: string
   currentStatus: PedidoStatus
-  pago: boolean
   documentoStatus: string
 }
 
 const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
-  novo: "aguardando_pagamento",
-  aguardando_pagamento: "confirmado",
-  confirmado: "em_rota",
+  aguardando_documentos: "confirmado",
+  confirmado: "enviar_para_entregador",
+  enviar_para_entregador: "em_rota",
   em_rota: "entregue",
-  entregue: "recolhido",
+  entregue: "aguardando_pagamento",
+  aguardando_pagamento: "recolhido",
   recolhido: "finalizado",
 }
 
-const StatusActions = ({ pedidoId, currentStatus, pago, documentoStatus }: StatusActionsProps) => {
+const StatusActions = ({ pedidoId, currentStatus, documentoStatus }: StatusActionsProps) => {
   const [loading, setLoading] = useState(false)
 
   const nextStatus = nextStatusMap[currentStatus]
@@ -40,42 +40,34 @@ const StatusActions = ({ pedidoId, currentStatus, pago, documentoStatus }: Statu
     setLoading(false)
   }
 
-  const handleMarkPaid = async () => {
-    setLoading(true)
-    await markAsPaid(pedidoId)
-    setLoading(false)
-  }
-
   if (currentStatus === "finalizado" || currentStatus === "cancelado") return null
 
+  const docsVerified = documentoStatus === "verificado"
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-brand-warm-gray">Status atual:</span>
+        <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium border tracking-wide ${statusConfig[currentStatus].color}`}>
+          {statusConfig[currentStatus].label}
+        </span>
+      </div>
+
       {nextStatus && (
         <>
           <motion.button
             onClick={handleAdvance}
-            disabled={loading || documentoStatus !== "verificado"}
+            disabled={loading || !docsVerified}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-brand-yellow text-brand-black font-bold py-3 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
           >
             {loading ? "Atualizando..." : `Mover para: ${statusConfig[nextStatus].label}`}
           </motion.button>
-          {documentoStatus !== "verificado" && (
+          {!docsVerified && (
             <p className="text-yellow-400 text-xs text-center">Verifique os documentos primeiro</p>
           )}
         </>
-      )}
-      {!pago && (
-        <motion.button
-          onClick={handleMarkPaid}
-          disabled={loading}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 transition cursor-pointer disabled:opacity-50"
-        >
-          Marcar como Pago
-        </motion.button>
       )}
       <motion.button
         onClick={handleCancel}
