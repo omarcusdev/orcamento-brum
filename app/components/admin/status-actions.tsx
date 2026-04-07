@@ -5,11 +5,13 @@ import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
 import { statusConfig } from "@/components/order-status-badge"
 import { advanceOrderStatus, cancelOrder } from "@/lib/admin-actions"
+import DispatchModal from "@/components/admin/dispatch-modal"
 
 type StatusActionsProps = {
   pedidoId: string
   currentStatus: PedidoStatus
   documentoStatus: string
+  dispatchText?: string
 }
 
 const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
@@ -22,12 +24,17 @@ const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
   recolhido: "finalizado",
 }
 
-const StatusActions = ({ pedidoId, currentStatus, documentoStatus }: StatusActionsProps) => {
+const StatusActions = ({ pedidoId, currentStatus, documentoStatus, dispatchText }: StatusActionsProps) => {
   const [loading, setLoading] = useState(false)
+  const [showDispatch, setShowDispatch] = useState(false)
 
   const nextStatus = nextStatusMap[currentStatus]
 
   const handleAdvance = async () => {
+    if (currentStatus === "confirmado") {
+      setShowDispatch(true)
+      return
+    }
     setLoading(true)
     await advanceOrderStatus(pedidoId, currentStatus)
     setLoading(false)
@@ -78,6 +85,14 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus }: StatusActio
       >
         Cancelar Pedido
       </motion.button>
+
+      {showDispatch && dispatchText && (
+        <DispatchModal
+          pedidoId={pedidoId}
+          dispatchText={dispatchText}
+          onClose={() => setShowDispatch(false)}
+        />
+      )}
     </div>
   )
 }

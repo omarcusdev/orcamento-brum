@@ -16,13 +16,43 @@ type Props = {
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
+const buildDispatchText = (pedido: any, items: any[], cliente: any) => {
+  const itemLines = (items ?? []).map((item: any) => {
+    const marca = item.produtos?.marca ?? item.produtos?.[0]?.marca ?? ""
+    const volume = item.produtos?.volume_litros ?? item.produtos?.[0]?.volume_litros ?? ""
+    return `${item.quantidade}x ${marca} ${volume}L`
+  }).join(", ")
+
+  const dataFormatted = new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")
+  const endereco = pedido.endereco_completo
+  const enderecoLine = endereco
+    ? `${endereco.rua}, ${endereco.numero}${endereco.complemento ? ` (${endereco.complemento})` : ""}`
+    : pedido.endereco
+
+  return [
+    `📍 Data do evento: ${dataFormatted}`,
+    `◼ Quantidade de Barris: ${itemLines}`,
+    `◼ Preferencia de Chopeira: ${pedido.tipo_chopeira}`,
+    `◼ Responsavel: ${cliente.nome}`,
+    `◼ Contato: ${cliente.telefone}`,
+    `◼ Municipio: ${endereco?.cidade ?? "—"}`,
+    `◼ Bairro: ${endereco?.bairro ?? "—"}`,
+    `◼ Endereco: ${enderecoLine}`,
+    `◼ Rampas/Escadas: ${pedido.rampas_escadas || "Nao"}`,
+    `◼ Valor: R$ ${pedido.subtotal.toFixed(2).replace(".", ",")}`,
+    `◼ Frete: R$ ${(pedido.frete || 0).toFixed(2).replace(".", ",")}`,
+    `◼ Forma de pagamento: ${pedido.metodo_pagamento ?? "—"}`,
+    `◼ Observacoes: ${pedido.observacoes || "—"}`,
+  ].join("\n")
+}
+
 const AdminOrderDetailPage = async ({ params }: Props) => {
   const { id } = await params
   const supabase = await createClient()
 
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("*, clientes(id, nome, telefone, email, cpf, documento_pessoal_url, comprovante_residencia_url, documento_verificado, documento_verificado_em)")
+    .select("*, clientes(id, nome, telefone, email, cpf, documento_pessoal_url, comprovante_residencia_url, documento_verificado, documento_verificado_em), entregadores(id, nome, telefone)")
     .eq("id", id)
     .single()
 
@@ -123,6 +153,12 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                   <span className="text-brand-warm-gray block mb-1">Endereco</span>
                   <span className="text-sm text-white">{pedido.endereco}</span>
                 </div>
+                {pedido.rampas_escadas && (
+                  <div>
+                    <span className="text-brand-warm-gray block mb-1">Rampas/Escadas</span>
+                    <span className="text-sm text-white">{pedido.rampas_escadas}</span>
+                  </div>
+                )}
                 {pedido.observacoes && (
                   <div>
                     <span className="text-brand-warm-gray block mb-1">Observacoes</span>
@@ -180,9 +216,39 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
           <FadeIn delay={0.12}>
             <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
               <h2 className="font-display text-lg font-bold text-white tracking-wide mb-4">ACOES</h2>
-              <StatusActions pedidoId={pedido.id} currentStatus={pedido.status as PedidoStatus} documentoStatus={pedido.documento_status} />
+              <StatusActions
+                pedidoId={pedido.id}
+                currentStatus={pedido.status as PedidoStatus}
+                documentoStatus={pedido.documento_status}
+                dispatchText={buildDispatchText(pedido, items ?? [], pedido.clientes)}
+              />
             </div>
           </FadeIn>
+
+          {pedido.entregadores && (
+            <FadeIn delay={0.15}>
+              <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
+                <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">ENTREGADOR</h2>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-brand-warm-gray">Nome</span>
+                    <span className="text-white">{pedido.entregadores.nome}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-brand-warm-gray">WhatsApp</span>
+                    <a
+                      href={`https://wa.me/${pedido.entregadores.telefone.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-400 hover:underline"
+                    >
+                      {pedido.entregadores.telefone}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+          )}
 
           {(logs ?? []).length > 0 && (
             <FadeIn delay={0.18}>

@@ -299,6 +299,50 @@ export const toggleEntregadorAtivo = async (id: string, ativo: boolean) => {
   revalidatePath("/admin/entregadores")
 }
 
+export const dispatchToEntregador = async (pedidoId: string, entregadorId: string) => {
+  const { supabase } = await requireAdmin()
+
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("status")
+    .eq("id", pedidoId)
+    .single()
+
+  if (!pedido) throw new Error("Pedido nao encontrado")
+  if (pedido.status !== "confirmado") throw new Error("Pedido precisa estar confirmado para despachar")
+
+  const { data: entregador } = await supabase
+    .from("entregadores")
+    .select("id, ativo")
+    .eq("id", entregadorId)
+    .single()
+
+  if (!entregador || !entregador.ativo) throw new Error("Entregador invalido ou inativo")
+
+  const { error } = await supabase
+    .from("pedidos")
+    .update({ entregador_id: entregadorId, status: "enviar_para_entregador" })
+    .eq("id", pedidoId)
+
+  if (error) throw error
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+  revalidatePath("/admin/pedidos")
+}
+
+export const fetchActiveEntregadores = async () => {
+  const { supabase } = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from("entregadores")
+    .select("id, nome, telefone")
+    .eq("ativo", true)
+    .order("nome")
+
+  if (error) throw error
+  return data ?? []
+}
+
 export const getDocumentSignedUrl = async (clienteId: string, tipo: "pessoal" | "residencia") => {
   await requireAdmin()
   const serviceClient = createServiceClient()
