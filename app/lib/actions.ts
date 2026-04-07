@@ -116,6 +116,7 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
       horario_evento: data.horario_evento,
       observacoes: data.observacoes || null,
       tipo_chopeira: data.tipo_chopeira,
+      rampas_escadas: data.rampas_escadas || null,
       metodo_pagamento: data.metodo_pagamento,
       subtotal,
       total: subtotal,

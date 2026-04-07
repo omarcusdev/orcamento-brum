@@ -76,11 +76,14 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
   const [address, setAddress] = useState<AddressData | null>(null)
   const [complemento, setComplemento] = useState("")
   const [addressInArea, setAddressInArea] = useState<boolean | null>(null)
+  const [tipoChopeira, setTipoChopeira] = useState<"gelo" | "eletrica" | "">("")
+  const [temRampas, setTemRampas] = useState<"sim" | "nao" | "">("")
+  const [rampasDetalhes, setRampasDetalhes] = useState("")
 
   const selectedMonth = mes ? parseInt(mes) : 0
   const selectedYear = parseInt(ano)
   const maxDays = selectedMonth ? getDaysInMonth(selectedMonth, selectedYear) : 31
-  const diaInvalida = dia && selectedMonth && parseInt(dia) > maxDays
+  const diaInvalida = dia && selectedMonth > 0 && parseInt(dia) > maxDays
 
   const dataEvento = dia && mes && ano && !diaInvalida
     ? `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`
@@ -132,6 +135,18 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
       return
     }
 
+    if (!tipoChopeira) {
+      setError("Selecione o tipo de chopeira")
+      setLoading(false)
+      return
+    }
+
+    if (address && !temRampas) {
+      setError("Informe se o local possui rampas ou escadas")
+      setLoading(false)
+      return
+    }
+
     const formData = new FormData(e.currentTarget)
 
     const result = await createOrder({
@@ -151,7 +166,8 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
       endereco_lat: address.lat,
       endereco_lng: address.lng,
       observacoes: (formData.get("observacoes") as string) || undefined,
-      tipo_chopeira: "gelo" as const,
+      tipo_chopeira: tipoChopeira as "gelo" | "eletrica",
+      rampas_escadas: temRampas === "sim" ? rampasDetalhes : undefined,
       metodo_pagamento: metodoPagamento,
       items: items.map((item) => ({
         produto_id: item.produto.id,
@@ -354,6 +370,41 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
             </motion.div>
           )}
 
+          {address && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+            >
+              <label className={labelClassName}>Local possui rampas ou escadas? *</label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`flex items-center justify-center px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${temRampas === "sim" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                  <input type="radio" name="rampas" value="sim" checked={temRampas === "sim"} onChange={() => setTemRampas("sim")} className="sr-only" />
+                  <span className="font-medium">Sim</span>
+                </label>
+                <label className={`flex items-center justify-center px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${temRampas === "nao" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                  <input type="radio" name="rampas" value="nao" checked={temRampas === "nao"} onChange={() => setTemRampas("nao")} className="sr-only" />
+                  <span className="font-medium">Nao</span>
+                </label>
+              </div>
+              {temRampas === "sim" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="mt-3"
+                >
+                  <input
+                    type="text"
+                    required
+                    value={rampasDetalhes}
+                    onChange={(e) => setRampasDetalhes(e.target.value)}
+                    className={inputClassName}
+                    placeholder="Descreva (ex: 3o andar sem elevador)"
+                  />
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
           <div>
             <label className={labelClassName}>Data do evento *</label>
             <div className="grid grid-cols-3 gap-3">
@@ -407,7 +458,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
               <select
                 required
                 value={hora}
-                onChange={(e) => setHora(e.target.value)}
+                onChange={(e) => { setHora(e.target.value); if (minuto === "") setMinuto("0") }}
                 className={selectClassName}
               >
                 <option value="" disabled>Hora</option>
@@ -426,6 +477,22 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                   <option key={m} value={String(m)}>{String(m).padStart(2, "0")}min</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClassName}>Preferencia de Chopeira *</label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={`flex flex-col items-center gap-1 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "eletrica" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                <input type="radio" name="tipo_chopeira" value="eletrica" checked={tipoChopeira === "eletrica"} onChange={() => setTipoChopeira("eletrica")} className="sr-only" />
+                <span className="text-xl">⚡</span>
+                <span className="font-medium">Eletrica</span>
+              </label>
+              <label className={`flex flex-col items-center gap-1 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "gelo" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
+                <input type="radio" name="tipo_chopeira" value="gelo" checked={tipoChopeira === "gelo"} onChange={() => setTipoChopeira("gelo")} className="sr-only" />
+                <span className="text-xl">🧊</span>
+                <span className="font-medium">Gelo</span>
+              </label>
             </div>
           </div>
 
@@ -470,7 +537,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
 
           <motion.button
             type="submit"
-            disabled={loading || addressInArea === false || !!diaInvalida}
+            disabled={loading || addressInArea === false || !!diaInvalida || !tipoChopeira || (!!address && !temRampas)}
             whileHover={{ opacity: 0.85 }}
             whileTap={{ scale: 0.97 }}
             className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber disabled:opacity-50 disabled:cursor-not-allowed"
