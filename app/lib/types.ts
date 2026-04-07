@@ -28,11 +28,12 @@ export type Cliente = {
 export type DocumentoStatus = "pendente" | "enviado" | "verificado"
 
 export type PedidoStatus =
-  | "novo"
-  | "aguardando_pagamento"
+  | "aguardando_documentos"
   | "confirmado"
+  | "enviar_para_entregador"
   | "em_rota"
   | "entregue"
+  | "aguardando_pagamento"
   | "recolhido"
   | "finalizado"
   | "cancelado"
@@ -48,11 +49,14 @@ export type Pedido = {
   horario_evento: string
   observacoes: string | null
   tipo_chopeira: "gelo" | "eletrica"
+  rampas_escadas: string | null
   subtotal: number
   desconto: number
+  frete: number
   total: number
   metodo_pagamento: "pix" | "cartao" | "dinheiro" | null
   pago: boolean
+  entregador_id: string | null
   created_at: string
   updated_at: string
 }
@@ -85,6 +89,14 @@ export type EnderecoCompleto = {
   complemento: string
   lat: number
   lng: number
+}
+
+export type Entregador = {
+  id: string
+  nome: string
+  telefone: string
+  ativo: boolean
+  created_at: string
 }
 
 export type ZonaExclusao = {
