@@ -67,6 +67,37 @@ export const cancelOrder = async (pedidoId: string) => {
   revalidatePath("/admin/pedidos")
 }
 
+export const updateFrete = async (pedidoId: string, frete: number) => {
+  const { supabase } = await requireAdmin()
+
+  if (frete < 0) throw new Error("Frete nao pode ser negativo")
+
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("subtotal, desconto, status")
+    .eq("id", pedidoId)
+    .single()
+
+  if (!pedido) throw new Error("Pedido nao encontrado")
+
+  const lockedStatuses = ["enviar_para_entregador", "em_rota", "entregue", "aguardando_pagamento", "recolhido", "finalizado", "cancelado"]
+  if (lockedStatuses.includes(pedido.status)) {
+    throw new Error("Frete nao pode ser alterado apos despacho")
+  }
+
+  const total = pedido.subtotal - pedido.desconto + frete
+
+  const { error } = await supabase
+    .from("pedidos")
+    .update({ frete, total })
+    .eq("id", pedidoId)
+
+  if (error) throw error
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+  revalidatePath("/admin/pedidos")
+}
+
 export const createProduct = async (formData: FormData) => {
   const { supabase } = await requireAdmin()
 

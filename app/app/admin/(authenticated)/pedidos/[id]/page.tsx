@@ -7,6 +7,7 @@ import OrderTimeline from "@/components/order-timeline"
 import StatusActions from "@/components/admin/status-actions"
 import FadeIn from "@/components/admin/fade-in"
 import DocumentSection from "@/components/admin/document-section"
+import FreteInput from "@/components/admin/frete-input"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -143,15 +144,33 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                   <span className="font-medium text-white">{formatPrice(item.preco_unitario * item.quantidade)}</span>
                 </div>
               ))}
-              <div className="flex justify-between font-bold mt-3 pt-3 border-t border-white/10">
-                <span className="text-white">Total</span>
-                <span className="text-brand-yellow">{formatPrice(pedido.total)}</span>
+              <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-brand-warm-gray">Subtotal</span>
+                  <span className="text-white">{formatPrice(pedido.subtotal)}</span>
+                </div>
+                {pedido.desconto > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-brand-warm-gray">Desconto</span>
+                    <span className="text-green-400">- {formatPrice(pedido.desconto)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm items-center">
+                  <span className="text-brand-yellow font-medium">Frete</span>
+                  <FreteInput
+                    pedidoId={pedido.id}
+                    initialFrete={pedido.frete}
+                    readOnly={["enviar_para_entregador", "em_rota", "entregue", "aguardando_pagamento", "recolhido", "finalizado", "cancelado"].includes(pedido.status)}
+                  />
+                </div>
+                <div className="flex justify-between font-bold pt-2 border-t border-white/10">
+                  <span className="text-white">Total</span>
+                  <span className="text-brand-yellow">{formatPrice(pedido.total)}</span>
+                </div>
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span className="text-brand-warm-gray">Pagamento</span>
-                <span className={pedido.pago ? "text-green-400 font-medium" : "text-brand-yellow"}>
-                  {pedido.metodo_pagamento ?? "—"} {pedido.pago ? "✓ Pago" : "• Pendente"}
-                </span>
+                <span className="text-brand-yellow">{pedido.metodo_pagamento ?? "—"}</span>
               </div>
             </div>
           </FadeIn>
@@ -161,7 +180,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
           <FadeIn delay={0.12}>
             <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
               <h2 className="font-display text-lg font-bold text-white tracking-wide mb-4">ACOES</h2>
-              <StatusActions pedidoId={pedido.id} currentStatus={pedido.status as PedidoStatus} pago={pedido.pago} documentoStatus={pedido.documento_status} />
+              <StatusActions pedidoId={pedido.id} currentStatus={pedido.status as PedidoStatus} documentoStatus={pedido.documento_status} />
             </div>
           </FadeIn>
 
