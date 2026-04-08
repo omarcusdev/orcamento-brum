@@ -252,6 +252,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
             <span className="text-white">Total</span>
             <span className="font-display text-brand-yellow">{formatPrice(total)}</span>
           </div>
+          <p className="text-brand-warm-gray text-xs mt-2">O frete sera calculado e informado apos a confirmacao do pedido.</p>
         </motion.div>
 
         <motion.form

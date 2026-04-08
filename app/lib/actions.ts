@@ -157,7 +157,7 @@ export const getOrdersByCpf = async (rawCpf: string) => {
 
   const { data: pedidos } = await supabase
     .from("pedidos")
-    .select("id, status, documento_status, data_evento, horario_evento, total, created_at, pedido_itens(quantidade, produtos(marca, volume_litros))")
+    .select("id, status, documento_status, data_evento, horario_evento, total, frete, subtotal, created_at, pedido_itens(quantidade, produtos(marca, volume_litros))")
     .eq("cliente_id", cliente.id)
     .order("created_at", { ascending: false })
 
@@ -168,6 +168,8 @@ export const getOrdersByCpf = async (rawCpf: string) => {
     data_evento: p.data_evento,
     horario_evento: p.horario_evento,
     total: p.total,
+    frete: p.frete,
+    subtotal: p.subtotal,
     created_at: p.created_at,
     itens: ((p.pedido_itens as unknown[]) ?? []).map((item: any) => {
       const produto = Array.isArray(item.produtos) ? item.produtos[0] : item.produtos
