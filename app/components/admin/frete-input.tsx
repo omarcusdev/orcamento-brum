@@ -13,16 +13,24 @@ const FreteInput = ({ pedidoId, initialFrete, readOnly }: FreteInputProps) => {
   const [value, setValue] = useState(String(initialFrete || ""))
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState(false)
 
   const handleBlur = async () => {
     const parsed = parseFloat(value.replace(",", "."))
     if (isNaN(parsed) || parsed === initialFrete) return
 
     setSaving(true)
-    await updateFrete(pedidoId, parsed)
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setError(false)
+    try {
+      await updateFrete(pedidoId, parsed)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      setError(true)
+      setTimeout(() => setError(false), 3000)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (readOnly) {
@@ -46,6 +54,7 @@ const FreteInput = ({ pedidoId, initialFrete, readOnly }: FreteInputProps) => {
       />
       {saving && <span className="text-xs text-brand-warm-gray">...</span>}
       {saved && <span className="text-xs text-green-400">✓</span>}
+      {error && <span className="text-xs text-red-400">✗</span>}
     </div>
   )
 }

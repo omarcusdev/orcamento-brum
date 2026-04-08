@@ -28,11 +28,17 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
 
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("documento_status")
+    .select("documento_status, status")
     .eq("id", pedidoId)
     .single()
 
-  if (pedido?.documento_status !== "verificado") {
+  if (!pedido) throw new Error("Pedido nao encontrado")
+
+  if (pedido.status !== currentStatus) {
+    throw new Error("Status do pedido foi alterado por outro usuario")
+  }
+
+  if (pedido.documento_status !== "verificado") {
     throw new Error("Documentos precisam ser verificados antes de avancar o pedido")
   }
 
@@ -40,12 +46,14 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
     throw new Error("Use despacho para entregador para avancar pedidos confirmados")
   }
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("pedidos")
     .update({ status: nextStatus })
     .eq("id", pedidoId)
+    .eq("status", currentStatus)
 
   if (error) throw error
+  if (count === 0) throw new Error("Status do pedido foi alterado por outro usuario")
 
   revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin/pedidos")

@@ -40,8 +40,7 @@ const DispatchModal = ({ pedidoId, dispatchText, onClose }: DispatchModalProps) 
     setError(null)
 
     try {
-      await navigator.clipboard.writeText(dispatchText)
-      setCopied(true)
+      try { await navigator.clipboard.writeText(dispatchText); setCopied(true) } catch {}
       await dispatchToEntregador(pedidoId, selectedId)
       onClose()
     } catch (err: any) {

@@ -8,7 +8,6 @@ create table entregadores (
 
 alter table entregadores enable row level security;
 create policy "entregadores_all_admin" on entregadores for all using (auth.role() = 'authenticated');
-create policy "entregadores_select_admin" on entregadores for select using (auth.role() = 'authenticated');
 
 alter table pedidos add column frete numeric(10,2) not null default 0;
 alter table pedidos add column rampas_escadas text;
