@@ -46,6 +46,7 @@ const FreteInput = ({ pedidoId, initialFrete, readOnly }: FreteInputProps) => {
       <span className="text-brand-warm-gray text-sm">R$</span>
       <input
         type="text"
+        data-frete-input
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={handleBlur}

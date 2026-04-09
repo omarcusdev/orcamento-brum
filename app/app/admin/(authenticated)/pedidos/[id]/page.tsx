@@ -8,6 +8,7 @@ import StatusActions from "@/components/admin/status-actions"
 import FadeIn from "@/components/admin/fade-in"
 import DocumentSection from "@/components/admin/document-section"
 import FreteInput from "@/components/admin/frete-input"
+import FreteBanner from "@/components/admin/frete-banner"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -88,6 +89,10 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
           <OrderStatusBadge status={pedido.status as PedidoStatus} />
         </div>
       </FadeIn>
+
+      {pedido.frete === 0 && !["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"].includes(pedido.status) && (
+        <FreteBanner />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6">
