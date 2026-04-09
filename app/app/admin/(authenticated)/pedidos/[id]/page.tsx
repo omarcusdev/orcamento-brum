@@ -192,7 +192,12 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                   </div>
                 )}
                 <div className="flex justify-between text-sm items-center">
-                  <span className="text-brand-yellow font-medium">Frete</span>
+                  <div>
+                    <span className="text-brand-yellow font-medium">Frete</span>
+                    {pedido.frete === 0 && !["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"].includes(pedido.status) && (
+                      <span className="text-amber-400 text-xs ml-2">← definir valor</span>
+                    )}
+                  </div>
                   <FreteInput
                     pedidoId={pedido.id}
                     initialFrete={pedido.frete}
@@ -220,6 +225,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                 pedidoId={pedido.id}
                 currentStatus={pedido.status as PedidoStatus}
                 documentoStatus={pedido.documento_status}
+                frete={pedido.frete ?? 0}
                 dispatchText={buildDispatchText(pedido, items ?? [], pedido.clientes)}
               />
             </div>

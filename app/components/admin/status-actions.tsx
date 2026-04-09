@@ -11,6 +11,7 @@ type StatusActionsProps = {
   pedidoId: string
   currentStatus: PedidoStatus
   documentoStatus: string
+  frete: number
   dispatchText?: string
 }
 
@@ -23,7 +24,7 @@ const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
   pago: "recolhido",
 }
 
-const StatusActions = ({ pedidoId, currentStatus, documentoStatus, dispatchText }: StatusActionsProps) => {
+const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispatchText }: StatusActionsProps) => {
   const [loading, setLoading] = useState(false)
   const [showDispatch, setShowDispatch] = useState(false)
 
@@ -34,6 +35,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, dispatchText 
       setShowDispatch(true)
       return
     }
+    if (frete === 0 && !confirm("Frete nao definido. Deseja continuar sem frete?")) return
     setLoading(true)
     await advanceOrderStatus(pedidoId, currentStatus)
     setLoading(false)

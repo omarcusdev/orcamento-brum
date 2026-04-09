@@ -50,7 +50,9 @@ const FreteInput = ({ pedidoId, initialFrete, readOnly }: FreteInputProps) => {
         onChange={(e) => setValue(e.target.value)}
         onBlur={handleBlur}
         placeholder="0,00"
-        className="w-20 px-2 py-1 rounded border border-white/10 bg-brand-dark text-white text-sm text-right focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none"
+        className={`w-20 px-2 py-1 rounded border bg-brand-dark text-white text-sm text-right focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none ${
+          !value || value === "0" || value === "" ? "border-amber-500/60 ring-1 ring-amber-500/30" : "border-white/10"
+        }`}
       />
       {saving && <span className="text-xs text-brand-warm-gray">...</span>}
       {saved && <span className="text-xs text-green-400">✓</span>}
