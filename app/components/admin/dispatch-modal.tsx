@@ -106,6 +106,8 @@ const DispatchModal = ({ pedidoId, dispatchText, onClose }: DispatchModalProps) 
               </pre>
             </div>
 
+            <p className="text-amber-400 text-xs">O valor do frete nao podera mais ser alterado apos esta etapa.</p>
+
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
             <div className="flex gap-3 pt-2">
