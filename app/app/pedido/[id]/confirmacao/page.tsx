@@ -56,6 +56,24 @@ const ConfirmacaoPage = async ({ params }: Props) => {
           </p>
         </div>
 
+        <div className="bg-amber-500/15 border-2 border-amber-500/50 rounded-xl p-5 text-center space-y-3">
+          <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-400">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-amber-400 font-bold text-base">Envie seus documentos</p>
+            <p className="text-brand-gray-light text-sm mt-1">Para confirmar seu pedido, envie seu documento pessoal e comprovante de residencia na pagina de acompanhamento.</p>
+          </div>
+          <Link
+            href={`/pedido/${pedido.id}`}
+            className="inline-block bg-amber-500 text-brand-black font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition text-sm"
+          >
+            Enviar Documentos
+          </Link>
+        </div>
+
         <div className="bg-brand-surface rounded-xl border border-white/10 p-6 space-y-4">
           <div className="flex justify-between items-center pb-3 border-b border-white/10">
             <span className="text-brand-warm-gray text-sm">Pedido</span>
@@ -107,24 +125,6 @@ const ConfirmacaoPage = async ({ params }: Props) => {
               <p className="text-white text-sm">{pedido.observacoes}</p>
             </div>
           )}
-        </div>
-
-        <div className="bg-amber-500/15 border-2 border-amber-500/50 rounded-xl p-5 text-center space-y-3">
-          <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-400">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-amber-400 font-bold text-base">Envie seus documentos</p>
-            <p className="text-brand-gray-light text-sm mt-1">Para confirmar seu pedido, envie seu documento pessoal e comprovante de residencia na pagina de acompanhamento.</p>
-          </div>
-          <Link
-            href={`/pedido/${pedido.id}`}
-            className="inline-block bg-amber-500 text-brand-black font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition text-sm"
-          >
-            Enviar Documentos
-          </Link>
         </div>
 
         <Link
