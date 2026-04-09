@@ -16,7 +16,7 @@ type OrderWithClient = {
   horario_evento: string
   endereco: string
   metodo_pagamento: string | null
-  pago: boolean
+
   created_at: string
   clientes: { nome: string; telefone: string }
 }
@@ -42,23 +42,34 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
   useEffect(() => {
     const supabase = createClient()
 
+    const refetch = async () => {
+      const { data } = await supabase
+        .from("pedidos")
+        .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, clientes(nome, telefone)")
+        .order("created_at", { ascending: false })
+
+      if (data) setOrders(normalizeOrders(data as unknown[]))
+    }
+
     const channel = supabase
       .channel("admin-orders")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pedidos" },
-        async () => {
-          const { data } = await supabase
-            .from("pedidos")
-            .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, pago, created_at, clientes(nome, telefone)")
-            .order("created_at", { ascending: false })
-
-          if (data) setOrders(normalizeOrders(data as unknown[]))
-        }
+        refetch
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    const handleVisibility = () => { if (document.visibilityState === "visible") refetch() }
+    document.addEventListener("visibilitychange", handleVisibility)
+
+    const interval = setInterval(refetch, 30_000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      document.removeEventListener("visibilitychange", handleVisibility)
+      clearInterval(interval)
+    }
   }, [])
 
   const counts = orders.reduce<Record<string, number>>((acc, order) => {
