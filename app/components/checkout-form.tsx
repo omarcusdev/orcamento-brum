@@ -509,7 +509,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
           </div>
 
           <div>
-            <label className={labelClassName}>Forma de pagamento *</label>
+            <label className={labelClassName}>Forma de pagamento (pagamento na entrega) *</label>
             <div className="grid grid-cols-3 gap-3">
               <label className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${metodoPagamento === "pix" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
                 <input type="radio" name="metodo_pagamento" value="pix" checked={metodoPagamento === "pix"} onChange={() => setMetodoPagamento("pix")} className="sr-only" />
