@@ -112,9 +112,28 @@ const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: Order
               <span className="text-brand-yellow font-medium">{formatPrice(item.preco_unitario * item.quantidade)}</span>
             </div>
           ))}
-          <div className="flex justify-between items-center pt-4 mt-4 border-t border-white/10">
-            <span className="text-white font-medium">Total</span>
-            <span className="font-display text-2xl text-brand-yellow">{formatPrice(pedido.total)}</span>
+          <div className="pt-4 mt-4 border-t border-white/10 space-y-2">
+            {pedido.frete > 0 ? (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-brand-warm-gray">Subtotal</span>
+                  <span className="text-brand-gray-light">{formatPrice(pedido.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-brand-warm-gray">Frete</span>
+                  <span className="text-brand-gray-light">{formatPrice(pedido.frete)}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between text-sm">
+                <span className="text-brand-warm-gray">Frete</span>
+                <span className="text-amber-400 text-xs">Sera informado em breve</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-white font-medium">Total</span>
+              <span className="font-display text-2xl text-brand-yellow">{formatPrice(pedido.total)}</span>
+            </div>
           </div>
         </motion.div>
 
