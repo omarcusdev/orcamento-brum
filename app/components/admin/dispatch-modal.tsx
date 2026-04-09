@@ -7,6 +7,7 @@ import { dispatchToEntregador, fetchActiveEntregadores } from "@/lib/admin-actio
 type DispatchModalProps = {
   pedidoId: string
   dispatchText: string
+  frete: number
   onClose: () => void
 }
 
@@ -16,7 +17,7 @@ type EntregadorOption = {
   telefone: string
 }
 
-const DispatchModal = ({ pedidoId, dispatchText, onClose }: DispatchModalProps) => {
+const DispatchModal = ({ pedidoId, dispatchText, frete, onClose }: DispatchModalProps) => {
   const [entregadores, setEntregadores] = useState<EntregadorOption[]>([])
   const [selectedId, setSelectedId] = useState("")
   const [loading, setLoading] = useState(false)
@@ -36,6 +37,7 @@ const DispatchModal = ({ pedidoId, dispatchText, onClose }: DispatchModalProps) 
 
   const handleConfirm = async () => {
     if (!selectedId) return
+    if (frete === 0 && !confirm("Frete nao definido. Apos o despacho, o valor do frete nao podera mais ser alterado. Deseja continuar sem frete?")) return
     setLoading(true)
     setError(null)
 
@@ -105,8 +107,6 @@ const DispatchModal = ({ pedidoId, dispatchText, onClose }: DispatchModalProps) 
                 {dispatchText}
               </pre>
             </div>
-
-            <p className="text-amber-400 text-xs">O valor do frete nao podera mais ser alterado apos esta etapa.</p>
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 

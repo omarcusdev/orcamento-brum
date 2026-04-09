@@ -91,6 +91,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
         <DispatchModal
           pedidoId={pedidoId}
           dispatchText={dispatchText}
+          frete={frete}
           onClose={() => setShowDispatch(false)}
         />
       )}
