@@ -19,9 +19,8 @@ const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
   confirmado: "enviar_para_entregador",
   enviar_para_entregador: "em_rota",
   em_rota: "entregue",
-  entregue: "aguardando_pagamento",
-  aguardando_pagamento: "recolhido",
-  recolhido: "finalizado",
+  entregue: "pago",
+  pago: "recolhido",
 }
 
 const StatusActions = ({ pedidoId, currentStatus, documentoStatus, dispatchText }: StatusActionsProps) => {
@@ -47,7 +46,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, dispatchText 
     setLoading(false)
   }
 
-  if (currentStatus === "finalizado" || currentStatus === "cancelado") return null
+  if (currentStatus === "recolhido" || currentStatus === "cancelado") return null
 
   const docsVerified = documentoStatus === "verificado"
 

@@ -15,9 +15,9 @@ alter table pedidos add column entregador_id uuid references entregadores(id);
 
 alter table pedidos drop constraint if exists pedidos_status_check;
 alter table pedidos add constraint pedidos_status_check check (status in (
-  'aguardando_documentos', 'aguardando_pagamento', 'confirmado',
+  'aguardando_documentos', 'confirmado',
   'enviar_para_entregador', 'em_rota', 'entregue',
-  'recolhido', 'finalizado', 'cancelado'
+  'pago', 'recolhido', 'cancelado'
 ));
 
 create index idx_pedidos_entregador_id on pedidos(entregador_id);

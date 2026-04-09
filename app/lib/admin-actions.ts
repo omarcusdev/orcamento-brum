@@ -11,9 +11,8 @@ const statusOrder = [
   "enviar_para_entregador",
   "em_rota",
   "entregue",
-  "aguardando_pagamento",
+  "pago",
   "recolhido",
-  "finalizado",
 ] as const
 
 export const advanceOrderStatus = async (pedidoId: string, currentStatus: string) => {
@@ -88,7 +87,7 @@ export const updateFrete = async (pedidoId: string, frete: number) => {
 
   if (!pedido) throw new Error("Pedido nao encontrado")
 
-  const lockedStatuses = ["enviar_para_entregador", "em_rota", "entregue", "aguardando_pagamento", "recolhido", "finalizado", "cancelado"]
+  const lockedStatuses = ["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"]
   if (lockedStatuses.includes(pedido.status)) {
     throw new Error("Frete nao pode ser alterado apos despacho")
   }

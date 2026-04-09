@@ -196,7 +196,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                   <FreteInput
                     pedidoId={pedido.id}
                     initialFrete={pedido.frete}
-                    readOnly={["enviar_para_entregador", "em_rota", "entregue", "aguardando_pagamento", "recolhido", "finalizado", "cancelado"].includes(pedido.status)}
+                    readOnly={["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"].includes(pedido.status)}
                   />
                 </div>
                 <div className="flex justify-between font-bold pt-2 border-t border-white/10">

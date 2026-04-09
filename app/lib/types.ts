@@ -33,9 +33,8 @@ export type PedidoStatus =
   | "enviar_para_entregador"
   | "em_rota"
   | "entregue"
-  | "aguardando_pagamento"
+  | "pago"
   | "recolhido"
-  | "finalizado"
   | "cancelado"
 
 export type Pedido = {
