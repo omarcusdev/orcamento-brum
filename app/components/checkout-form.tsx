@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useCart } from "@/lib/cart-context"
-import { createOrder } from "@/lib/actions"
+import { createOrder, getBookedSlots } from "@/lib/actions"
 import { formatCpf } from "@/lib/cpf"
 import { isAddressInDeliveryArea } from "@/lib/geo"
 import AddressAutocomplete from "@/components/address-autocomplete"
@@ -79,6 +79,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
   const [tipoChopeira, setTipoChopeira] = useState<"gelo" | "eletrica" | "">("")
   const [temRampas, setTemRampas] = useState<"sim" | "nao" | "">("")
   const [rampasDetalhes, setRampasDetalhes] = useState("")
+  const [bookedSlots, setBookedSlots] = useState<Record<number, number>>({})
 
   const selectedMonth = mes ? parseInt(mes) : 0
   const selectedYear = parseInt(ano)
@@ -107,6 +108,21 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
     )
     setAddressInArea(inArea)
   }
+
+  useEffect(() => {
+    if (!dataEvento) {
+      setBookedSlots({})
+      return
+    }
+    getBookedSlots(dataEvento).then(setBookedSlots).catch(() => setBookedSlots({}))
+  }, [dataEvento])
+
+  useEffect(() => {
+    if (hora && (bookedSlots[parseInt(hora, 10)] ?? 0) >= 2) {
+      setHora("")
+      setMinuto("")
+    }
+  }, [bookedSlots, hora])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -463,9 +479,14 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                 className={selectClassName}
               >
                 <option value="" disabled>Hora</option>
-                {HORAS.map((h) => (
-                  <option key={h} value={String(h)}>{String(h).padStart(2, "0")}h</option>
-                ))}
+                {HORAS.map((h) => {
+                  const full = (bookedSlots[h] ?? 0) >= 2
+                  return (
+                    <option key={h} value={String(h)} disabled={full}>
+                      {String(h).padStart(2, "0")}h{full ? " (indisponivel)" : ""}
+                    </option>
+                  )
+                })}
               </select>
               <select
                 required
@@ -488,11 +509,13 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                 <input type="radio" name="tipo_chopeira" value="eletrica" checked={tipoChopeira === "eletrica"} onChange={() => setTipoChopeira("eletrica")} className="sr-only" />
                 <span className="text-xl">⚡</span>
                 <span className="font-medium">Eletrica</span>
+                <span className="text-xs text-brand-warm-gray text-center leading-tight">Refrigeracao propria — mantem o chopp gelado sem gelo</span>
               </label>
               <label className={`flex flex-col items-center gap-1 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "gelo" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
                 <input type="radio" name="tipo_chopeira" value="gelo" checked={tipoChopeira === "gelo"} onChange={() => setTipoChopeira("gelo")} className="sr-only" />
                 <span className="text-xl">🧊</span>
                 <span className="font-medium">Gelo</span>
+                <span className="text-xs text-brand-warm-gray text-center leading-tight">Resfriada com gelo — simples e sem energia eletrica</span>
               </label>
             </div>
           </div>
