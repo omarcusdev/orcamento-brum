@@ -106,6 +106,17 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
 
   const subtotal = itemsWithServerPrice.reduce((sum, item) => sum + item.subtotal, 0)
 
+  const hora = parseInt(data.horario_evento.split(":")[0], 10)
+  const { count: slotCount } = await supabase
+    .from("pedidos")
+    .select("id", { count: "exact", head: true })
+    .eq("data_evento", data.data_evento)
+    .gte("horario_evento", `${String(hora).padStart(2, "0")}:00`)
+    .lt("horario_evento", `${String(hora + 1).padStart(2, "0")}:00`)
+    .neq("status", "cancelado")
+
+  if ((slotCount ?? 0) >= 2) return { error: "Horario indisponivel. Escolha outro horario." }
+
   const { data: pedido, error: pedidoError } = await supabase
     .from("pedidos")
     .insert({
@@ -222,4 +233,22 @@ export const uploadDocuments = async (pedidoId: string, formData: FormData): Pro
     .eq("id", pedidoId)
 
   return { error: null }
+}
+
+export const getBookedSlots = async (dataEvento: string): Promise<Record<number, number>> => {
+  const supabase = await createClient()
+
+  const { data: pedidos } = await supabase
+    .from("pedidos")
+    .select("horario_evento")
+    .eq("data_evento", dataEvento)
+    .neq("status", "cancelado")
+
+  const counts: Record<number, number> = {}
+  for (const p of pedidos ?? []) {
+    const hour = parseInt(p.horario_evento.split(":")[0], 10)
+    counts[hour] = (counts[hour] ?? 0) + 1
+  }
+
+  return counts
 }
