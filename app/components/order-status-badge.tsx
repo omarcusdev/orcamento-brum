@@ -1,7 +1,6 @@
 import type { PedidoStatus } from "@/lib/types"
 
 const statusConfig: Record<PedidoStatus, { label: string; color: string }> = {
-  aguardando_documentos: { label: "Aguardando Documentos", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   confirmado: { label: "Confirmado", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
   enviar_para_entregador: { label: "Enviar p/ Entregador", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   em_rota: { label: "Em Rota", color: "bg-violet-500/20 text-violet-400 border-violet-500/30" },

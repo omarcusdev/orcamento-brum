@@ -11,7 +11,7 @@ type StatusFilterProps = {
 }
 
 const allStatuses: (PedidoStatus | "todos")[] = [
-  "todos", "aguardando_documentos", "confirmado", "enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"
+  "todos", "confirmado", "enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"
 ]
 
 const StatusFilter = ({ selected, counts, onChange }: StatusFilterProps) => (

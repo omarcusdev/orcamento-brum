@@ -28,7 +28,6 @@ export type Cliente = {
 export type DocumentoStatus = "pendente" | "enviado" | "verificado"
 
 export type PedidoStatus =
-  | "aguardando_documentos"
   | "confirmado"
   | "enviar_para_entregador"
   | "em_rota"

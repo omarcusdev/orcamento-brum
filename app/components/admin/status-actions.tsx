@@ -16,7 +16,6 @@ type StatusActionsProps = {
 }
 
 const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
-  aguardando_documentos: "confirmado",
   confirmado: "enviar_para_entregador",
   enviar_para_entregador: "em_rota",
   em_rota: "entregue",
