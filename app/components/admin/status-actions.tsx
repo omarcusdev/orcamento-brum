@@ -62,18 +62,20 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
 
       {nextStatus && (
         <>
+          {!docsVerified && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <span className="text-yellow-400 text-sm">Documentacao pendente de verificacao</span>
+            </div>
+          )}
           <motion.button
             onClick={handleAdvance}
-            disabled={loading || !docsVerified}
+            disabled={loading}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-brand-yellow text-brand-black font-bold py-3 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
           >
             {loading ? "Atualizando..." : `Mover para: ${statusConfig[nextStatus].label}`}
           </motion.button>
-          {!docsVerified && (
-            <p className="text-yellow-400 text-xs text-center">Verifique os documentos primeiro</p>
-          )}
         </>
       )}
       <motion.button
@@ -91,6 +93,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
           pedidoId={pedidoId}
           dispatchText={dispatchText}
           frete={frete}
+          documentoStatus={documentoStatus}
           onClose={() => setShowDispatch(false)}
         />
       )}

@@ -8,6 +8,7 @@ type DispatchModalProps = {
   pedidoId: string
   dispatchText: string
   frete: number
+  documentoStatus: string
   onClose: () => void
 }
 
@@ -17,7 +18,7 @@ type EntregadorOption = {
   telefone: string
 }
 
-const DispatchModal = ({ pedidoId, dispatchText, frete, onClose }: DispatchModalProps) => {
+const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose }: DispatchModalProps) => {
   const [entregadores, setEntregadores] = useState<EntregadorOption[]>([])
   const [selectedId, setSelectedId] = useState("")
   const [loading, setLoading] = useState(false)
@@ -37,6 +38,7 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, onClose }: DispatchModal
 
   const handleConfirm = async () => {
     if (!selectedId) return
+    if (documentoStatus !== "verificado" && !confirm("Documentacao ainda nao verificada. Deseja despachar mesmo assim?")) return
     if (frete === 0 && !confirm("Frete nao definido. Apos o despacho, o valor do frete nao podera mais ser alterado. Deseja continuar sem frete?")) return
     setLoading(true)
     setError(null)
