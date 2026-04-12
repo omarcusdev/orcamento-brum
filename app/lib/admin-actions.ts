@@ -6,7 +6,6 @@ import { revalidatePath } from "next/cache"
 import { productSchema } from "@/lib/schemas"
 
 const statusOrder = [
-  "aguardando_documentos",
   "confirmado",
   "enviar_para_entregador",
   "em_rota",
@@ -35,10 +34,6 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
 
   if (pedido.status !== currentStatus) {
     throw new Error("Status do pedido foi alterado por outro usuario")
-  }
-
-  if (pedido.documento_status !== "verificado") {
-    throw new Error("Documentos precisam ser verificados antes de avancar o pedido")
   }
 
   if (currentStatus === "confirmado") {

@@ -120,9 +120,9 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
       metodo_pagamento: data.metodo_pagamento,
       subtotal,
       total: subtotal,
+      status: "confirmado",
       ...(docsAlreadyVerified && {
         documento_status: "verificado",
-        status: "confirmado",
       }),
     })
     .select("id")
