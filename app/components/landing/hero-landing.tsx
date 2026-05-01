@@ -25,7 +25,7 @@ const HeroLanding = ({ whatsappNumber = "5521999999999" }: HeroLandingProps) => 
     </div>
     <div className="absolute inset-0 z-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
 
-    <div className="relative z-10 container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+    <div className="relative z-10 container mx-auto px-8 md:px-16 lg:px-24 grid md:grid-cols-2 gap-12 items-center">
       <div className="max-w-xl">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
