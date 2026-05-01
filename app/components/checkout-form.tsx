@@ -503,19 +503,19 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
           </div>
 
           <div>
-            <label className={labelClassName}>Preferencia de Chopeira *</label>
+            <label className={labelClassName}>Preferência de Chopeira *</label>
             <div className="grid grid-cols-2 gap-3">
               <label className={`flex flex-col items-center gap-1 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "eletrica" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
                 <input type="radio" name="tipo_chopeira" value="eletrica" checked={tipoChopeira === "eletrica"} onChange={() => setTipoChopeira("eletrica")} className="sr-only" />
                 <span className="text-xl">⚡</span>
-                <span className="font-medium">Eletrica</span>
-                <span className="text-xs text-brand-warm-gray text-center leading-tight">Refrigeracao propria — mantem o chopp gelado sem gelo</span>
+                <span className="font-medium">Elétrica</span>
+                <span className="text-xs text-brand-warm-gray text-center leading-tight">Refrigeração própria: mantém o chopp gelado sem gelo.</span>
               </label>
               <label className={`flex flex-col items-center gap-1 px-4 py-3 rounded-md border text-sm cursor-pointer transition-colors duration-200 ${tipoChopeira === "gelo" ? "border-brand-yellow bg-brand-yellow/10 text-brand-yellow" : "border-white/10 bg-brand-surface text-brand-gray-light hover:border-white/20"}`}>
                 <input type="radio" name="tipo_chopeira" value="gelo" checked={tipoChopeira === "gelo"} onChange={() => setTipoChopeira("gelo")} className="sr-only" />
                 <span className="text-xl">🧊</span>
                 <span className="font-medium">Gelo</span>
-                <span className="text-xs text-brand-warm-gray text-center leading-tight">Resfriada com gelo — simples e sem energia eletrica</span>
+                <span className="text-xs text-brand-warm-gray text-center leading-tight">Resfriada com gelo: simples e sem energia elétrica.</span>
               </label>
             </div>
           </div>
