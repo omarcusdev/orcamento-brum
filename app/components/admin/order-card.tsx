@@ -15,7 +15,6 @@ type OrderCardProps = {
     horario_evento: string
     endereco: string
     metodo_pagamento: string | null
-    pago: boolean
     created_at: string
     clientes: { nome: string; telefone: string }
   }

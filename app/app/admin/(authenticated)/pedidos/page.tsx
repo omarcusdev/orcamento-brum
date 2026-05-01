@@ -16,7 +16,6 @@ const normalizeOrders = (raw: any[]) =>
     horario_evento: string
     endereco: string
     metodo_pagamento: string | null
-    pago: boolean
     created_at: string
     clientes: { nome: string; telefone: string }
   }[]
@@ -26,7 +25,7 @@ const PedidosPage = async () => {
 
   const { data: rawOrders } = await supabase
     .from("pedidos")
-    .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, pago, created_at, clientes(nome, telefone)")
+    .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, clientes(nome, telefone)")
     .order("created_at", { ascending: false })
 
   const orders = normalizeOrders((rawOrders ?? []) as unknown[])
