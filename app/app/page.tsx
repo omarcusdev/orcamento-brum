@@ -1,34 +1,37 @@
-import Header from "@/components/header"
-import Hero from "@/components/hero"
+import HeaderLanding from "@/components/landing/header-landing"
+import HeroLanding from "@/components/landing/hero-landing"
+import Calculator from "@/components/landing/calculator"
+import FooterLanding from "@/components/landing/footer-landing"
+import WhatsappFab from "@/components/landing/whatsapp-fab"
 import Storefront from "@/components/storefront"
 import Features from "@/components/features"
 import Faq from "@/components/faq"
-import Footer from "@/components/footer"
 import { getActiveProducts, getConfig, getConteudo } from "@/lib/queries"
-import type { HeroContent, FeaturesContent, FaqContent, FooterContent } from "@/lib/types"
+import type { FeaturesContent, FaqContent } from "@/lib/types"
 
 const HomePage = async () => {
-  const [produtos, whatsappNumber, heroContent, featuresContent, faqContent, footerContent] = await Promise.all([
+  const [produtos, whatsappNumber, featuresContent, faqContent] = await Promise.all([
     getActiveProducts(),
     getConfig("whatsapp_numero"),
-    getConteudo("hero") as Promise<HeroContent | null>,
     getConteudo("features") as Promise<FeaturesContent | null>,
     getConteudo("faq") as Promise<FaqContent | null>,
-    getConteudo("footer") as Promise<FooterContent | null>,
   ])
 
   const whatsapp = whatsappNumber ?? "5521999999999"
 
   return (
     <>
-      <Header />
+      <HeaderLanding />
       <main>
-        <Storefront produtos={produtos} hero={<Hero whatsappNumber={whatsapp} content={heroContent} />}>
+        <HeroLanding whatsappNumber={whatsapp} />
+        <Calculator produtos={produtos} whatsappNumber={whatsapp} />
+        <Storefront produtos={produtos}>
           <Features content={featuresContent} />
           <Faq content={faqContent} />
         </Storefront>
       </main>
-      <Footer whatsappNumber={whatsapp} content={footerContent} />
+      <FooterLanding whatsappNumber={whatsapp} />
+      <WhatsappFab whatsappNumber={whatsapp} />
     </>
   )
 }
