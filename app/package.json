@@ -6,7 +6,8 @@
     "dev": "next dev -p 2998",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.8",
