@@ -1,9 +1,11 @@
 "use server"
 
+import { after } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { createOrderSchema } from "@/lib/schemas"
 import { isAddressInDeliveryArea } from "@/lib/geo"
+import { sendNewOrderEmail } from "@/lib/email"
 
 export const createOrder = async (input: unknown): Promise<{ pedidoId: string; clienteId: string; error?: never } | { error: string; pedidoId?: never; clienteId?: never }> => {
   const parsed = createOrderSchema.safeParse(input)
@@ -148,6 +150,8 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
 
   const { error: itensError } = await supabase.from("pedido_itens").insert(itemsToInsert)
   if (itensError) return { error: "Erro ao criar itens do pedido" }
+
+  after(() => sendNewOrderEmail(pedido.id))
 
   return { pedidoId: pedido.id, clienteId }
 }
