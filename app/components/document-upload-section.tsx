@@ -24,14 +24,14 @@ const DocumentUploadSection = ({ pedidoId, documentoStatus }: DocumentUploadSect
     if (!pessoalFile || !residenciaFile) return
     setLoading(true)
     setError(null)
-    try {
-      const formData = new FormData()
-      formData.set("documento_pessoal", pessoalFile)
-      formData.set("comprovante_residencia", residenciaFile)
-      await uploadDocuments(pedidoId, formData)
+    const formData = new FormData()
+    formData.set("documento_pessoal", pessoalFile)
+    formData.set("comprovante_residencia", residenciaFile)
+    const result = await uploadDocuments(pedidoId, formData)
+    if (result.error) {
+      setError(result.error)
+    } else {
       setStatus("enviado")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar documentos")
     }
     setLoading(false)
   }
