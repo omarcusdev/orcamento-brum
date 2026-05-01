@@ -4,3 +4,23 @@ node_modules/
 dist/
 .next/
 .DS_Store
+.vercel
+
+# Tooling / local agents
+.claude/
+.playwright-mcp/
+.superpowers/
+mar.config.yaml
+
+# Auto-compact dump dirs
+app/docs/
+supabase/docs/
+docs/workflow/
+
+# Supabase CLI temp
+supabase/.temp/
+supabase/supabase/
+
+# Local QA screenshots and asset stash
+/*.png
+posts-alfa-bot/
