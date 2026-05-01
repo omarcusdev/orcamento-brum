@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Bebas_Neue, DM_Sans } from "next/font/google"
+import { Bebas_Neue, DM_Sans, Montserrat } from "next/font/google"
 import { CartProvider } from "@/lib/cart-context"
 import "./globals.css"
 
@@ -16,6 +16,13 @@ const dmSans = DM_Sans({
   display: "swap",
 })
 
+const montserrat = Montserrat({
+  weight: ["700", "900"],
+  subsets: ["latin"],
+  variable: "--font-headline",
+  display: "swap",
+})
+
 export const metadata: Metadata = {
   title: "ALFA Chopp Delivery — Chopp para seu evento",
   description: "Delivery e locacao de chopp para eventos no Rio de Janeiro e Baixada Fluminense.",
@@ -28,7 +35,7 @@ export const metadata: Metadata = {
 }
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => (
-  <html lang="pt-BR" className={`${bebasNeue.variable} ${dmSans.variable}`}>
+  <html lang="pt-BR" className={`${bebasNeue.variable} ${dmSans.variable} ${montserrat.variable}`}>
     <body className="font-body antialiased">
       <CartProvider>{children}</CartProvider>
     </body>

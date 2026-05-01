@@ -13,6 +13,7 @@
   --color-brand-surface: #1F1F1F;
   --font-display: "Bebas Neue", "Impact", sans-serif;
   --font-body: "DM Sans", system-ui, sans-serif;
+  --font-headline: "Montserrat", system-ui, sans-serif;
 }
 
 html {
