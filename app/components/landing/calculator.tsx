@@ -2,12 +2,10 @@
 
 import { useMemo, useState } from "react"
 import { motion } from "framer-motion"
-import { useCart } from "@/lib/cart-context"
-import type { Produto } from "@/lib/types"
+import { Users, Clock, Beer } from "lucide-react"
 import { calcularLitros, resolverCombo, type EstiloConsumo } from "./calculator-utils"
 
 type CalculatorProps = {
-  produtos: Produto[]
   whatsappNumber?: string
 }
 
@@ -17,139 +15,124 @@ const ESTILOS: Array<{ value: EstiloConsumo; label: string }> = [
   { value: "alto", label: "Alto (Balada/Open Bar)" },
 ]
 
-const findChopp = (produtos: Produto[], volume: 30 | 50): Produto | null => {
-  const chopps = produtos.filter((p) => p.tipo === "chopp" && p.ativo && p.volume_litros === volume)
-  if (chopps.length === 0) return null
-  const pilsen = chopps.find((p) => p.marca.toLowerCase().includes("pilsen"))
-  return pilsen ?? chopps[0]
-}
-
-const Calculator = ({ produtos, whatsappNumber = "5521999999999" }: CalculatorProps) => {
+const Calculator = ({ whatsappNumber = "5521999999999" }: CalculatorProps) => {
   const [pessoas, setPessoas] = useState(20)
   const [horas, setHoras] = useState(4)
   const [estilo, setEstilo] = useState<EstiloConsumo>("padrao")
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const { addToCart } = useCart()
 
   const litros = useMemo(() => calcularLitros(pessoas, horas, estilo), [pessoas, horas, estilo])
   const combo = useMemo(() => resolverCombo(litros), [litros])
-  const podeAdicionar = litros > 0
-
-  const handleAdd = () => {
-    setFeedback(null)
-    if (!podeAdicionar) return
-    const produto50 = combo.b50 > 0 ? findChopp(produtos, 50) : null
-    const produto30 = combo.b30 > 0 ? findChopp(produtos, 30) : null
-    if ((combo.b50 > 0 && !produto50) || (combo.b30 > 0 && !produto30)) {
-      setFeedback("Algum barril desse tamanho não está disponível agora — fale conosco no WhatsApp.")
-      return
-    }
-    if (produto50 && combo.b50 > 0) addToCart(produto50, combo.b50)
-    if (produto30 && combo.b30 > 0) addToCart(produto30, combo.b30)
-    const marca = (produto50 ?? produto30)?.marca ?? "chopp"
-    setFeedback(`Adicionamos ${combo.b50 > 0 ? `${combo.b50}× 50L` : ""}${combo.b50 > 0 && combo.b30 > 0 ? " + " : ""}${combo.b30 > 0 ? `${combo.b30}× 30L` : ""} de ${marca} ao carrinho. Você pode trocar a marca antes de finalizar.`)
-  }
 
   return (
     <section id="calculadora" className="bg-brand-dark py-16 md:py-24 px-4">
-      <div className="max-w-5xl mx-auto bg-brand-yellow rounded-xl p-6 md:p-10 shadow-2xl">
-        <h2 className="font-display text-brand-black text-3xl md:text-4xl font-bold tracking-tight uppercase">
+      <div className="relative max-w-6xl mx-auto bg-brand-yellow rounded-2xl p-8 md:p-12 shadow-2xl overflow-hidden">
+        <Beer className="absolute -top-4 -right-4 w-40 h-40 text-brand-black/10" strokeWidth={1.2} aria-hidden="true" />
+
+        <h2 className="font-headline text-brand-black text-3xl md:text-5xl font-black tracking-tight uppercase">
           Calculadora de Festa
         </h2>
-        <p className="text-brand-black/80 text-sm md:text-base mt-2 mb-8">
+        <p className="text-brand-black/80 text-base md:text-lg mt-3 mb-10">
           Não sabe quanto pedir? Faça uma simulação rápida para não faltar chopp.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-6 md:gap-10">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-start">
 
-          <div className="space-y-5">
+          <div className="space-y-6">
             <label className="block">
               <span className="block text-xs font-bold text-brand-black uppercase tracking-widest mb-2">
                 Número de pessoas (bebem chopp)
               </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={pessoas}
-                onChange={(e) => setPessoas(Number(e.target.value.replace(/\D/g, "")) || 0)}
-                className="w-full bg-white text-brand-black font-bold text-lg px-4 py-3 rounded-md border-2 border-brand-black/15 focus:border-brand-black outline-none"
-              />
+              <div className="flex items-center gap-3 bg-brand-yellow/40 border border-brand-black/10 rounded-xl px-5 py-4">
+                <Users className="w-5 h-5 text-brand-black/70 shrink-0" />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={pessoas}
+                  onChange={(e) => setPessoas(Number(e.target.value.replace(/\D/g, "")) || 0)}
+                  className="w-full bg-transparent text-brand-black font-bold text-xl outline-none"
+                />
+              </div>
             </label>
 
             <label className="block">
               <span className="block text-xs font-bold text-brand-black uppercase tracking-widest mb-2">
                 Duração da festa (horas)
               </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={horas}
-                onChange={(e) => setHoras(Number(e.target.value.replace(/\D/g, "")) || 0)}
-                className="w-full bg-white text-brand-black font-bold text-lg px-4 py-3 rounded-md border-2 border-brand-black/15 focus:border-brand-black outline-none"
-              />
+              <div className="flex items-center gap-3 bg-brand-yellow/40 border border-brand-black/10 rounded-xl px-5 py-4">
+                <Clock className="w-5 h-5 text-brand-black/70 shrink-0" />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={horas}
+                  onChange={(e) => setHoras(Number(e.target.value.replace(/\D/g, "")) || 0)}
+                  className="w-full bg-transparent text-brand-black font-bold text-xl outline-none"
+                />
+              </div>
             </label>
 
             <label className="block">
               <span className="block text-xs font-bold text-brand-black uppercase tracking-widest mb-2">
                 Estilo de consumo
               </span>
-              <select
-                value={estilo}
-                onChange={(e) => setEstilo(e.target.value as EstiloConsumo)}
-                className="w-full bg-white text-brand-black font-bold text-base px-4 py-3 rounded-md border-2 border-brand-black/15 focus:border-brand-black outline-none cursor-pointer"
-              >
-                {ESTILOS.map((e) => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
+              <div className="bg-brand-yellow/40 border border-brand-black/10 rounded-xl px-5 py-4">
+                <select
+                  value={estilo}
+                  onChange={(e) => setEstilo(e.target.value as EstiloConsumo)}
+                  className="w-full bg-transparent text-brand-black font-medium text-base outline-none cursor-pointer appearance-none"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 0 center",
+                    paddingRight: "20px",
+                  }}
+                >
+                  {ESTILOS.map((e) => (
+                    <option key={e.value} value={e.value}>{e.label}</option>
+                  ))}
+                </select>
+              </div>
             </label>
           </div>
 
-          <div className="bg-brand-black text-white rounded-md p-6 flex flex-col justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-white/60">Você vai precisar de aprox.</p>
-              <div className="flex items-baseline gap-2 mt-2">
+          <div className="bg-brand-black text-white rounded-2xl p-8 flex flex-col justify-between min-h-[340px]">
+            <div className="text-center">
+              <p className="text-xs uppercase tracking-widest text-white/70">Você vai precisar de aprox:</p>
+              <div className="flex items-baseline justify-center gap-1 mt-4">
                 <motion.span
                   key={litros}
                   initial={{ scale: 0.92, opacity: 0.5 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.2 }}
-                  className="font-display text-7xl font-bold text-brand-yellow"
+                  className="font-headline text-7xl md:text-8xl font-black text-brand-yellow leading-none"
                 >
                   {litros}
                 </motion.span>
-                <span className="font-display text-xl uppercase tracking-widest">Litros</span>
+                <span className="font-headline text-2xl md:text-3xl font-black uppercase tracking-tight text-brand-yellow leading-none">Litros</span>
               </div>
-              <p className="text-xs text-white/50 mt-3">
-                Cálculo aproximado. Recomendamos sempre uma margem de segurança.
+              <p className="text-xs text-white/60 mt-5 max-w-[260px] mx-auto">
+                Cálculo baseado em média de consumo. Recomendamos sempre uma margem de segurança.
               </p>
               {litros > 0 && (
-                <p className="text-xs text-brand-yellow/80 mt-2">
-                  Combo sugerido: {combo.b50 > 0 ? `${combo.b50}× 50L` : ""}{combo.b50 > 0 && combo.b30 > 0 ? " + " : ""}{combo.b30 > 0 ? `${combo.b30}× 30L` : ""} ({combo.total}L total)
+                <p className="text-xs text-brand-yellow/80 mt-3">
+                  Sugestão: {combo.b50 > 0 ? `${combo.b50}× 50L` : ""}{combo.b50 > 0 && combo.b30 > 0 ? " + " : ""}{combo.b30 > 0 ? `${combo.b30}× 30L` : ""}
                 </p>
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={!podeAdicionar}
-              className="mt-5 w-full bg-brand-yellow text-brand-black font-bold uppercase tracking-widest text-sm px-4 py-3.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            <a
+              href="#catalogo"
+              className="mt-6 block w-full bg-brand-yellow text-brand-black font-bold uppercase tracking-widest text-sm px-4 py-4 rounded-xl text-center hover:opacity-90 transition-opacity"
             >
               Solicitar Essa Quantidade
-            </button>
-
-            {feedback && (
-              <p className="mt-3 text-xs text-white/80">{feedback}</p>
-            )}
+            </a>
 
             {litros > 200 && (
-              <p className="mt-3 text-xs text-white/70">
+              <p className="mt-3 text-center text-xs text-white/70">
                 Eventos grandes?{" "}
                 <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="text-brand-yellow underline">
-                  Fale conosco para preço especial
+                  Fale conosco
                 </a>.
               </p>
             )}

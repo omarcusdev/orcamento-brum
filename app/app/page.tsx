@@ -23,7 +23,7 @@ const HomePage = async () => {
       <HeaderLanding />
       <main>
         <HeroLanding whatsappNumber={whatsapp} />
-        <Calculator produtos={produtos} whatsappNumber={whatsapp} />
+        <Calculator whatsappNumber={whatsapp} />
         <Storefront produtos={produtos}>
           <Features content={featuresContent} />
           <Faq content={faqContent} />
