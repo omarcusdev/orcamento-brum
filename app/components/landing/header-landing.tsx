@@ -49,10 +49,9 @@ const HeaderLanding = () => {
               href="#catalogo"
               whileHover={{ opacity: 0.85, scale: 0.98 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-brand-yellow text-brand-black font-bold px-5 py-2 rounded-full text-xs tracking-widest uppercase flex items-center gap-2"
+              className="bg-brand-yellow text-brand-black font-bold px-5 py-2 rounded-full text-xs tracking-widest uppercase"
             >
-              <span>🛒</span>
-              <span>Pedir Agora</span>
+              Pedir Agora
             </motion.a>
           </div>
 
@@ -105,7 +104,7 @@ const HeaderLanding = () => {
                 onClick={() => setMobileOpen(false)}
                 className="bg-brand-yellow text-brand-black font-bold px-8 py-3 rounded-full text-sm tracking-widest uppercase"
               >
-                🛒 Pedir Agora
+                Pedir Agora
               </a>
             </div>
           </motion.div>

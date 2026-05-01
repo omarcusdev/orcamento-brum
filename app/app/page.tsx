@@ -2,7 +2,6 @@ import HeaderLanding from "@/components/landing/header-landing"
 import HeroLanding from "@/components/landing/hero-landing"
 import Calculator from "@/components/landing/calculator"
 import FooterLanding from "@/components/landing/footer-landing"
-import WhatsappFab from "@/components/landing/whatsapp-fab"
 import Storefront from "@/components/storefront"
 import Features from "@/components/features"
 import Faq from "@/components/faq"
@@ -31,7 +30,6 @@ const HomePage = async () => {
         </Storefront>
       </main>
       <FooterLanding whatsappNumber={whatsapp} />
-      <WhatsappFab whatsappNumber={whatsapp} />
     </>
   )
 }
