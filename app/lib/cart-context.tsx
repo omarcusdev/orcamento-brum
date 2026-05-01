@@ -7,7 +7,7 @@ type CartContextType = {
   items: CartItem[]
   cartOpen: boolean
   totalItems: number
-  addToCart: (produto: Produto) => void
+  addToCart: (produto: Produto, quantidade?: number) => void
   increaseItem: (produtoId: string) => void
   decreaseItem: (produtoId: string) => void
   removeItem: (produtoId: string) => void
@@ -50,17 +50,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (hydrated) writeStorage(items)
   }, [items, hydrated])
 
-  const addToCart = useCallback((produto: Produto) => {
+  const addToCart = useCallback((produto: Produto, quantidade: number = 1) => {
+    if (quantidade <= 0) return
     setItems((prev) => {
       const existing = prev.find((item) => item.produto.id === produto.id)
       if (existing) {
         return prev.map((item) =>
           item.produto.id === produto.id
-            ? { ...item, quantidade: item.quantidade + 1 }
+            ? { ...item, quantidade: item.quantidade + quantidade }
             : item
         )
       }
-      return [...prev, { produto, quantidade: 1 }]
+      return [...prev, { produto, quantidade }]
     })
     setCartOpen(true)
   }, [])
