@@ -40,10 +40,10 @@ const HeroLanding = ({ whatsappNumber = "5521999999999" }: HeroLandingProps) => 
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.05 }}
-          className="font-headline font-black leading-tight uppercase text-3xl sm:text-4xl md:text-5xl lg:text-6xl"
+          className="font-headline font-black leading-[0.95] uppercase text-3xl sm:text-4xl md:text-5xl lg:text-6xl"
         >
           <span className="block text-white">O Melhor Chopp</span>
-          <span className="block text-brand-yellow mt-1">Pelo Melhor Preço</span>
+          <span className="block text-brand-yellow mt-2">Pelo Melhor Preço</span>
         </motion.h1>
 
         <motion.p
