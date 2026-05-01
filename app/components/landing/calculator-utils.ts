@@ -25,6 +25,9 @@ export const resolverCombo = (litros: number): Combo => {
       if (total >= litros) candidatos.push({ b50, b30, total, sobra: total - litros })
     }
   }
-  candidatos.sort((a, b) => a.sobra - b.sobra || (a.b50 + a.b30) - (b.b50 + b.b30))
+  candidatos.sort((a, b) =>
+    (a.b50 + a.b30) - (b.b50 + b.b30)
+    || a.sobra - b.sobra
+  )
   return candidatos[0]
 }

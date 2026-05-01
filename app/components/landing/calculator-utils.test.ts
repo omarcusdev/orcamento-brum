@@ -36,8 +36,8 @@ describe("resolverCombo", () => {
     expect(resolverCombo(100)).toMatchObject({ b50: 2, b30: 0, total: 100, sobra: 0 })
   })
 
-  it("120L → 4× 30L (zero spare wins over 2×50+1×30 with 10L spare)", () => {
-    expect(resolverCombo(120)).toMatchObject({ b50: 0, b30: 4, total: 120, sobra: 0 })
+  it("120L → 2× 50L + 1× 30L (3 items beats 4× 30L)", () => {
+    expect(resolverCombo(120)).toMatchObject({ b50: 2, b30: 1, total: 130, sobra: 10 })
   })
 
   it("0L returns empty combo", () => {
