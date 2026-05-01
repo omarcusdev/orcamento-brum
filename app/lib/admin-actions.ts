@@ -212,6 +212,17 @@ export const deleteExclusionZone = async (id: string) => {
   revalidatePath("/checkout")
 }
 
+export const renameExclusionZone = async (id: string, nome: string) => {
+  const { supabase } = await requireAdmin()
+  const trimmed = nome.trim()
+  const { error } = await supabase
+    .from("zonas_exclusao")
+    .update({ nome: trimmed.length > 0 ? trimmed : null })
+    .eq("id", id)
+  if (error) throw error
+  revalidatePath("/admin/area-entrega")
+}
+
 export const verifyDocument = async (clienteId: string, pedidoId: string) => {
   const { supabase, user } = await requireAdmin()
 

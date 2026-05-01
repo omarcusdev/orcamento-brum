@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react"
 import { GoogleMap, useJsApiLoader, Marker, Circle, Polygon, DrawingManager } from "@react-google-maps/api"
-import { saveDeliveryArea, createExclusionZone, deleteExclusionZone } from "@/lib/admin-actions"
+import { saveDeliveryArea, createExclusionZone, deleteExclusionZone, renameExclusionZone } from "@/lib/admin-actions"
 import type { ZonaExclusao } from "@/lib/types"
 
 const libraries: ("places" | "drawing")[] = ["places", "drawing"]
@@ -34,6 +34,7 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
   const [zones, setZones] = useState(initialZones)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [hoveredZoneId, setHoveredZoneId] = useState<string | null>(null)
   const markerRef = useRef<google.maps.Marker | null>(null)
 
   const { isLoaded } = useJsApiLoader({
@@ -82,6 +83,19 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
       setZones((prev) => prev.filter((z) => z.id !== id))
     } catch {
       setMessage("Erro ao remover zona")
+    }
+  }
+
+  const handleRenameZone = async (id: string, nome: string) => {
+    const trimmed = nome.trim()
+    const current = zones.find((z) => z.id === id)
+    if (!current) return
+    if ((current.nome ?? "") === trimmed) return
+    try {
+      await renameExclusionZone(id, trimmed)
+      setZones((prev) => prev.map((z) => (z.id === id ? { ...z, nome: trimmed.length > 0 ? trimmed : null } : z)))
+    } catch {
+      setMessage("Erro ao renomear zona")
     }
   }
 
@@ -143,19 +157,25 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
               strokeWeight: 2,
             }}
           />
-          {zones.map((zone) => (
-            <Polygon
-              key={zone.id}
-              paths={zone.poligono}
-              options={{
-                fillColor: "#FF4444",
-                fillOpacity: 0.3,
-                strokeColor: "#FF4444",
-                strokeOpacity: 0.8,
-                strokeWeight: 2,
-              }}
-            />
-          ))}
+          {zones.map((zone) => {
+            const isHovered = hoveredZoneId === zone.id
+            return (
+              <Polygon
+                key={zone.id}
+                paths={zone.poligono}
+                onMouseOver={() => setHoveredZoneId(zone.id)}
+                onMouseOut={() => setHoveredZoneId((current) => (current === zone.id ? null : current))}
+                options={{
+                  fillColor: "#FF4444",
+                  fillOpacity: isHovered ? 0.55 : 0.3,
+                  strokeColor: "#FF4444",
+                  strokeOpacity: isHovered ? 1 : 0.8,
+                  strokeWeight: isHovered ? 4 : 2,
+                  zIndex: isHovered ? 2 : 1,
+                }}
+              />
+            )
+          })}
           <DrawingManager
             onPolygonComplete={handlePolygonComplete}
             options={{
@@ -180,17 +200,39 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
         <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
           <h3 className="font-display font-bold text-white tracking-wide mb-3">ZONAS DE EXCLUSAO</h3>
           <div className="space-y-2">
-            {zones.map((zone) => (
-              <div key={zone.id} className="flex items-center justify-between bg-brand-dark rounded-lg px-4 py-2.5">
-                <span className="text-sm text-brand-gray-light">{zone.nome ?? "Zona sem nome"}</span>
-                <button
-                  onClick={() => handleDeleteZone(zone.id)}
-                  className="text-red-400 text-sm hover:text-red-300 transition cursor-pointer"
+            {zones.map((zone) => {
+              const isHovered = hoveredZoneId === zone.id
+              return (
+                <div
+                  key={zone.id}
+                  onMouseEnter={() => setHoveredZoneId(zone.id)}
+                  onMouseLeave={() => setHoveredZoneId((current) => (current === zone.id ? null : current))}
+                  className={`flex items-center justify-between rounded-lg px-4 py-2.5 transition-colors ${isHovered ? "bg-red-500/10 ring-1 ring-red-500/40" : "bg-brand-dark"}`}
                 >
-                  Remover
-                </button>
-              </div>
-            ))}
+                  <input
+                    type="text"
+                    defaultValue={zone.nome ?? ""}
+                    placeholder="Zona sem nome"
+                    onBlur={(e) => handleRenameZone(zone.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.currentTarget.blur()
+                      } else if (e.key === "Escape") {
+                        e.currentTarget.value = zone.nome ?? ""
+                        e.currentTarget.blur()
+                      }
+                    }}
+                    className="flex-1 bg-transparent text-sm text-brand-gray-light placeholder-brand-warm-gray/60 focus:outline-none focus:text-white"
+                  />
+                  <button
+                    onClick={() => handleDeleteZone(zone.id)}
+                    className="ml-3 text-red-400 text-sm hover:text-red-300 transition cursor-pointer"
+                  >
+                    Remover
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
