@@ -68,10 +68,11 @@ const Calculator = ({ produtos, whatsappNumber = "5521999999999" }: CalculatorPr
                 Número de pessoas (bebem chopp)
               </span>
               <input
-                type="number"
-                min={1}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={pessoas}
-                onChange={(e) => setPessoas(Math.max(0, Number(e.target.value) || 0))}
+                onChange={(e) => setPessoas(Number(e.target.value.replace(/\D/g, "")) || 0)}
                 className="w-full bg-white text-brand-black font-bold text-lg px-4 py-3 rounded-md border-2 border-brand-black/15 focus:border-brand-black outline-none"
               />
             </label>
@@ -81,10 +82,11 @@ const Calculator = ({ produtos, whatsappNumber = "5521999999999" }: CalculatorPr
                 Duração da festa (horas)
               </span>
               <input
-                type="number"
-                min={1}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={horas}
-                onChange={(e) => setHoras(Math.max(0, Number(e.target.value) || 0))}
+                onChange={(e) => setHoras(Number(e.target.value.replace(/\D/g, "")) || 0)}
                 className="w-full bg-white text-brand-black font-bold text-lg px-4 py-3 rounded-md border-2 border-brand-black/15 focus:border-brand-black outline-none"
               />
             </label>
