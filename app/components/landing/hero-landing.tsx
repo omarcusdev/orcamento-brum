@@ -4,11 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 
-type HeroLandingProps = {
-  whatsappNumber?: string
-}
-
-const HeroLanding = ({ whatsappNumber = "5521999999999" }: HeroLandingProps) => (
+const HeroLanding = () => (
   <section
     id="home"
     className="relative h-screen min-h-[640px] flex items-center pt-20 overflow-hidden bg-brand-dark"
@@ -62,19 +58,17 @@ const HeroLanding = ({ whatsappNumber = "5521999999999" }: HeroLandingProps) => 
           transition={{ duration: 0.6, delay: 0.15 }}
           className="mt-8 flex flex-col sm:flex-row gap-4"
         >
-          <a
-            href={`https://wa.me/${whatsappNumber}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="#catalogo"
             className="bg-brand-yellow hover:bg-white text-brand-black px-8 py-4 rounded-full font-bold text-base text-center transition-all shadow-lg shadow-brand-yellow/30 hover:-translate-y-0.5"
           >
-            SOLICITAR ORÇAMENTO
-          </a>
+            VER CATÁLOGO
+          </Link>
           <Link
             href="#calculadora"
             className="border border-white text-white hover:bg-white hover:text-brand-black px-8 py-4 rounded-full font-bold text-base text-center transition-all"
           >
-            VER OPÇÕES
+            CALCULAR QUANTIDADE
           </Link>
         </motion.div>
 
