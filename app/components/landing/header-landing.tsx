@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -30,12 +31,8 @@ const HeaderLanding = () => {
         }`}
       >
         <nav className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 cursor-pointer">
-            <span className="inline-block w-7 h-7 rounded-full bg-brand-yellow/20 border border-brand-yellow flex items-center justify-center text-brand-yellow text-xs">🍺</span>
-            <span className="leading-none">
-              <span className="block font-display font-bold text-brand-yellow text-lg tracking-wide">ALFA</span>
-              <span className="block font-display text-brand-yellow text-[10px] tracking-[0.2em]">CHOPP</span>
-            </span>
+          <Link href="/" className="opacity-90 hover:opacity-100 transition-opacity duration-300">
+            <Image src="/logo-white.png" alt="ALFA Chopp Delivery" width={44} height={44} priority />
           </Link>
 
           <div className="hidden md:flex items-center gap-7">
