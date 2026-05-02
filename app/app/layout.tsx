@@ -24,13 +24,22 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://alfachopp.com.br"),
   title: "ALFA Chopp Delivery — Chopp para seu evento",
   description: "Delivery e locacao de chopp para eventos no Rio de Janeiro e Baixada Fluminense.",
   icons: { icon: "/favicon.png" },
   openGraph: {
-    title: "ALFA Chopp Delivery",
+    title: "ALFA Chopp Delivery — O melhor chopp pelo melhor preço",
     description: "Delivery de chopp para festas e eventos no RJ e Baixada Fluminense.",
+    url: "https://alfachopp.com.br",
+    siteName: "ALFA Chopp Delivery",
+    locale: "pt_BR",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ALFA Chopp Delivery — O melhor chopp pelo melhor preço",
+    description: "Delivery de chopp para festas e eventos no RJ e Baixada Fluminense.",
   },
 }
 
