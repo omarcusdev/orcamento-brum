@@ -101,18 +101,20 @@ export const updateFrete = async (pedidoId: string, frete: number) => {
   revalidatePath("/admin/pedidos")
 }
 
-export const createProduct = async (formData: FormData) => {
-  const { supabase } = await requireAdmin()
-
-  const parsed = productSchema.safeParse({
+const parseProductForm = (formData: FormData) =>
+  productSchema.safeParse({
     marca: formData.get("marca"),
     descricao: formData.get("descricao") || undefined,
     volume_litros: Number(formData.get("volume_litros")),
     preco_avista: Number(formData.get("preco_avista")),
     preco_cartao: formData.get("preco_cartao") ? Number(formData.get("preco_cartao")) : null,
+    preco_segundo_barril: formData.get("preco_segundo_barril") ? Number(formData.get("preco_segundo_barril")) : null,
     tipo: formData.get("tipo"),
   })
 
+export const createProduct = async (formData: FormData) => {
+  const { supabase } = await requireAdmin()
+  const parsed = parseProductForm(formData)
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
   }
@@ -123,21 +125,14 @@ export const createProduct = async (formData: FormData) => {
   }).select("id").single()
   if (error) throw error
   revalidatePath("/admin/catalogo")
+  revalidatePath("/admin/promocoes")
+  revalidatePath("/")
   return data
 }
 
 export const updateProduct = async (id: string, formData: FormData) => {
   const { supabase } = await requireAdmin()
-
-  const parsed = productSchema.safeParse({
-    marca: formData.get("marca"),
-    descricao: formData.get("descricao") || undefined,
-    volume_litros: Number(formData.get("volume_litros")),
-    preco_avista: Number(formData.get("preco_avista")),
-    preco_cartao: formData.get("preco_cartao") ? Number(formData.get("preco_cartao")) : null,
-    tipo: formData.get("tipo"),
-  })
-
+  const parsed = parseProductForm(formData)
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
   }
@@ -149,6 +144,39 @@ export const updateProduct = async (id: string, formData: FormData) => {
 
   if (error) throw error
   revalidatePath("/admin/catalogo")
+  revalidatePath("/admin/promocoes")
+  revalidatePath("/")
+}
+
+export const updateProductSecondBarrelPrice = async (id: string, preco: number | null) => {
+  const { supabase } = await requireAdmin()
+
+  if (preco !== null) {
+    if (!Number.isFinite(preco) || preco <= 0 || preco > 99999) {
+      throw new Error("Preco invalido")
+    }
+
+    const { data: produto } = await supabase
+      .from("produtos")
+      .select("preco_avista")
+      .eq("id", id)
+      .single()
+    if (!produto) throw new Error("Produto nao encontrado")
+    if (preco >= Number(produto.preco_avista)) {
+      throw new Error("Preco do 2º barril deve ser menor que o preco a vista")
+    }
+  }
+
+  const { error } = await supabase
+    .from("produtos")
+    .update({ preco_segundo_barril: preco })
+    .eq("id", id)
+
+  if (error) throw error
+
+  revalidatePath("/admin/catalogo")
+  revalidatePath("/admin/promocoes")
+  revalidatePath("/")
 }
 
 export const toggleProductActive = async (id: string, ativo: boolean) => {

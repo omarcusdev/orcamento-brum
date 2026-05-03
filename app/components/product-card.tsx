@@ -50,6 +50,11 @@ const ProductCard = ({ produto, onAdd, index = 0 }: ProductCardProps) => (
       <div className="mt-auto">
         <p className="font-display text-3xl font-bold text-brand-yellow">{formatPrice(produto.preco_avista)}</p>
         <p className="text-xs text-brand-warm-gray mt-0.5">no pix/dinheiro</p>
+        {produto.preco_segundo_barril && produto.preco_segundo_barril < produto.preco_avista && (
+          <p className="text-xs text-green-400 mt-1.5 font-medium">
+            2º barril por {formatPrice(produto.preco_segundo_barril)}
+          </p>
+        )}
       </div>
       <motion.button
         onClick={() => onAdd(produto)}

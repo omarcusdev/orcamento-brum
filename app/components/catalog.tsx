@@ -10,12 +10,21 @@ type CatalogProps = {
   onAddToCart: (produto: Produto) => void
 }
 
+const VOLUMES = [50, 30] as const
+
 const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
   const [filter, setFilter] = useState<"todos" | "chopp" | "vinho">("todos")
 
   const filtered = filter === "todos"
     ? produtos
     : produtos.filter((p) => p.tipo === filter)
+
+  const sections = VOLUMES
+    .map((volume) => ({
+      volume,
+      items: filtered.filter((p) => p.volume_litros === volume),
+    }))
+    .filter((s) => s.items.length > 0)
 
   return (
     <section id="catalogo" className="py-20 px-4 bg-[#2A2A2A]">
@@ -62,10 +71,25 @@ const Catalog = ({ produtos, onAddToCart }: CatalogProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="space-y-14"
           >
-            {filtered.map((produto, idx) => (
-              <ProductCard key={produto.id} produto={produto} onAdd={onAddToCart} index={idx} />
+            {sections.map(({ volume, items }) => (
+              <div key={volume}>
+                <div className="flex items-baseline gap-4 mb-6">
+                  <h3 className="font-display text-xl md:text-2xl font-bold text-white tracking-wider uppercase">
+                    Barris de <span className="text-brand-yellow">{volume}L</span>
+                  </h3>
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-xs text-brand-warm-gray tracking-wide uppercase">
+                    {items.length} {items.length === 1 ? "opção" : "opções"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {items.map((produto, idx) => (
+                    <ProductCard key={produto.id} produto={produto} onAdd={onAddToCart} index={idx} />
+                  ))}
+                </div>
+              </div>
             ))}
           </motion.div>
         </AnimatePresence>

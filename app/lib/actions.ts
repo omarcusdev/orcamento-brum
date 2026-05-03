@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service"
 import { createOrderSchema } from "@/lib/schemas"
 import { isAddressInDeliveryArea } from "@/lib/geo"
 import { sendNewOrderEmail } from "@/lib/email"
+import { calculateLine } from "@/lib/pricing"
 
 export const createOrder = async (input: unknown): Promise<{ pedidoId: string; clienteId: string; error?: never } | { error: string; pedidoId?: never; clienteId?: never }> => {
   const parsed = createOrderSchema.safeParse(input)
@@ -19,7 +20,7 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
   const productIds = data.items.map((item) => item.produto_id)
   const { data: products, error: productsError } = await supabase
     .from("produtos")
-    .select("id, preco_avista, preco_cartao, ativo")
+    .select("id, preco_avista, preco_cartao, preco_segundo_barril, ativo")
     .in("id", productIds)
 
   if (productsError || !products) return { error: "Erro ao buscar produtos" }
@@ -94,15 +95,15 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
     lng: data.endereco_lng,
   }
 
-  const useCardPrice = data.metodo_pagamento === "cartao"
   const itemsWithServerPrice = data.items.map((item) => {
     const product = priceMap.get(item.produto_id)!
-    const serverPrice = (useCardPrice && product.preco_cartao) ? product.preco_cartao : product.preco_avista
+    const line = calculateLine(product, item.quantidade, data.metodo_pagamento)
+    const unitAverage = item.quantidade > 0 ? line.total / item.quantidade : line.firstUnitPrice
     return {
       produto_id: item.produto_id,
       quantidade: item.quantidade,
-      preco_unitario: serverPrice,
-      subtotal: serverPrice * item.quantidade,
+      preco_unitario: Number(unitAverage.toFixed(2)),
+      subtotal: Number(line.total.toFixed(2)),
     }
   })
 

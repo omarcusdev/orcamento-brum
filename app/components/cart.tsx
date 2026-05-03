@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/cart-context"
 import CartItemRow from "@/components/cart-item"
+import { calculateLine } from "@/lib/pricing"
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
@@ -12,7 +13,9 @@ const Cart = () => {
   const router = useRouter()
   const { items, cartOpen, totalItems, closeCart, increaseItem, decreaseItem, removeItem } = useCart()
 
-  const total = items.reduce((sum, item) => sum + item.produto.preco_avista * item.quantidade, 0)
+  const lines = items.map((item) => ({ item, line: calculateLine(item.produto, item.quantidade) }))
+  const total = lines.reduce((sum, { line }) => sum + line.total, 0)
+  const totalSavings = lines.reduce((sum, { line }) => sum + line.savings, 0)
 
   const handleCheckout = () => {
     closeCart()
@@ -68,6 +71,12 @@ const Cart = () => {
             </div>
             {items.length > 0 && (
               <div className="p-5 border-t border-white/10">
+                {totalSavings > 0 && (
+                  <div className="flex justify-between mb-2">
+                    <span className="text-xs text-brand-warm-gray">Promo do 2º barril</span>
+                    <span className="text-xs text-green-400">- {formatPrice(totalSavings)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between mb-4">
                   <span className="font-medium text-brand-warm-gray text-sm">Total</span>
                   <span className="font-display font-bold text-xl text-brand-yellow">{formatPrice(total)}</span>

@@ -44,6 +44,7 @@ export const productSchema = z.object({
   volume_litros: z.number().refine((v) => v === 30 || v === 50, "Volume deve ser 30 ou 50"),
   preco_avista: z.number().positive().max(99999),
   preco_cartao: z.number().positive().max(99999).optional().nullable(),
+  preco_segundo_barril: z.number().positive().max(99999).optional().nullable(),
   tipo: z.enum(["chopp", "vinho"]),
 })
 

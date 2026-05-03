@@ -146,6 +146,21 @@ const ProductForm = ({ produto, onClose }: ProductFormProps) => {
               />
             </div>
           </div>
+          <div>
+            <label htmlFor="preco_segundo_barril" className="block text-sm font-medium text-brand-gray-light mb-1">
+              Preco do 2º barril <span className="text-brand-warm-gray">(promo, opcional)</span>
+            </label>
+            <input
+              id="preco_segundo_barril"
+              name="preco_segundo_barril"
+              type="number"
+              step="0.01"
+              defaultValue={produto?.preco_segundo_barril ?? ""}
+              placeholder="Ex: 385.00"
+              className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
+            />
+            <p className="text-xs text-brand-warm-gray mt-1">A partir do 2º barril deste produto, esse preco substitui o preco a vista.</p>
+          </div>
           {error && (
             <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
           )}

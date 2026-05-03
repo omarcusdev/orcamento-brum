@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import type { CartItem } from "@/lib/types"
+import { calculateLine } from "@/lib/pricing"
 
 type CartItemRowProps = {
   item: CartItem
@@ -13,7 +14,9 @@ type CartItemRowProps = {
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
-const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProps) => (
+const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProps) => {
+  const line = calculateLine(item.produto, item.quantidade)
+  return (
   <motion.div
     layout
     initial={{ opacity: 0, y: 8 }}
@@ -25,6 +28,11 @@ const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
     <div className="flex-1 min-w-0">
       <p className="font-medium text-sm text-white truncate">{item.produto.marca}</p>
       <p className="text-xs text-brand-warm-gray">{item.produto.volume_litros}L</p>
+      {line.hasPromo && (
+        <p className="text-[10px] text-green-400 mt-0.5">
+          1º {formatPrice(line.firstUnitPrice)} · 2º+ {formatPrice(line.extraUnitPrice)}
+        </p>
+      )}
     </div>
     <div className="flex items-center gap-2">
       <motion.button
@@ -46,7 +54,7 @@ const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
       </motion.button>
     </div>
     <p className="font-display font-semibold text-sm w-20 text-right text-brand-yellow">
-      {formatPrice(item.produto.preco_avista * item.quantidade)}
+      {formatPrice(line.total)}
     </p>
     <motion.button
       onClick={onRemove}
@@ -57,6 +65,7 @@ const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
       ×
     </motion.button>
   </motion.div>
-)
+  )
+}
 
 export default CartItemRow

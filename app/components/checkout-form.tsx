@@ -10,6 +10,7 @@ import { formatCpf } from "@/lib/cpf"
 import { isAddressInDeliveryArea } from "@/lib/geo"
 import AddressAutocomplete from "@/components/address-autocomplete"
 import type { AddressData } from "@/components/address-autocomplete"
+import { calculateLine } from "@/lib/pricing"
 
 type DeliveryConfig = {
   raioKm: number
@@ -93,10 +94,9 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
     ? `${hora.padStart(2, "0")}:${minuto.padStart(2, "0")}`
     : ""
 
-  const total = items.reduce((sum, item) => {
-    const price = (metodoPagamento === "cartao" && item.produto.preco_cartao) ? item.produto.preco_cartao : item.produto.preco_avista
-    return sum + price * item.quantidade
-  }, 0)
+  const lines = items.map((item) => ({ item, line: calculateLine(item.produto, item.quantidade, metodoPagamento) }))
+  const total = lines.reduce((sum, { line }) => sum + line.total, 0)
+  const totalSavings = lines.reduce((sum, { line }) => sum + line.savings, 0)
 
   const handleAddressSelect = (addr: AddressData) => {
     setAddress(addr)
@@ -254,16 +254,27 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
           className="bg-brand-surface rounded-lg p-5 mb-10 border border-white/5"
         >
           <h3 className="font-display font-bold text-white mb-4 text-lg">Resumo do pedido</h3>
-          {items.map((item) => (
-            <div key={item.produto.id} className="flex justify-between text-sm py-1.5">
-              <span className="text-brand-gray-light">
-                {item.quantidade}x {item.produto.marca} {item.produto.volume_litros}L
-              </span>
-              <span className="font-medium text-white">
-                {formatPrice(((metodoPagamento === "cartao" && item.produto.preco_cartao) ? item.produto.preco_cartao : item.produto.preco_avista) * item.quantidade)}
-              </span>
+          {lines.map(({ item, line }) => (
+            <div key={item.produto.id} className="py-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-brand-gray-light">
+                  {item.quantidade}x {item.produto.marca} {item.produto.volume_litros}L
+                </span>
+                <span className="font-medium text-white">{formatPrice(line.total)}</span>
+              </div>
+              {line.hasPromo && (
+                <p className="text-[11px] text-green-400 mt-0.5">
+                  1º {formatPrice(line.firstUnitPrice)} · 2º+ {formatPrice(line.extraUnitPrice)}
+                </p>
+              )}
             </div>
           ))}
+          {totalSavings > 0 && (
+            <div className="flex justify-between text-sm mt-3 pt-3 border-t border-white/10">
+              <span className="text-brand-warm-gray">Promo do 2º barril</span>
+              <span className="text-green-400">- {formatPrice(totalSavings)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t border-white/10">
             <span className="text-white">Total</span>
             <span className="font-display text-brand-yellow">{formatPrice(total)}</span>

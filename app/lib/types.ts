@@ -5,6 +5,7 @@ export type Produto = {
   volume_litros: number
   preco_avista: number
   preco_cartao: number | null
+  preco_segundo_barril: number | null
   tipo: "chopp" | "vinho"
   foto_url: string | null
   ativo: boolean

@@ -62,6 +62,11 @@ const ProductCardRow = ({ produto, isToggling, onToggle, onEdit, onDelete }: Pro
           <p className="text-sm text-brand-warm-gray mt-1">
             {formatPrice(produto.preco_avista)}
             {produto.preco_cartao && ` / ${formatPrice(produto.preco_cartao)} cartao`}
+            {produto.preco_segundo_barril && (
+              <span className="text-green-400">
+                {" · 2º "}{formatPrice(produto.preco_segundo_barril)}
+              </span>
+            )}
           </p>
         </div>
       </div>

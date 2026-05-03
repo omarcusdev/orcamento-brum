@@ -9,6 +9,7 @@ const navItems = [
   { href: "/admin/pedidos", label: "Pedidos" },
   { href: "/admin/entregadores", label: "Entregadores" },
   { href: "/admin/catalogo", label: "Catalogo" },
+  { href: "/admin/promocoes", label: "Promo" },
   { href: "/admin/area-entrega", label: "Area" },
   { href: "/admin/conteudo", label: "Conteudo" },
   { href: "/admin/configuracoes", label: "Config" },
