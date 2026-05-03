@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
 import { productSchema } from "@/lib/schemas"
+import type { OrdemUpdate } from "@/lib/admin-ordem"
 
 const statusOrder = [
   "confirmado",
@@ -364,4 +365,30 @@ export const getDocumentSignedUrl = async (clienteId: string, tipo: "pessoal" | 
     .createSignedUrl(`${clienteId}/${tipo}`, 300)
   if (error) throw error
   return data.signedUrl
+}
+
+export const deleteProduct = async (id: string) => {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase.from("produtos").delete().eq("id", id)
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error("Este produto tem pedidos vinculados. Desative ele em vez de excluir.")
+    }
+    throw error
+  }
+  await supabase.storage.from("produtos").remove([id])
+  revalidatePath("/admin/catalogo")
+  revalidatePath("/")
+}
+
+export const reorderProducts = async (updates: OrdemUpdate[]) => {
+  const { supabase } = await requireAdmin()
+  if (updates.length === 0) return
+  for (const { id, ordem } of updates) {
+    if (!Number.isInteger(ordem) || ordem < 0) throw new Error("Ordem invalida")
+    const { error } = await supabase.from("produtos").update({ ordem }).eq("id", id)
+    if (error) throw error
+  }
+  revalidatePath("/admin/catalogo")
+  revalidatePath("/")
 }
