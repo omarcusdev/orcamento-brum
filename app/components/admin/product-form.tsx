@@ -51,7 +51,7 @@ const ProductForm = ({ produto, onClose }: ProductFormProps) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4"
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <motion.div
@@ -59,7 +59,7 @@ const ProductForm = ({ produto, onClose }: ProductFormProps) => {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-        className="bg-brand-surface rounded-2xl max-w-md w-full p-6 border border-white/10"
+        className="bg-brand-surface rounded-2xl max-w-md w-full p-6 border border-white/10 max-h-[calc(100vh-3rem)] overflow-y-auto"
       >
         <h3 className="font-display text-xl font-bold text-white tracking-wide mb-4">
           {produto ? "EDITAR PRODUTO" : "NOVO PRODUTO"}

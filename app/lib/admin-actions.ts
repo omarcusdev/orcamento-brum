@@ -286,20 +286,23 @@ export const saveConteudo = async (secao: string, dados: Record<string, unknown>
 }
 
 export const uploadProductImage = async (productId: string, formData: FormData) => {
-  const { supabase } = await requireAdmin()
+  await requireAdmin()
   const file = formData.get("foto") as File | null
   if (!file) throw new Error("Nenhuma imagem enviada")
-  const { error: uploadError } = await supabase.storage
+  const serviceClient = createServiceClient()
+  const { error: uploadError } = await serviceClient.storage
     .from("produtos")
     .upload(productId, file, { upsert: true, contentType: file.type })
-  if (uploadError) throw uploadError
-  const { data: urlData } = supabase.storage.from("produtos").getPublicUrl(productId)
-  const { error: updateError } = await supabase
+  if (uploadError) throw new Error(`Falha ao subir imagem: ${uploadError.message}`)
+  const { data: urlData } = serviceClient.storage.from("produtos").getPublicUrl(productId)
+  const cacheBustedUrl = `${urlData.publicUrl}?v=${Date.now()}`
+  const { error: updateError } = await serviceClient
     .from("produtos")
-    .update({ foto_url: urlData.publicUrl })
+    .update({ foto_url: cacheBustedUrl })
     .eq("id", productId)
-  if (updateError) throw updateError
+  if (updateError) throw new Error(`Falha ao salvar URL da imagem: ${updateError.message}`)
   revalidatePath("/admin/catalogo")
+  revalidatePath("/admin/promocoes")
   revalidatePath("/")
 }
 
@@ -404,8 +407,10 @@ export const deleteProduct = async (id: string) => {
     }
     throw error
   }
-  await supabase.storage.from("produtos").remove([id])
+  const serviceClient = createServiceClient()
+  await serviceClient.storage.from("produtos").remove([id])
   revalidatePath("/admin/catalogo")
+  revalidatePath("/admin/promocoes")
   revalidatePath("/")
 }
 
