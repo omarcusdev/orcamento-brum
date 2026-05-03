@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   DndContext,
@@ -39,11 +39,17 @@ const ProductList = ({ produtos: initialProdutos }: ProductListProps) => {
   const [deletingProduct, setDeletingProduct] = useState<Produto | undefined>()
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
   const [reorderError, setReorderError] = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
+  const [toggleError, setToggleError] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
+
+  useEffect(() => {
+    setProdutos([...initialProdutos].sort(sortByOrdem))
+  }, [initialProdutos])
 
   const sectionsByVolume = (volume: SectionVolume) =>
     produtos.filter((p) => p.volume_litros === volume).sort(sortByOrdem)
@@ -52,10 +58,13 @@ const ProductList = ({ produtos: initialProdutos }: ProductListProps) => {
   const produtos30 = sectionsByVolume(30)
 
   const handleToggle = async (id: string, currentActive: boolean) => {
+    setToggleError(null)
     setTogglingIds((prev) => new Set(prev).add(id))
     try {
       await toggleProductActive(id, !currentActive)
       setProdutos((prev) => prev.map((p) => (p.id === id ? { ...p, ativo: !currentActive } : p)))
+    } catch (err) {
+      setToggleError(err instanceof Error ? err.message : "Erro ao alterar status")
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev)
@@ -72,6 +81,7 @@ const ProductList = ({ produtos: initialProdutos }: ProductListProps) => {
   const handleDragEnd = async (event: DragEndEvent, volume: SectionVolume) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
+    if (reordering) return
 
     const sectionItems = sectionsByVolume(volume)
     const oldIndex = sectionItems.findIndex((p) => p.id === active.id)
@@ -87,12 +97,15 @@ const ProductList = ({ produtos: initialProdutos }: ProductListProps) => {
     )
     setProdutos(optimistic)
     setReorderError(null)
+    setReordering(true)
 
     try {
       await reorderProducts(updates)
     } catch (err) {
       setProdutos(previousProdutos)
       setReorderError(err instanceof Error ? err.message : "Erro ao reordenar")
+    } finally {
+      setReordering(false)
     }
   }
 
@@ -156,6 +169,9 @@ const ProductList = ({ produtos: initialProdutos }: ProductListProps) => {
       </motion.div>
       {reorderError && (
         <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4">{reorderError}</p>
+      )}
+      {toggleError && (
+        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4">{toggleError}</p>
       )}
       {renderSection(50, produtos50)}
       {renderSection(30, produtos30)}
