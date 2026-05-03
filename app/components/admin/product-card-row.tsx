@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { motion } from "framer-motion"
@@ -43,6 +44,25 @@ const ProductCardRow = ({ produto, isToggling, onToggle, onEdit, onDelete }: Pro
             <path d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm0 6a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm9-13a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
           </svg>
         </button>
+        {produto.foto_url ? (
+          <Image
+            src={produto.foto_url}
+            alt={produto.marca}
+            width={44}
+            height={44}
+            className="w-11 h-11 rounded-lg object-cover border border-white/10 shrink-0"
+            unoptimized
+          />
+        ) : (
+          <div
+            aria-label="Sem foto"
+            className="w-11 h-11 rounded-lg border border-dashed border-white/15 bg-brand-dark flex items-center justify-center text-brand-warm-gray/60 shrink-0"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75 7.409 10.591a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+            </svg>
+          </div>
+        )}
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-white">{produto.marca}</span>
