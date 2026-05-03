@@ -13,32 +13,36 @@ type ProductFormProps = {
 
 const ProductForm = ({ produto, onClose }: ProductFormProps) => {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setError(null)
     setLoading(true)
-
     const formData = new FormData(e.currentTarget)
-
-    if (produto) {
-      await updateProduct(produto.id, formData)
-      if (imageFile) {
-        const imgFormData = new FormData()
-        imgFormData.set("foto", imageFile)
-        await uploadProductImage(produto.id, imgFormData)
+    try {
+      if (produto) {
+        await updateProduct(produto.id, formData)
+        if (imageFile) {
+          const imgFormData = new FormData()
+          imgFormData.set("foto", imageFile)
+          await uploadProductImage(produto.id, imgFormData)
+        }
+      } else {
+        const result = await createProduct(formData)
+        if (imageFile && result?.id) {
+          const imgFormData = new FormData()
+          imgFormData.set("foto", imageFile)
+          await uploadProductImage(result.id, imgFormData)
+        }
       }
-    } else {
-      const result = await createProduct(formData)
-      if (imageFile && result?.id) {
-        const imgFormData = new FormData()
-        imgFormData.set("foto", imageFile)
-        await uploadProductImage(result.id, imgFormData)
-      }
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
-    onClose()
   }
 
   return (
@@ -113,6 +117,9 @@ const ProductForm = ({ produto, onClose }: ProductFormProps) => {
           <div>
             <label className="block text-sm font-medium text-brand-gray-light mb-1">Foto do produto</label>
             <ImageUpload currentUrl={produto?.foto_url} onFileSelect={setImageFile} />
+            <p className="text-xs text-brand-warm-gray mt-2">
+              Recomendado: imagem quadrada (1:1), minimo 500x500px. JPG, PNG ou WebP, ate 5MB.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -139,6 +146,9 @@ const ProductForm = ({ produto, onClose }: ProductFormProps) => {
               />
             </div>
           </div>
+          {error && (
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
+          )}
           <div className="flex gap-3 pt-2">
             <motion.button
               type="button"
