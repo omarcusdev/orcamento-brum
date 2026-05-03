@@ -6,7 +6,8 @@ export const getActiveProducts = async () => {
     .from("produtos")
     .select("*")
     .eq("ativo", true)
-    .order("preco_avista", { ascending: true })
+    .order("volume_litros", { ascending: false })
+    .order("ordem", { ascending: true })
 
   if (error) throw error
   return data
