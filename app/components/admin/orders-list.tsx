@@ -16,14 +16,16 @@ type OrderWithClient = {
   horario_evento: string
   endereco: string
   metodo_pagamento: string | null
-
   created_at: string
+  arquivado_em: string | null
   clientes: { nome: string; telefone: string }
 }
 
 type OrdersListProps = {
   initialOrders: OrderWithClient[]
 }
+
+type ViewMode = "ativos" | "arquivados"
 
 const normalizeOrders = (raw: unknown[]) =>
   raw.map((row) => {
@@ -38,6 +40,7 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
   const [orders, setOrders] = useState(initialOrders)
   const [filter, setFilter] = useState<PedidoStatus | "todos">("todos")
   const [search, setSearch] = useState("")
+  const [view, setView] = useState<ViewMode>("ativos")
 
   useEffect(() => {
     const supabase = createClient()
@@ -45,7 +48,7 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
     const refetch = async () => {
       const { data } = await supabase
         .from("pedidos")
-        .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, clientes(nome, telefone)")
+        .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, arquivado_em, clientes(nome, telefone)")
         .order("created_at", { ascending: false })
 
       if (data) setOrders(normalizeOrders(data as unknown[]))
@@ -72,16 +75,23 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
     }
   }, [])
 
-  const counts = orders.reduce<Record<string, number>>((acc, order) => {
+  const visibleByView = orders.filter((order) =>
+    view === "ativos" ? order.arquivado_em == null : order.arquivado_em != null,
+  )
+
+  const counts = visibleByView.reduce<Record<string, number>>((acc, order) => {
     acc[order.status] = (acc[order.status] ?? 0) + 1
     return acc
   }, {})
 
-  const filtered = orders.filter((order) => {
+  const filtered = visibleByView.filter((order) => {
     const matchesFilter = filter === "todos" || order.status === filter
     const matchesSearch = search === "" || order.clientes.nome.toLowerCase().includes(search.toLowerCase()) || order.endereco.toLowerCase().includes(search.toLowerCase())
     return matchesFilter && matchesSearch
   })
+
+  const ativosCount = orders.filter((o) => o.arquivado_em == null).length
+  const arquivadosCount = orders.length - ativosCount
 
   return (
     <div>
@@ -89,15 +99,31 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-        className="mb-4"
+        className="mb-4 flex flex-col gap-3 sm:flex-row"
       >
         <input
           type="text"
           placeholder="Buscar por nome ou endereco..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg bg-brand-surface border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
+          className="flex-1 px-4 py-2.5 rounded-lg bg-brand-surface border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
         />
+        <div className="inline-flex rounded-lg bg-brand-surface border border-white/10 p-0.5 self-stretch sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setView("ativos")}
+            className={`px-3 py-2 rounded-md text-xs font-semibold transition cursor-pointer ${view === "ativos" ? "bg-brand-yellow text-brand-black" : "text-brand-gray-light hover:text-white"}`}
+          >
+            Ativos ({ativosCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("arquivados")}
+            className={`px-3 py-2 rounded-md text-xs font-semibold transition cursor-pointer ${view === "arquivados" ? "bg-brand-yellow text-brand-black" : "text-brand-gray-light hover:text-white"}`}
+          >
+            Arquivados ({arquivadosCount})
+          </button>
+        </div>
       </motion.div>
       <StatusFilter selected={filter} counts={counts} onChange={setFilter} />
       <div className="mt-4 space-y-3">
@@ -107,7 +133,7 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
             animate={{ opacity: 1 }}
             className="text-center text-brand-warm-gray py-8"
           >
-            Nenhum pedido encontrado
+            {view === "arquivados" ? "Nenhum pedido arquivado" : "Nenhum pedido encontrado"}
           </motion.p>
         ) : (
           filtered.map((order, index) => (

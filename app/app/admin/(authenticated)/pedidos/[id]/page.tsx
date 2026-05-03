@@ -9,6 +9,7 @@ import FadeIn from "@/components/admin/fade-in"
 import DocumentSection from "@/components/admin/document-section"
 import FreteInput from "@/components/admin/frete-input"
 import FreteBanner from "@/components/admin/frete-banner"
+import ArchiveToggle from "@/components/admin/archive-toggle"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -233,6 +234,14 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                 frete={pedido.frete ?? 0}
                 dispatchText={buildDispatchText(pedido, items ?? [], pedido.clientes)}
               />
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <ArchiveToggle pedidoId={pedido.id} arquivado={!!pedido.arquivado_em} />
+                {pedido.arquivado_em && (
+                  <p className="text-xs text-brand-warm-gray mt-2 text-center">
+                    Arquivado em {new Date(pedido.arquivado_em).toLocaleDateString("pt-BR")}
+                  </p>
+                )}
+              </div>
             </div>
           </FadeIn>
 

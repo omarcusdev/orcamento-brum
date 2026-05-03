@@ -57,6 +57,7 @@ export type Pedido = {
   metodo_pagamento: "pix" | "cartao" | "dinheiro" | null
   pago: boolean
   entregador_id: string | null
+  arquivado_em: string | null
   created_at: string
   updated_at: string
 }

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import FadeIn from "@/components/admin/fade-in"
 import OrdersList from "@/components/admin/orders-list"
+import { archiveStaleOrders } from "@/lib/admin-actions"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const normalizeOrders = (raw: any[]) =>
@@ -17,15 +18,17 @@ const normalizeOrders = (raw: any[]) =>
     endereco: string
     metodo_pagamento: string | null
     created_at: string
+    arquivado_em: string | null
     clientes: { nome: string; telefone: string }
   }[]
 
 const PedidosPage = async () => {
+  await archiveStaleOrders()
   const supabase = await createClient()
 
   const { data: rawOrders } = await supabase
     .from("pedidos")
-    .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, clientes(nome, telefone)")
+    .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, arquivado_em, clientes(nome, telefone)")
     .order("created_at", { ascending: false })
 
   const orders = normalizeOrders((rawOrders ?? []) as unknown[])

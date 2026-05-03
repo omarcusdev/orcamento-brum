@@ -16,6 +16,7 @@ type OrderCardProps = {
     endereco: string
     metodo_pagamento: string | null
     created_at: string
+    arquivado_em: string | null
     clientes: { nome: string; telefone: string }
   }
   index?: number
@@ -55,10 +56,15 @@ const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => (
         <span className="font-bold text-brand-yellow">{formatPrice(pedido.total)}</span>
       </div>
       <p className="text-xs text-brand-warm-gray mt-1 truncate">{pedido.endereco}</p>
-      <div className="mt-2">
+      <div className="mt-2 flex items-center gap-2">
         <span className={`text-xs px-2 py-0.5 rounded-full border ${docStatusConfig[pedido.documento_status]?.className ?? ""}`}>
           {docStatusConfig[pedido.documento_status]?.label ?? pedido.documento_status}
         </span>
+        {pedido.arquivado_em && (
+          <span className="text-xs px-2 py-0.5 rounded-full border border-white/15 text-brand-warm-gray bg-white/5">
+            Arquivado
+          </span>
+        )}
       </div>
     </Link>
   </motion.div>

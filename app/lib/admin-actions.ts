@@ -70,6 +70,54 @@ export const cancelOrder = async (pedidoId: string) => {
   revalidatePath("/admin/pedidos")
 }
 
+export const archiveOrder = async (pedidoId: string) => {
+  const { supabase } = await requireAdmin()
+
+  const { error } = await supabase
+    .from("pedidos")
+    .update({ arquivado_em: new Date().toISOString() })
+    .eq("id", pedidoId)
+    .is("arquivado_em", null)
+
+  if (error) throw new Error(`Falha ao arquivar pedido: ${error.message}`)
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+  revalidatePath("/admin/pedidos")
+}
+
+export const unarchiveOrder = async (pedidoId: string) => {
+  const { supabase } = await requireAdmin()
+
+  const { error } = await supabase
+    .from("pedidos")
+    .update({ arquivado_em: null })
+    .eq("id", pedidoId)
+
+  if (error) throw new Error(`Falha ao desarquivar pedido: ${error.message}`)
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+  revalidatePath("/admin/pedidos")
+}
+
+const STALE_THRESHOLD_DAYS = 30
+
+export const archiveStaleOrders = async () => {
+  const { supabase } = await requireAdmin()
+
+  const cutoff = new Date(Date.now() - STALE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+  const { error } = await supabase
+    .from("pedidos")
+    .update({ arquivado_em: new Date().toISOString() })
+    .is("arquivado_em", null)
+    .eq("status", "recolhido")
+    .lt("updated_at", cutoff)
+
+  if (error) {
+    console.error("archiveStaleOrders failed", error)
+  }
+}
+
 export const updateFrete = async (pedidoId: string, frete: number) => {
   const { supabase } = await requireAdmin()
 
