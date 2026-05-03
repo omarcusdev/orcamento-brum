@@ -7,7 +7,8 @@ const CatalogoAdminPage = async () => {
   const { data: produtos } = await supabase
     .from("produtos")
     .select("*")
-    .order("marca", { ascending: true })
+    .order("volume_litros", { ascending: false })
+    .order("ordem", { ascending: true })
 
   return <ProductList produtos={produtos ?? []} />
 }

@@ -1,31 +1,141 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
 import type { Produto } from "@/lib/types"
-import { toggleProductActive } from "@/lib/admin-actions"
+import { reorderProducts, toggleProductActive } from "@/lib/admin-actions"
+import { recomputeOrdens } from "@/lib/admin-ordem"
 import ProductForm from "@/components/admin/product-form"
+import ProductCardRow from "@/components/admin/product-card-row"
+import DeleteProductModal from "@/components/admin/delete-product-modal"
 
 type ProductListProps = {
   produtos: Produto[]
 }
 
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+type SectionVolume = 50 | 30
 
-const ProductList = ({ produtos }: ProductListProps) => {
+const sortByOrdem = (a: Produto, b: Produto) => a.ordem - b.ordem
+
+const ProductList = ({ produtos: initialProdutos }: ProductListProps) => {
+  const [produtos, setProdutos] = useState<Produto[]>(() => [...initialProdutos].sort(sortByOrdem))
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Produto | undefined>()
+  const [deletingProduct, setDeletingProduct] = useState<Produto | undefined>()
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+  const [reorderError, setReorderError] = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
+  const [toggleError, setToggleError] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  useEffect(() => {
+    setProdutos([...initialProdutos].sort(sortByOrdem))
+  }, [initialProdutos])
+
+  const sectionsByVolume = (volume: SectionVolume) =>
+    produtos.filter((p) => p.volume_litros === volume).sort(sortByOrdem)
+
+  const produtos50 = sectionsByVolume(50)
+  const produtos30 = sectionsByVolume(30)
 
   const handleToggle = async (id: string, currentActive: boolean) => {
+    setToggleError(null)
     setTogglingIds((prev) => new Set(prev).add(id))
-    await toggleProductActive(id, !currentActive)
-    setTogglingIds((prev) => {
-      const next = new Set(prev)
-      next.delete(id)
-      return next
-    })
+    try {
+      await toggleProductActive(id, !currentActive)
+      setProdutos((prev) => prev.map((p) => (p.id === id ? { ...p, ativo: !currentActive } : p)))
+    } catch (err) {
+      setToggleError(err instanceof Error ? err.message : "Erro ao alterar status")
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }
+
+  const handleDeleted = (id: string) => {
+    setProdutos((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  const handleDragEnd = async (event: DragEndEvent, volume: SectionVolume) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    if (reordering) return
+
+    const sectionItems = sectionsByVolume(volume)
+    const oldIndex = sectionItems.findIndex((p) => p.id === active.id)
+    const newIndex = sectionItems.findIndex((p) => p.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const previousProdutos = produtos
+    const reorderedSection = arrayMove(sectionItems, oldIndex, newIndex)
+    const updates = recomputeOrdens(reorderedSection.map((p) => p.id))
+    const ordemById = new Map(updates.map((u) => [u.id, u.ordem]))
+    const optimistic = produtos.map((p) =>
+      ordemById.has(p.id) ? { ...p, ordem: ordemById.get(p.id)! } : p
+    )
+    setProdutos(optimistic)
+    setReorderError(null)
+    setReordering(true)
+
+    try {
+      await reorderProducts(updates)
+    } catch (err) {
+      setProdutos(previousProdutos)
+      setReorderError(err instanceof Error ? err.message : "Erro ao reordenar")
+    } finally {
+      setReordering(false)
+    }
+  }
+
+  const renderSection = (volume: SectionVolume, items: Produto[]) => {
+    if (items.length === 0) return null
+    return (
+      <section className="mb-8">
+        <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">BARRIS DE {volume}L</h2>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e) => handleDragEnd(e, volume)}
+        >
+          <SortableContext items={items.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {items.map((produto) => (
+                <ProductCardRow
+                  key={produto.id}
+                  produto={produto}
+                  isToggling={togglingIds.has(produto.id)}
+                  onToggle={() => handleToggle(produto.id, produto.ativo)}
+                  onEdit={() => { setEditingProduct(produto); setShowForm(true) }}
+                  onDelete={() => setDeletingProduct(produto)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </section>
+    )
   }
 
   return (
@@ -55,74 +165,26 @@ const ProductList = ({ produtos }: ProductListProps) => {
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-brand-yellow shrink-0">
           <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
         </svg>
-        <p className="text-xs text-brand-yellow/80">Desativar um produto remove ele do catalogo visivel para os clientes.</p>
+        <p className="text-xs text-brand-yellow/80">Desativar um produto remove ele do catalogo visivel para os clientes. Arraste pelo icone <span aria-hidden="true">⋮⋮</span> para reordenar.</p>
       </motion.div>
-      <div className="space-y-3">
-        {produtos.map((produto, index) => {
-          const isToggling = togglingIds.has(produto.id)
-          return (
-          <motion.div
-            key={produto.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: index * 0.04, ease: [0.25, 0.1, 0.25, 1] }}
-            whileHover={{ y: -2 }}
-            className="bg-brand-surface rounded-xl border border-white/10 p-4 flex items-center justify-between"
-          >
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-white">{produto.marca}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  produto.volume_litros === 30
-                    ? "bg-cyan-500/15 text-cyan-400"
-                    : "bg-blue-500/15 text-blue-400"
-                }`}>{produto.volume_litros}L</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  produto.tipo === "chopp"
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "bg-violet-500/15 text-violet-400"
-                }`}>
-                  {produto.tipo}
-                </span>
-              </div>
-              <p className="text-sm text-brand-warm-gray mt-1">
-                {formatPrice(produto.preco_avista)}
-                {produto.preco_cartao && ` / ${formatPrice(produto.preco_cartao)} cartao`}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => handleToggle(produto.id, produto.ativo)}
-                disabled={isToggling}
-                className={`relative w-10 h-5 rounded-full transition-colors ${isToggling ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
-                style={{ backgroundColor: produto.ativo ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.1)" }}
-                aria-label={produto.ativo ? "Desativar produto" : "Ativar produto"}
-              >
-                <motion.div
-                  layout
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className={`absolute top-0.5 w-4 h-4 rounded-full ${isToggling ? "animate-pulse" : ""}`}
-                  style={{
-                    left: produto.ativo ? "calc(100% - 18px)" : "2px",
-                    backgroundColor: produto.ativo ? "#22c55e" : "#8A8278",
-                  }}
-                />
-              </button>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => { setEditingProduct(produto); setShowForm(true) }}
-                className="px-3 py-1.5 rounded-lg border border-white/10 text-brand-gray-light hover:border-brand-yellow/40 hover:text-white text-xs font-medium cursor-pointer transition"
-              >
-                Editar
-              </motion.button>
-            </div>
-          </motion.div>
-          )
-        })}
-      </div>
+      {reorderError && (
+        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4">{reorderError}</p>
+      )}
+      {toggleError && (
+        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4">{toggleError}</p>
+      )}
+      {renderSection(50, produtos50)}
+      {renderSection(30, produtos30)}
       <AnimatePresence>
         {showForm && (
           <ProductForm produto={editingProduct} onClose={() => setShowForm(false)} />
+        )}
+        {deletingProduct && (
+          <DeleteProductModal
+            produto={deletingProduct}
+            onClose={() => setDeletingProduct(undefined)}
+            onDeleted={handleDeleted}
+          />
         )}
       </AnimatePresence>
     </div>

@@ -8,6 +8,7 @@ export type Produto = {
   tipo: "chopp" | "vinho"
   foto_url: string | null
   ativo: boolean
+  ordem: number
   created_at: string
 }
 
