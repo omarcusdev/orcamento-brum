@@ -54,7 +54,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
 
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("*, clientes(id, nome, telefone, email, cpf, documento_pessoal_url, comprovante_residencia_url, documento_verificado, documento_verificado_em), entregadores(id, nome, telefone)")
+    .select("*, clientes(id, nome, telefone, email, cpf, documento_pessoal_urls, comprovante_residencia_url, documento_verificado, documento_verificado_em), entregadores(id, nome, telefone)")
     .eq("id", id)
     .single()
 
@@ -132,7 +132,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
               clienteId={pedido.clientes.id}
               pedidoId={pedido.id}
               documentoStatus={pedido.documento_status}
-              documentoPessoalUrl={pedido.clientes.documento_pessoal_url}
+              documentoPessoalUrls={pedido.clientes.documento_pessoal_urls}
               comprovanteResidenciaUrl={pedido.clientes.comprovante_residencia_url}
               documentoVerificado={pedido.clientes.documento_verificado}
               documentoVerificadoEm={pedido.clientes.documento_verificado_em}

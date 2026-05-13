@@ -227,7 +227,7 @@ export const uploadDocuments = async (pedidoId: string, formData: FormData): Pro
   await supabase
     .from("clientes")
     .update({
-      documento_pessoal_url: `${clienteId}/pessoal`,
+      documento_pessoal_urls: [`${clienteId}/pessoal`],
       comprovante_residencia_url: `${clienteId}/residencia`,
     })
     .eq("id", clienteId)
