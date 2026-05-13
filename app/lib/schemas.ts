@@ -56,3 +56,69 @@ export const entregadorSchema = z.object({
 export type EntregadorInput = z.infer<typeof entregadorSchema>
 export type CreateOrderInput = z.infer<typeof createOrderSchema>
 export type ProductInput = z.infer<typeof productSchema>
+
+const enderecoCompletoSchema = z.object({
+  rua: z.string(),
+  numero: z.string(),
+  bairro: z.string(),
+  cidade: z.string(),
+  estado: z.string().length(2),
+  cep: z.string(),
+  complemento: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+})
+
+const manualOrderItemSchema = z.object({
+  produto_id: z.string().uuid(),
+  quantidade: z.number().int().min(1).max(100),
+  is_consignado: z.boolean(),
+})
+
+const manualOrderClienteExistingSchema = z.object({
+  kind: z.literal("existing"),
+  id: z.string().uuid(),
+})
+
+const manualOrderClienteNewSchema = z.object({
+  kind: z.literal("new"),
+  nome: z.string().min(2).max(200),
+  telefone: z.string().regex(phoneRegex, "Telefone invalido"),
+  cpf: z.string().nullable().optional(),
+  email: z.string().email().max(254).nullable().optional(),
+})
+
+export const manualOrderInputSchema = z.object({
+  cliente: z.discriminatedUnion("kind", [manualOrderClienteExistingSchema, manualOrderClienteNewSchema]),
+  endereco: z.string().min(1).max(500),
+  endereco_completo: enderecoCompletoSchema.nullable(),
+  data_evento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  horario_evento: z.string().regex(/^\d{2}:\d{2}$/),
+  tipo_chopeira: z.enum(["gelo", "eletrica"]),
+  rampas_escadas: z.string().max(500).nullable(),
+  observacoes: z.string().max(1000).nullable(),
+  items: z.array(manualOrderItemSchema).min(1),
+  metodo_pagamento: z.enum(["pix", "cartao", "dinheiro"]),
+  pago: z.boolean(),
+  frete: z.number().nonnegative(),
+}).refine(
+  (input) => input.items.filter((i) => i.is_consignado).length <= 1,
+  { message: "No maximo 1 item pode ser consignado" },
+)
+
+export type ManualOrderInput = z.infer<typeof manualOrderInputSchema>
+
+export const updatePedidoSchema = z.object({
+  data_evento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  horario_evento: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  endereco: z.string().min(1).max(500).optional(),
+  endereco_completo: enderecoCompletoSchema.optional(),
+  observacoes: z.string().max(1000).nullable().optional(),
+  rampas_escadas: z.string().max(500).nullable().optional(),
+  tipo_chopeira: z.enum(["gelo", "eletrica"]).optional(),
+  frete: z.number().nonnegative().optional(),
+  metodo_pagamento: z.enum(["pix", "cartao", "dinheiro"]).nullable().optional(),
+  pago: z.boolean().optional(),
+})
+
+export type UpdatePedidoInput = z.infer<typeof updatePedidoSchema>
