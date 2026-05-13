@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { canRevertToStatus, STATUS_FLOW_ORDER } from "./admin-actions"
+import { canRevertToStatus, STATUS_FLOW_ORDER } from "./admin-status"
 
 describe("canRevertToStatus", () => {
   it("permite cancelado a partir de qualquer status nao terminal", () => {

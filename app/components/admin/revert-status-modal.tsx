@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { revertOrderStatus, STATUS_FLOW_ORDER } from "@/lib/admin-actions"
+import { revertOrderStatus } from "@/lib/admin-actions"
+import { STATUS_FLOW_ORDER } from "@/lib/admin-status"
 import { statusConfig } from "@/components/order-status-badge"
 import type { PedidoStatus } from "@/lib/types"
 

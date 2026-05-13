@@ -5,26 +5,10 @@ import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
 import { productSchema, manualOrderInputSchema, updatePedidoSchema, type ManualOrderInput, type UpdatePedidoInput } from "@/lib/schemas"
 import { calculateOrderTotals } from "@/lib/pricing"
+import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES } from "@/lib/admin-status"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
 
-const statusOrder = [
-  "confirmado",
-  "enviar_para_entregador",
-  "em_rota",
-  "entregue",
-  "pago",
-  "recolhido",
-] as const
-
-export const STATUS_FLOW_ORDER = statusOrder
-
-export const canRevertToStatus = (current: string, target: string): boolean => {
-  if (target === "cancelado") return current !== "recolhido" && current !== "cancelado"
-  const currentIndex = statusOrder.indexOf(current as typeof statusOrder[number])
-  const targetIndex = statusOrder.indexOf(target as typeof statusOrder[number])
-  if (currentIndex === -1 || targetIndex === -1) return false
-  return targetIndex < currentIndex
-}
+const statusOrder = STATUS_FLOW_ORDER
 
 export const advanceOrderStatus = async (pedidoId: string, currentStatus: string) => {
   const { supabase } = await requireAdmin()
@@ -788,8 +772,6 @@ export const settleConsignado = async (pedidoItemId: string, status: "usado" | "
   revalidatePath(`/admin/pedidos/${item.pedido_id}`)
   revalidatePath("/admin/pedidos")
 }
-
-const LOCKED_EDIT_STATUSES = ["entregue", "pago", "recolhido", "cancelado"]
 
 export const updatePedido = async (pedidoId: string, input: UpdatePedidoInput) => {
   const parsed = updatePedidoSchema.safeParse(input)
