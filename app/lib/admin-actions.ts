@@ -734,3 +734,57 @@ export const createManualOrder = async (input: ManualOrderInput) => {
   revalidatePath("/admin/pedidos")
   return { pedidoId: pedido.id }
 }
+
+export const settleConsignado = async (pedidoItemId: string, status: "usado" | "devolvido") => {
+  const { supabase, user } = await requireAdmin()
+
+  const { data: item } = await supabase
+    .from("pedido_itens")
+    .select("id, pedido_id, is_consignado, consignado_status")
+    .eq("id", pedidoItemId)
+    .single()
+  if (!item) throw new Error("Item nao encontrado")
+  if (!item.is_consignado) throw new Error("Item nao eh consignado")
+  if (item.consignado_status !== "pendente") throw new Error("Consignado ja foi settled")
+
+  const { error: updateErr } = await supabase
+    .from("pedido_itens")
+    .update({ consignado_status: status })
+    .eq("id", pedidoItemId)
+  if (updateErr) throw updateErr
+
+  const { data: allItems } = await supabase
+    .from("pedido_itens")
+    .select("subtotal, is_consignado, consignado_status")
+    .eq("pedido_id", item.pedido_id)
+
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("frete, desconto")
+    .eq("id", item.pedido_id)
+    .single()
+
+  const totals = calculateOrderTotals((allItems ?? []).map((i) => ({
+    subtotal: Number(i.subtotal),
+    is_consignado: i.is_consignado,
+    consignado_status: i.consignado_status,
+  })))
+  const newSubtotal = Number(totals.subtotalMin.toFixed(2))
+  const newTotal = Number((newSubtotal - Number(pedido?.desconto ?? 0) + Number(pedido?.frete ?? 0)).toFixed(2))
+
+  await supabase
+    .from("pedidos")
+    .update({ subtotal: newSubtotal, total: newTotal, updated_at: new Date().toISOString() })
+    .eq("id", item.pedido_id)
+
+  await supabase.from("pedido_edit_log").insert({
+    pedido_id: item.pedido_id,
+    field: "consignado_status",
+    old_value: "pendente",
+    new_value: status,
+    changed_by: user.id,
+  })
+
+  revalidatePath(`/admin/pedidos/${item.pedido_id}`)
+  revalidatePath("/admin/pedidos")
+}

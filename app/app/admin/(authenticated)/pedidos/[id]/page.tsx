@@ -10,6 +10,8 @@ import DocumentSection from "@/components/admin/document-section"
 import FreteInput from "@/components/admin/frete-input"
 import FreteBanner from "@/components/admin/frete-banner"
 import ArchiveToggle from "@/components/admin/archive-toggle"
+import ConsignadoBanner from "@/components/admin/consignado-banner"
+import { calculateOrderTotals } from "@/lib/pricing"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -62,7 +64,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
 
   const { data: items } = await supabase
     .from("pedido_itens")
-    .select("quantidade, preco_unitario, produtos(marca, volume_litros)")
+    .select("id, quantidade, preco_unitario, subtotal, is_consignado, consignado_status, produtos(marca, volume_litros)")
     .eq("pedido_id", id)
 
   const { data: logs } = await supabase
@@ -72,6 +74,16 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
     .order("changed_at", { ascending: false })
 
   const whatsappLink = `https://wa.me/${pedido.clientes.telefone.replace(/\D/g, "")}`
+
+  const itemsForTotals = (items ?? []).map((i: any) => ({
+    subtotal: Number(i.subtotal),
+    is_consignado: !!i.is_consignado,
+    consignado_status: i.consignado_status as string | null,
+  }))
+  const totals = calculateOrderTotals(itemsForTotals)
+  const totalMin = totals.subtotalMin - (pedido.desconto ?? 0) + (pedido.frete ?? 0)
+  const totalMax = totals.subtotalMax - (pedido.desconto ?? 0) + (pedido.frete ?? 0)
+  const consignadosPendentes = (items ?? []).filter((i: any) => i.is_consignado && i.consignado_status === "pendente")
 
   return (
     <div>
@@ -175,17 +187,43 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
             </div>
           </FadeIn>
 
+          {consignadosPendentes.length > 0 && (
+            <FadeIn delay={0.17}>
+              <div className="space-y-3">
+                {consignadosPendentes.map((item: any) => {
+                  const marca = item.produtos?.marca ?? item.produtos?.[0]?.marca
+                  const volume = item.produtos?.volume_litros ?? item.produtos?.[0]?.volume_litros
+                  return (
+                    <ConsignadoBanner
+                      key={item.id}
+                      itemId={item.id}
+                      produtoLabel={`${marca} ${volume}L`}
+                      subtotal={Number(item.subtotal)}
+                    />
+                  )
+                })}
+              </div>
+            </FadeIn>
+          )}
+
           <FadeIn delay={0.2}>
             <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
               <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">ITENS</h2>
-              {(items ?? []).map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between text-sm py-1">
-                  <span className="text-brand-gray-light">
-                    {item.quantidade}x {item.produtos?.marca ?? item.produtos?.[0]?.marca} {item.produtos?.volume_litros ?? item.produtos?.[0]?.volume_litros}L
-                  </span>
-                  <span className="font-medium text-white">{formatPrice(item.preco_unitario * item.quantidade)}</span>
-                </div>
-              ))}
+              {(items ?? []).map((item: any, idx: number) => {
+                const marca = item.produtos?.marca ?? item.produtos?.[0]?.marca
+                const volume = item.produtos?.volume_litros ?? item.produtos?.[0]?.volume_litros
+                const consignTag = item.is_consignado
+                  ? ` · consignado${item.consignado_status === "pendente" ? " (pendente)" : item.consignado_status === "devolvido" ? " (devolvido)" : " (usado)"}`
+                  : ""
+                return (
+                  <div key={idx} className="flex justify-between text-sm py-1">
+                    <span className={item.consignado_status === "devolvido" ? "text-brand-warm-gray line-through" : "text-brand-gray-light"}>
+                      {item.quantidade}x {marca} {volume}L{consignTag}
+                    </span>
+                    <span className="font-medium text-white">{formatPrice(Number(item.subtotal))}</span>
+                  </div>
+                )
+              })}
               <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-brand-warm-gray">Subtotal</span>
@@ -212,8 +250,15 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                 </div>
                 <div className="flex justify-between font-bold pt-2 border-t border-white/10">
                   <span className="text-white">Total</span>
-                  <span className="text-brand-yellow">{formatPrice(pedido.total)}</span>
+                  <span className="text-brand-yellow">
+                    {totals.hasPendente
+                      ? `${formatPrice(totalMin)} / ${formatPrice(totalMax)}`
+                      : formatPrice(pedido.total)}
+                  </span>
                 </div>
+                {totals.hasPendente && (
+                  <p className="text-xs text-brand-warm-gray text-right">Min (consignado devolvido) / Max (consignado usado)</p>
+                )}
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span className="text-brand-warm-gray">Pagamento</span>
