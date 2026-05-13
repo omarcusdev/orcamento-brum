@@ -3,7 +3,8 @@
 import { requireAdmin } from "@/lib/auth"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
-import { productSchema } from "@/lib/schemas"
+import { productSchema, manualOrderInputSchema, type ManualOrderInput } from "@/lib/schemas"
+import { calculateOrderTotals } from "@/lib/pricing"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
 
 const statusOrder = [
@@ -568,4 +569,168 @@ export const revertOrderStatus = async (pedidoId: string, newStatus: string) => 
 
   revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin")
+}
+
+export const searchClientes = async (query: string) => {
+  const { supabase } = await requireAdmin()
+  const trimmed = query.trim()
+  if (trimmed.length < 2) return []
+  const sanitized = trimmed.replace(/\D/g, "")
+  const filters: string[] = [`nome.ilike.%${trimmed}%`]
+  if (sanitized.length >= 2) {
+    filters.push(`telefone.ilike.%${sanitized}%`)
+    filters.push(`cpf.ilike.%${sanitized}%`)
+  }
+  const { data, error } = await supabase
+    .from("clientes")
+    .select("id, nome, telefone, cpf, email, documento_verificado")
+    .or(filters.join(","))
+    .limit(8)
+  if (error) throw error
+  return data ?? []
+}
+
+export const createManualOrder = async (input: ManualOrderInput) => {
+  const parsed = manualOrderInputSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
+  }
+  const data = parsed.data
+  const { supabase, user } = await requireAdmin()
+
+  let clienteId: string
+  if (data.cliente.kind === "existing") {
+    clienteId = data.cliente.id
+  } else {
+    const cpfDigits = data.cliente.cpf?.replace(/\D/g, "") ?? null
+    const { data: newCliente, error: cliErr } = await supabase
+      .from("clientes")
+      .insert({
+        nome: data.cliente.nome,
+        telefone: data.cliente.telefone,
+        cpf: cpfDigits,
+        email: data.cliente.email ?? null,
+      })
+      .select("id")
+      .single()
+    if (cliErr || !newCliente) {
+      throw new Error(`Erro ao criar cliente: ${cliErr?.message ?? "desconhecido"}`)
+    }
+    clienteId = newCliente.id
+  }
+
+  const productIds = data.items.map((i) => i.produto_id)
+  const { data: produtos, error: produtosErr } = await supabase
+    .from("produtos")
+    .select("id, preco_avista, preco_cartao, preco_segundo_barril, ativo")
+    .in("id", productIds)
+  if (produtosErr || !produtos) throw new Error("Erro ao buscar produtos")
+
+  type ItemRow = {
+    produto_id: string
+    quantidade: number
+    preco_unitario: number
+    subtotal: number
+    is_consignado: boolean
+    consignado_status: "pendente" | null
+  }
+  const itemRows: ItemRow[] = []
+  for (const inputItem of data.items) {
+    const produto = produtos.find((p) => p.id === inputItem.produto_id)
+    if (!produto) throw new Error(`Produto nao encontrado: ${inputItem.produto_id}`)
+    if (!produto.ativo) throw new Error("Produto indisponivel")
+    const firstUnitPrice = data.metodo_pagamento === "cartao" && produto.preco_cartao
+      ? Number(produto.preco_cartao)
+      : Number(produto.preco_avista)
+    const secondUnitPrice = produto.preco_segundo_barril != null
+      ? Number(produto.preco_segundo_barril)
+      : firstUnitPrice
+
+    if (inputItem.is_consignado) {
+      if (inputItem.quantidade !== 2) {
+        throw new Error("Consignado exige quantidade = 2 (1 pago + 1 consignado)")
+      }
+      itemRows.push({
+        produto_id: inputItem.produto_id,
+        quantidade: 1,
+        preco_unitario: firstUnitPrice,
+        subtotal: firstUnitPrice,
+        is_consignado: false,
+        consignado_status: null,
+      })
+      itemRows.push({
+        produto_id: inputItem.produto_id,
+        quantidade: 1,
+        preco_unitario: secondUnitPrice,
+        subtotal: secondUnitPrice,
+        is_consignado: true,
+        consignado_status: "pendente",
+      })
+    } else {
+      const qty = inputItem.quantidade
+      const subtotalLine = qty === 1 ? firstUnitPrice : firstUnitPrice + secondUnitPrice * (qty - 1)
+      const unitAverage = qty > 0 ? subtotalLine / qty : firstUnitPrice
+      itemRows.push({
+        produto_id: inputItem.produto_id,
+        quantidade: qty,
+        preco_unitario: Number(unitAverage.toFixed(2)),
+        subtotal: Number(subtotalLine.toFixed(2)),
+        is_consignado: false,
+        consignado_status: null,
+      })
+    }
+  }
+
+  const totals = calculateOrderTotals(
+    itemRows.map((r) => ({
+      subtotal: r.subtotal,
+      is_consignado: r.is_consignado,
+      consignado_status: r.consignado_status,
+    })),
+  )
+  const subtotal = Number(totals.subtotalMin.toFixed(2))
+  const total = Number((subtotal + data.frete).toFixed(2))
+
+  const { data: pedido, error: pedErr } = await supabase
+    .from("pedidos")
+    .insert({
+      cliente_id: clienteId,
+      status: "confirmado",
+      documento_status: "pendente",
+      endereco: data.endereco,
+      endereco_completo: data.endereco_completo,
+      data_evento: data.data_evento,
+      horario_evento: data.horario_evento,
+      tipo_chopeira: data.tipo_chopeira,
+      rampas_escadas: data.rampas_escadas,
+      observacoes: data.observacoes,
+      subtotal,
+      desconto: 0,
+      frete: data.frete,
+      total,
+      metodo_pagamento: data.metodo_pagamento,
+      pago: data.pago,
+    })
+    .select("id")
+    .single()
+  if (pedErr || !pedido) throw new Error(`Erro ao criar pedido: ${pedErr?.message ?? "desconhecido"}`)
+
+  const { error: itemsErr } = await supabase
+    .from("pedido_itens")
+    .insert(itemRows.map((r) => ({ ...r, pedido_id: pedido.id })))
+  if (itemsErr) {
+    await supabase.from("pedidos").delete().eq("id", pedido.id)
+    throw new Error(`Erro ao inserir itens: ${itemsErr.message}`)
+  }
+
+  await supabase.from("pedido_status_log").insert({
+    pedido_id: pedido.id,
+    status_anterior: null,
+    status_novo: "confirmado",
+    changed_by: user.id,
+  })
+
+  revalidatePath("/admin")
+  revalidatePath("/admin/pedidos")
+  return { pedidoId: pedido.id }
 }
