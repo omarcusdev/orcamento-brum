@@ -15,6 +15,16 @@ const statusOrder = [
   "recolhido",
 ] as const
 
+export const STATUS_FLOW_ORDER = statusOrder
+
+export const canRevertToStatus = (current: string, target: string): boolean => {
+  if (target === "cancelado") return current !== "recolhido" && current !== "cancelado"
+  const currentIndex = statusOrder.indexOf(current as typeof statusOrder[number])
+  const targetIndex = statusOrder.indexOf(target as typeof statusOrder[number])
+  if (currentIndex === -1 || targetIndex === -1) return false
+  return targetIndex < currentIndex
+}
+
 export const advanceOrderStatus = async (pedidoId: string, currentStatus: string) => {
   const { supabase } = await requireAdmin()
   const currentIndex = statusOrder.indexOf(currentStatus as typeof statusOrder[number])
@@ -526,4 +536,36 @@ export const reorderProducts = async (updates: OrdemUpdate[]) => {
   }
   revalidatePath("/admin/catalogo")
   revalidatePath("/")
+}
+
+export const revertOrderStatus = async (pedidoId: string, newStatus: string) => {
+  const { supabase, user } = await requireAdmin()
+
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("status")
+    .eq("id", pedidoId)
+    .single()
+
+  if (!pedido) throw new Error("Pedido nao encontrado")
+  if (!canRevertToStatus(pedido.status, newStatus)) {
+    throw new Error(`Nao pode voltar de ${pedido.status} para ${newStatus}`)
+  }
+
+  const { error: updateError } = await supabase
+    .from("pedidos")
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq("id", pedidoId)
+
+  if (updateError) throw updateError
+
+  await supabase.from("pedido_status_log").insert({
+    pedido_id: pedidoId,
+    status_anterior: pedido.status,
+    status_novo: newStatus,
+    changed_by: user.id,
+  })
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+  revalidatePath("/admin")
 }
