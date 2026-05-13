@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createManualOrder, searchClientes } from "@/lib/admin-actions"
-import AddressAutocomplete, { type AddressData } from "@/components/address-autocomplete"
 import type { Produto } from "@/lib/types"
 import type { ManualOrderInput } from "@/lib/schemas"
 import { calculateOrderTotals } from "@/lib/pricing"
@@ -60,7 +59,6 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   const [selectedCliente, setSelectedCliente] = useState<ClienteResult | null>(null)
   const [newCliente, setNewCliente] = useState({ nome: "", telefone: "", cpf: "", email: "" })
 
-  const [endereco, setEndereco] = useState<AddressData | null>(null)
   const [enderecoText, setEnderecoText] = useState("")
   const [dataEvento, setDataEvento] = useState("")
   const [horarioEvento, setHorarioEvento] = useState("")
@@ -104,7 +102,6 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     setClienteResults([])
     setSelectedCliente(null)
     setNewCliente({ nome: "", telefone: "", cpf: "", email: "" })
-    setEndereco(null)
     setEnderecoText("")
     setDataEvento("")
     setHorarioEvento("")
@@ -122,11 +119,6 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     if (submitting) return
     resetForm()
     onClose()
-  }
-
-  const handleAddressSelect = (addr: AddressData) => {
-    setEndereco(addr)
-    setEnderecoText(addr.formatted)
   }
 
   const addItem = () => {
@@ -196,24 +188,10 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
             email: newCliente.email || null,
           }
 
-      const enderecoCompleto = endereco
-        ? {
-            rua: endereco.rua,
-            numero: endereco.numero,
-            bairro: endereco.bairro,
-            cidade: endereco.cidade,
-            estado: endereco.estado,
-            cep: endereco.cep,
-            complemento: "",
-            lat: endereco.lat,
-            lng: endereco.lng,
-          }
-        : null
-
       const input: ManualOrderInput = {
         cliente,
         endereco: enderecoText,
-        endereco_completo: enderecoCompleto,
+        endereco_completo: null,
         data_evento: dataEvento,
         horario_evento: horarioEvento,
         tipo_chopeira: tipoChopeira,
@@ -311,8 +289,12 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
 
               <section>
                 <h3 className="text-sm font-semibold text-brand-yellow uppercase tracking-wider mb-2">Endereco</h3>
-                <AddressAutocomplete onAddressSelect={handleAddressSelect} inputClassName={inputClass} />
-                {enderecoText && <p className="text-xs text-brand-warm-gray mt-2">{enderecoText}</p>}
+                <textarea
+                  value={enderecoText}
+                  onChange={(e) => setEnderecoText(e.target.value)}
+                  placeholder="Rua, numero, bairro, cidade, UF, CEP"
+                  className={`${inputClass} h-20`}
+                />
               </section>
 
               <section>
