@@ -11,7 +11,10 @@ import FreteInput from "@/components/admin/frete-input"
 import FreteBanner from "@/components/admin/frete-banner"
 import ArchiveToggle from "@/components/admin/archive-toggle"
 import ConsignadoBanner from "@/components/admin/consignado-banner"
+import EditOrderTrigger from "@/components/admin/edit-order-trigger"
+import EditLog from "@/components/admin/edit-log"
 import { calculateOrderTotals } from "@/lib/pricing"
+import type { Produto } from "@/lib/types"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -64,14 +67,27 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
 
   const { data: items } = await supabase
     .from("pedido_itens")
-    .select("id, quantidade, preco_unitario, subtotal, is_consignado, consignado_status, produtos(marca, volume_litros)")
+    .select("id, produto_id, quantidade, preco_unitario, subtotal, is_consignado, consignado_status, produtos(marca, volume_litros)")
     .eq("pedido_id", id)
 
-  const { data: logs } = await supabase
-    .from("pedido_status_log")
-    .select("*")
-    .eq("pedido_id", id)
-    .order("changed_at", { ascending: false })
+  const [{ data: logs }, { data: editLogs }, { data: produtos }] = await Promise.all([
+    supabase
+      .from("pedido_status_log")
+      .select("*")
+      .eq("pedido_id", id)
+      .order("changed_at", { ascending: false }),
+    supabase
+      .from("pedido_edit_log")
+      .select("*")
+      .eq("pedido_id", id)
+      .order("changed_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("produtos")
+      .select("*")
+      .eq("ativo", true)
+      .order("ordem", { ascending: true }),
+  ])
 
   const whatsappLink = `https://wa.me/${pedido.clientes.telefone.replace(/\D/g, "")}`
 
@@ -84,6 +100,31 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
   const totalMin = totals.subtotalMin - (pedido.desconto ?? 0) + (pedido.frete ?? 0)
   const totalMax = totals.subtotalMax - (pedido.desconto ?? 0) + (pedido.frete ?? 0)
   const consignadosPendentes = (items ?? []).filter((i: any) => i.is_consignado && i.consignado_status === "pendente")
+
+  const lockedForEdit = ["entregue", "pago", "recolhido", "cancelado"].includes(pedido.status)
+  const editablePedido = {
+    id: pedido.id,
+    status: pedido.status,
+    data_evento: pedido.data_evento,
+    horario_evento: pedido.horario_evento,
+    endereco: pedido.endereco,
+    endereco_completo: pedido.endereco_completo,
+    observacoes: pedido.observacoes,
+    rampas_escadas: pedido.rampas_escadas,
+    tipo_chopeira: pedido.tipo_chopeira as "gelo" | "eletrica",
+    frete: Number(pedido.frete ?? 0),
+    metodo_pagamento: pedido.metodo_pagamento as "pix" | "cartao" | "dinheiro" | null,
+    pago: !!pedido.pago,
+  }
+  const editableItems = (items ?? []).map((item: any) => ({
+    id: item.id,
+    produto_id: item.produto_id,
+    quantidade: item.quantidade,
+    is_consignado: !!item.is_consignado,
+    consignado_status: item.consignado_status,
+    subtotal: Number(item.subtotal),
+    produtos: Array.isArray(item.produtos) ? item.produtos[0] : item.produtos,
+  }))
 
   return (
     <div>
@@ -279,6 +320,15 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                 frete={pedido.frete ?? 0}
                 dispatchText={buildDispatchText(pedido, items ?? [], pedido.clientes)}
               />
+              {!lockedForEdit && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <EditOrderTrigger
+                    pedido={editablePedido}
+                    items={editableItems}
+                    produtos={(produtos ?? []) as Produto[]}
+                  />
+                </div>
+              )}
               <div className="mt-4 pt-4 border-t border-white/10">
                 <ArchiveToggle pedidoId={pedido.id} arquivado={!!pedido.arquivado_em} />
                 {pedido.arquivado_em && (
@@ -321,6 +371,12 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                 <h2 className="font-display text-lg font-bold text-white tracking-wide mb-4">HISTORICO</h2>
                 <OrderTimeline logs={logs ?? []} />
               </div>
+            </FadeIn>
+          )}
+
+          {(editLogs ?? []).length > 0 && (
+            <FadeIn delay={0.2}>
+              <EditLog entries={(editLogs ?? []) as never} />
             </FadeIn>
           )}
         </div>

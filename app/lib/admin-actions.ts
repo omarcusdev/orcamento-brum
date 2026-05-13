@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
-import { productSchema, manualOrderInputSchema, type ManualOrderInput } from "@/lib/schemas"
+import { productSchema, manualOrderInputSchema, updatePedidoSchema, type ManualOrderInput, type UpdatePedidoInput } from "@/lib/schemas"
 import { calculateOrderTotals } from "@/lib/pricing"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
 
@@ -788,3 +788,195 @@ export const settleConsignado = async (pedidoItemId: string, status: "usado" | "
   revalidatePath(`/admin/pedidos/${item.pedido_id}`)
   revalidatePath("/admin/pedidos")
 }
+
+const LOCKED_EDIT_STATUSES = ["entregue", "pago", "recolhido", "cancelado"]
+
+export const updatePedido = async (pedidoId: string, input: UpdatePedidoInput) => {
+  const parsed = updatePedidoSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
+  }
+  const changes = parsed.data
+  const { supabase, user } = await requireAdmin()
+
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("*")
+    .eq("id", pedidoId)
+    .single()
+  if (!pedido) throw new Error("Pedido nao encontrado")
+  if (LOCKED_EDIT_STATUSES.includes(pedido.status)) {
+    throw new Error(`Pedido em status ${pedido.status} nao pode ser editado`)
+  }
+
+  const diffs: { field: string; old_value: unknown; new_value: unknown }[] = []
+  const updates: Record<string, unknown> = {}
+
+  for (const [key, newValue] of Object.entries(changes)) {
+    if (newValue === undefined) continue
+    const oldValue = (pedido as Record<string, unknown>)[key]
+    if (JSON.stringify(oldValue) === JSON.stringify(newValue)) continue
+    updates[key] = newValue
+    diffs.push({ field: key, old_value: oldValue, new_value: newValue })
+  }
+
+  if (Object.keys(updates).length === 0) return
+
+  if ("frete" in updates) {
+    const desconto = Number(pedido.desconto ?? 0)
+    const subtotal = Number(pedido.subtotal ?? 0)
+    updates.total = Number((subtotal - desconto + Number(updates.frete as number)).toFixed(2))
+  }
+
+  updates.updated_at = new Date().toISOString()
+
+  const { error: updateErr } = await supabase
+    .from("pedidos")
+    .update(updates)
+    .eq("id", pedidoId)
+  if (updateErr) throw updateErr
+
+  await supabase.from("pedido_edit_log").insert(
+    diffs.map((d) => ({ ...d, pedido_id: pedidoId, changed_by: user.id })),
+  )
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+  revalidatePath("/admin/pedidos")
+}
+
+const recalcPedidoTotals = async (pedidoId: string) => {
+  const { supabase } = await requireAdmin()
+  const { data: items } = await supabase
+    .from("pedido_itens")
+    .select("subtotal, is_consignado, consignado_status")
+    .eq("pedido_id", pedidoId)
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("frete, desconto")
+    .eq("id", pedidoId)
+    .single()
+  const totals = calculateOrderTotals((items ?? []).map((i) => ({
+    subtotal: Number(i.subtotal),
+    is_consignado: i.is_consignado,
+    consignado_status: i.consignado_status,
+  })))
+  const newSubtotal = Number(totals.subtotalMin.toFixed(2))
+  const newTotal = Number((newSubtotal - Number(pedido?.desconto ?? 0) + Number(pedido?.frete ?? 0)).toFixed(2))
+  await supabase
+    .from("pedidos")
+    .update({ subtotal: newSubtotal, total: newTotal, updated_at: new Date().toISOString() })
+    .eq("id", pedidoId)
+}
+
+export const addPedidoItem = async (
+  pedidoId: string,
+  produtoId: string,
+  quantidade: number,
+  isConsignado: boolean,
+) => {
+  const { supabase, user } = await requireAdmin()
+
+  const { data: pedido } = await supabase
+    .from("pedidos")
+    .select("status, metodo_pagamento")
+    .eq("id", pedidoId)
+    .single()
+  if (!pedido) throw new Error("Pedido nao encontrado")
+  if (LOCKED_EDIT_STATUSES.includes(pedido.status)) throw new Error("Pedido travado")
+
+  if (isConsignado) {
+    const { count } = await supabase
+      .from("pedido_itens")
+      .select("id", { count: "exact", head: true })
+      .eq("pedido_id", pedidoId)
+      .eq("is_consignado", true)
+    if ((count ?? 0) > 0) throw new Error("Pedido ja tem 1 item consignado")
+  }
+
+  const { data: produto } = await supabase
+    .from("produtos")
+    .select("preco_avista, preco_cartao, preco_segundo_barril")
+    .eq("id", produtoId)
+    .single()
+  if (!produto) throw new Error("Produto nao encontrado")
+
+  const firstUnitPrice = pedido.metodo_pagamento === "cartao" && produto.preco_cartao
+    ? Number(produto.preco_cartao)
+    : Number(produto.preco_avista)
+  const secondUnitPrice = produto.preco_segundo_barril != null
+    ? Number(produto.preco_segundo_barril)
+    : firstUnitPrice
+
+  if (isConsignado) {
+    if (quantidade !== 1) throw new Error("Consignado deve ser inserido como qty=1 separado")
+    const { error } = await supabase.from("pedido_itens").insert({
+      pedido_id: pedidoId,
+      produto_id: produtoId,
+      quantidade: 1,
+      preco_unitario: secondUnitPrice,
+      subtotal: secondUnitPrice,
+      is_consignado: true,
+      consignado_status: "pendente",
+    })
+    if (error) throw error
+  } else {
+    const subtotal = quantidade === 1 ? firstUnitPrice : firstUnitPrice + secondUnitPrice * (quantidade - 1)
+    const unitAverage = quantidade > 0 ? subtotal / quantidade : firstUnitPrice
+    const { error } = await supabase.from("pedido_itens").insert({
+      pedido_id: pedidoId,
+      produto_id: produtoId,
+      quantidade,
+      preco_unitario: Number(unitAverage.toFixed(2)),
+      subtotal: Number(subtotal.toFixed(2)),
+      is_consignado: false,
+      consignado_status: null,
+    })
+    if (error) throw error
+  }
+
+  await recalcPedidoTotals(pedidoId)
+
+  await supabase.from("pedido_edit_log").insert({
+    pedido_id: pedidoId,
+    field: "items.added",
+    old_value: null,
+    new_value: { produto_id: produtoId, quantidade, is_consignado: isConsignado },
+    changed_by: user.id,
+  })
+
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+}
+
+export const removePedidoItem = async (itemId: string) => {
+  const { supabase, user } = await requireAdmin()
+
+  const { data: item } = await supabase
+    .from("pedido_itens")
+    .select("id, pedido_id, produto_id, quantidade, is_consignado, consignado_status, pedidos:pedido_id(status)")
+    .eq("id", itemId)
+    .single()
+  if (!item) throw new Error("Item nao encontrado")
+  const pedidoStatus = Array.isArray(item.pedidos) ? item.pedidos[0]?.status : (item.pedidos as { status?: string } | null)?.status
+  if (pedidoStatus && LOCKED_EDIT_STATUSES.includes(pedidoStatus)) throw new Error("Pedido travado")
+
+  const { error: delErr } = await supabase.from("pedido_itens").delete().eq("id", itemId)
+  if (delErr) throw delErr
+
+  await recalcPedidoTotals(item.pedido_id)
+
+  await supabase.from("pedido_edit_log").insert({
+    pedido_id: item.pedido_id,
+    field: "items.removed",
+    old_value: {
+      id: itemId,
+      produto_id: item.produto_id,
+      quantidade: item.quantidade,
+      is_consignado: item.is_consignado,
+    },
+    new_value: null,
+    changed_by: user.id,
+  })
+
+  revalidatePath(`/admin/pedidos/${item.pedido_id}`)
+}
+
