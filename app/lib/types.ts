@@ -19,7 +19,7 @@ export type Cliente = {
   telefone: string
   email: string | null
   cpf: string | null
-  documento_pessoal_url: string | null
+  documento_pessoal_urls: string[] | null
   comprovante_residencia_url: string | null
   documento_verificado: boolean
   documento_verificado_em: string | null
@@ -28,6 +28,8 @@ export type Cliente = {
 }
 
 export type DocumentoStatus = "pendente" | "enviado" | "verificado"
+
+export type ConsignadoStatus = "pendente" | "usado" | "devolvido"
 
 export type PedidoStatus =
   | "confirmado"
@@ -69,6 +71,18 @@ export type PedidoItem = {
   quantidade: number
   preco_unitario: number
   subtotal: number
+  is_consignado: boolean
+  consignado_status: ConsignadoStatus | null
+}
+
+export type PedidoEditLog = {
+  id: string
+  pedido_id: string
+  field: string
+  old_value: unknown
+  new_value: unknown
+  changed_by: string | null
+  changed_at: string
 }
 
 export type PedidoStatusLog = {

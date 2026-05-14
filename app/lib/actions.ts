@@ -197,9 +197,11 @@ export const getOrdersByCpf = async (rawCpf: string) => {
 }
 
 export const uploadDocuments = async (pedidoId: string, formData: FormData): Promise<{ error: string | null }> => {
-  const pessoal = formData.get("documento_pessoal") as File
-  const residencia = formData.get("comprovante_residencia") as File
-  if (!pessoal || !residencia) return { error: "Ambos os documentos sao obrigatorios" }
+  const pessoalFrente = formData.get("documento_pessoal_frente") as File | null
+  const pessoalVerso = formData.get("documento_pessoal_verso") as File | null
+  const residencia = formData.get("comprovante_residencia") as File | null
+
+  if (!pessoalFrente || !residencia) return { error: "Documento de identidade e comprovante de residencia sao obrigatorios" }
 
   const supabase = createServiceClient()
 
@@ -214,20 +216,30 @@ export const uploadDocuments = async (pedidoId: string, formData: FormData): Pro
 
   const clienteId = pedido.cliente_id
 
-  const { error: err1 } = await supabase.storage
+  const { error: errFrente } = await supabase.storage
     .from("documentos")
-    .upload(`${clienteId}/pessoal`, pessoal, { upsert: true, contentType: pessoal.type })
-  if (err1) return { error: "Erro ao enviar documento pessoal" }
+    .upload(`${clienteId}/pessoal-1`, pessoalFrente, { upsert: true, contentType: pessoalFrente.type })
+  if (errFrente) return { error: "Erro ao enviar foto 1 do documento" }
 
-  const { error: err2 } = await supabase.storage
+  const pessoalUrls = [`${clienteId}/pessoal-1`]
+
+  if (pessoalVerso) {
+    const { error: errVerso } = await supabase.storage
+      .from("documentos")
+      .upload(`${clienteId}/pessoal-2`, pessoalVerso, { upsert: true, contentType: pessoalVerso.type })
+    if (errVerso) return { error: "Erro ao enviar foto 2 do documento" }
+    pessoalUrls.push(`${clienteId}/pessoal-2`)
+  }
+
+  const { error: errResidencia } = await supabase.storage
     .from("documentos")
     .upload(`${clienteId}/residencia`, residencia, { upsert: true, contentType: residencia.type })
-  if (err2) return { error: "Erro ao enviar comprovante de residencia" }
+  if (errResidencia) return { error: "Erro ao enviar comprovante de residencia" }
 
   await supabase
     .from("clientes")
     .update({
-      documento_pessoal_url: `${clienteId}/pessoal`,
+      documento_pessoal_urls: pessoalUrls,
       comprovante_residencia_url: `${clienteId}/residencia`,
     })
     .eq("id", clienteId)

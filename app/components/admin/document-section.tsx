@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { verifyDocument, getDocumentSignedUrl } from "@/lib/admin-actions"
+import { verifyDocument, revertDocumentoVerificacao, getDocumentSignedUrlByPath, getDocumentSignedUrl } from "@/lib/admin-actions"
 
 type DocumentSectionProps = {
   clienteId: string
   pedidoId: string
   documentoStatus: string
-  documentoPessoalUrl: string | null
+  documentoPessoalUrls: string[] | null
   comprovanteResidenciaUrl: string | null
   documentoVerificado: boolean
   documentoVerificadoEm: string | null
@@ -18,7 +18,7 @@ const DocumentSection = ({
   clienteId,
   pedidoId,
   documentoStatus: initialStatus,
-  documentoPessoalUrl,
+  documentoPessoalUrls,
   comprovanteResidenciaUrl,
   documentoVerificado,
   documentoVerificadoEm,
@@ -27,25 +27,51 @@ const DocumentSection = ({
   const [verified, setVerified] = useState(documentoVerificado)
   const [verifiedAt, setVerifiedAt] = useState(documentoVerificadoEm)
   const [verifying, setVerifying] = useState(false)
+  const [reverting, setReverting] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [pessoalUrl, setPessoalUrl] = useState<string | null>(null)
+  const [pessoalSignedUrls, setPessoalSignedUrls] = useState<Record<string, string>>({})
   const [residenciaUrl, setResidenciaUrl] = useState<string | null>(null)
-  const [loadingPessoal, setLoadingPessoal] = useState(false)
+  const [loadingPessoal, setLoadingPessoal] = useState<string | null>(null)
   const [loadingResidencia, setLoadingResidencia] = useState(false)
   const [docError, setDocError] = useState<string | null>(null)
 
-  const handleViewDocument = async (tipo: "pessoal" | "residencia") => {
-    const setUrl = tipo === "pessoal" ? setPessoalUrl : setResidenciaUrl
-    const setLoading = tipo === "pessoal" ? setLoadingPessoal : setLoadingResidencia
-    setLoading(true)
+  const handleViewPessoal = async (storagePath: string) => {
+    setLoadingPessoal(storagePath)
     setDocError(null)
     try {
-      const url = await getDocumentSignedUrl(clienteId, tipo)
-      setUrl(url)
+      const url = await getDocumentSignedUrlByPath(storagePath)
+      setPessoalSignedUrls((prev) => ({ ...prev, [storagePath]: url }))
     } catch {
-      setDocError(`Erro ao carregar ${tipo === "pessoal" ? "documento pessoal" : "comprovante de residencia"}`)
+      setDocError("Erro ao carregar documento pessoal")
     }
-    setLoading(false)
+    setLoadingPessoal(null)
+  }
+
+  const handleViewResidencia = async () => {
+    setLoadingResidencia(true)
+    setDocError(null)
+    try {
+      const url = await getDocumentSignedUrl(clienteId, "residencia")
+      setResidenciaUrl(url)
+    } catch {
+      setDocError("Erro ao carregar comprovante de residencia")
+    }
+    setLoadingResidencia(false)
+  }
+
+  const handleRevertVerification = async () => {
+    if (!confirm("Desfazer verificacao do documento? Sera necessario verificar novamente antes de avancar.")) return
+    setReverting(true)
+    setDocError(null)
+    try {
+      await revertDocumentoVerificacao(clienteId)
+      setVerified(false)
+      setVerifiedAt(null)
+      setStatus("enviado")
+    } catch {
+      setDocError("Erro ao desfazer verificacao")
+    }
+    setReverting(false)
   }
 
   const handleVerify = async () => {
@@ -71,35 +97,68 @@ const DocumentSection = ({
     )
   }
 
-  const renderDocViewer = (
-    label: string,
-    hasUrl: boolean,
-    signedUrl: string | null,
-    isLoading: boolean,
-    tipo: "pessoal" | "residencia"
-  ) => (
+  const renderResidenciaViewer = () => (
     <div>
-      <p className="text-xs text-brand-warm-gray uppercase tracking-wider mb-2">{label}</p>
-      {!hasUrl ? (
+      <p className="text-xs text-brand-warm-gray uppercase tracking-wider mb-2">Comprovante de residencia</p>
+      {!comprovanteResidenciaUrl ? (
         <p className="text-sm text-brand-warm-gray">Nao enviado</p>
-      ) : signedUrl ? (
+      ) : residenciaUrl ? (
         <div>
-          <img src={signedUrl} alt={label} className="max-h-48 rounded-lg border border-white/10" />
-          <a href={signedUrl} target="_blank" rel="noopener noreferrer" className="text-brand-yellow text-sm hover:underline mt-1 inline-block">
+          <img src={residenciaUrl} alt="Comprovante de residencia" className="max-h-48 rounded-lg border border-white/10" />
+          <a href={residenciaUrl} target="_blank" rel="noopener noreferrer" className="text-brand-yellow text-sm hover:underline mt-1 inline-block">
             Abrir em nova aba
           </a>
         </div>
       ) : (
         <button
-          onClick={() => handleViewDocument(tipo)}
-          disabled={isLoading}
+          onClick={handleViewResidencia}
+          disabled={loadingResidencia}
           className="px-4 py-2 bg-brand-dark border border-white/10 rounded-lg text-sm text-brand-gray-light hover:border-brand-yellow/30 transition cursor-pointer disabled:opacity-50"
         >
-          {isLoading ? "Carregando..." : "Ver documento"}
+          {loadingResidencia ? "Carregando..." : "Ver documento"}
         </button>
       )}
     </div>
   )
+
+  const renderPessoalViewer = () => {
+    const urls = documentoPessoalUrls ?? []
+    return (
+      <div>
+        <p className="text-xs text-brand-warm-gray uppercase tracking-wider mb-2">Documento de identidade</p>
+        {urls.length === 0 ? (
+          <p className="text-sm text-brand-warm-gray">Nao enviado</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {urls.map((path, idx) => {
+              const signedUrl = pessoalSignedUrls[path]
+              const isLoading = loadingPessoal === path
+              return (
+                <div key={path}>
+                  {signedUrl ? (
+                    <div>
+                      <img src={signedUrl} alt={`Documento ${idx + 1}`} className="max-h-40 rounded-lg border border-white/10 w-full object-cover" />
+                      <a href={signedUrl} target="_blank" rel="noopener noreferrer" className="text-brand-yellow text-xs hover:underline mt-1 inline-block">
+                        Abrir em nova aba
+                      </a>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleViewPessoal(path)}
+                      disabled={isLoading}
+                      className="w-full px-3 py-2 bg-brand-dark border border-white/10 rounded-lg text-xs text-brand-gray-light hover:border-brand-yellow/30 transition cursor-pointer disabled:opacity-50"
+                    >
+                      {isLoading ? "Carregando..." : `Ver foto ${idx + 1}`}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -107,19 +166,28 @@ const DocumentSection = ({
         <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">DOCUMENTOS</h2>
 
         {verified && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-md border border-green-500/30 bg-green-900/20 mb-4">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
-              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            <span className="text-green-400 text-sm font-medium">
-              Verificados {verifiedAt ? `em ${new Date(verifiedAt).toLocaleDateString("pt-BR")}` : ""}
-            </span>
+          <div className="flex items-center justify-between gap-2 px-4 py-3 rounded-md border border-green-500/30 bg-green-900/20 mb-4">
+            <div className="flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              <span className="text-green-400 text-sm font-medium">
+                Verificados {verifiedAt ? `em ${new Date(verifiedAt).toLocaleDateString("pt-BR")}` : ""}
+              </span>
+            </div>
+            <button
+              onClick={handleRevertVerification}
+              disabled={reverting}
+              className="text-yellow-400 text-xs underline hover:text-yellow-300 disabled:opacity-50"
+            >
+              {reverting ? "..." : "Revisar de novo"}
+            </button>
           </div>
         )}
 
         <div className="space-y-4">
-          {renderDocViewer("Documento pessoal", !!documentoPessoalUrl, pessoalUrl, loadingPessoal, "pessoal")}
-          {renderDocViewer("Comprovante de residencia", !!comprovanteResidenciaUrl, residenciaUrl, loadingResidencia, "residencia")}
+          {renderPessoalViewer()}
+          {renderResidenciaViewer()}
 
           {docError && (
             <p className="text-red-400 text-sm">{docError}</p>

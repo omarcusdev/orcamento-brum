@@ -6,6 +6,7 @@ import type { PedidoStatus } from "@/lib/types"
 import { statusConfig } from "@/components/order-status-badge"
 import { advanceOrderStatus, cancelOrder } from "@/lib/admin-actions"
 import DispatchModal from "@/components/admin/dispatch-modal"
+import RevertStatusModal from "@/components/admin/revert-status-modal"
 
 type StatusActionsProps = {
   pedidoId: string
@@ -26,8 +27,10 @@ const nextStatusMap: Partial<Record<PedidoStatus, PedidoStatus>> = {
 const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispatchText }: StatusActionsProps) => {
   const [loading, setLoading] = useState(false)
   const [showDispatch, setShowDispatch] = useState(false)
+  const [showRevert, setShowRevert] = useState(false)
 
   const nextStatus = nextStatusMap[currentStatus]
+  const canShowRevert = currentStatus !== "confirmado" && currentStatus !== "cancelado"
 
   const handleAdvance = async () => {
     if (currentStatus === "confirmado") {
@@ -47,7 +50,35 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
     setLoading(false)
   }
 
-  if (currentStatus === "recolhido" || currentStatus === "cancelado") return null
+  if (currentStatus === "recolhido" || currentStatus === "cancelado") {
+    if (currentStatus === "cancelado") return null
+    return (
+      <>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-brand-warm-gray">Status atual:</span>
+            <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium border tracking-wide ${statusConfig[currentStatus].color}`}>
+              {statusConfig[currentStatus].label}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowRevert(true)}
+            className="w-full text-sm text-brand-warm-gray hover:text-white border border-white/10 rounded-lg py-2 transition"
+          >
+            Voltar status
+          </button>
+        </div>
+        {showRevert && (
+          <RevertStatusModal
+            pedidoId={pedidoId}
+            currentStatus={currentStatus}
+            onClose={() => setShowRevert(false)}
+          />
+        )}
+      </>
+    )
+  }
 
   const docsVerified = documentoStatus === "verificado"
 
@@ -88,6 +119,16 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
         Cancelar Pedido
       </motion.button>
 
+      {canShowRevert && (
+        <button
+          type="button"
+          onClick={() => setShowRevert(true)}
+          className="w-full text-sm text-brand-warm-gray hover:text-white border border-white/10 rounded-lg py-2 transition"
+        >
+          Voltar status
+        </button>
+      )}
+
       {showDispatch && dispatchText && (
         <DispatchModal
           pedidoId={pedidoId}
@@ -95,6 +136,14 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
           frete={frete}
           documentoStatus={documentoStatus}
           onClose={() => setShowDispatch(false)}
+        />
+      )}
+
+      {showRevert && (
+        <RevertStatusModal
+          pedidoId={pedidoId}
+          currentStatus={currentStatus}
+          onClose={() => setShowRevert(false)}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { calculateLine, getBasePrice } from "./pricing"
+import { calculateLine, getBasePrice, calculateOrderTotals } from "./pricing"
 
 const baseProduct = {
   preco_avista: 500,
@@ -86,5 +86,48 @@ describe("calculateLine", () => {
   it("trunca quantidade fracionaria", () => {
     const line = calculateLine({ ...baseProduct, preco_segundo_barril: 385 }, 2.9)
     expect(line.total).toBe(885)
+  })
+})
+
+describe("calculateOrderTotals", () => {
+  const item = (subtotal: number, is_consignado = false, consignado_status: string | null = null) => ({
+    subtotal,
+    is_consignado,
+    consignado_status,
+  })
+
+  it("retorna total unico quando nao tem consignado", () => {
+    const totals = calculateOrderTotals([item(500), item(500)])
+    expect(totals.subtotalMin).toBe(1000)
+    expect(totals.subtotalMax).toBe(1000)
+    expect(totals.hasPendente).toBe(false)
+  })
+
+  it("expõe min/max quando consignado esta pendente", () => {
+    const totals = calculateOrderTotals([item(500), item(400, true, "pendente")])
+    expect(totals.subtotalMin).toBe(500)
+    expect(totals.subtotalMax).toBe(900)
+    expect(totals.hasPendente).toBe(true)
+  })
+
+  it("inclui consignado no min quando usado", () => {
+    const totals = calculateOrderTotals([item(500), item(400, true, "usado")])
+    expect(totals.subtotalMin).toBe(900)
+    expect(totals.subtotalMax).toBe(900)
+    expect(totals.hasPendente).toBe(false)
+  })
+
+  it("exclui consignado do max e do min quando devolvido", () => {
+    const totals = calculateOrderTotals([item(500), item(400, true, "devolvido")])
+    expect(totals.subtotalMin).toBe(500)
+    expect(totals.subtotalMax).toBe(500)
+    expect(totals.hasPendente).toBe(false)
+  })
+
+  it("zera pra lista vazia", () => {
+    const totals = calculateOrderTotals([])
+    expect(totals.subtotalMin).toBe(0)
+    expect(totals.subtotalMax).toBe(0)
+    expect(totals.hasPendente).toBe(false)
   })
 })

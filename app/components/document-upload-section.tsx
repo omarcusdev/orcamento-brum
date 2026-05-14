@@ -15,17 +15,19 @@ const DocumentUploadSection = ({ pedidoId, documentoStatus }: DocumentUploadSect
 
   useEffect(() => { setStatus(documentoStatus) }, [documentoStatus])
 
-  const [pessoalFile, setPessoalFile] = useState<File | null>(null)
+  const [pessoalFrente, setPessoalFrente] = useState<File | null>(null)
+  const [pessoalVerso, setPessoalVerso] = useState<File | null>(null)
   const [residenciaFile, setResidenciaFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async () => {
-    if (!pessoalFile || !residenciaFile) return
+    if (!pessoalFrente || !residenciaFile) return
     setLoading(true)
     setError(null)
     const formData = new FormData()
-    formData.set("documento_pessoal", pessoalFile)
+    formData.set("documento_pessoal_frente", pessoalFrente)
+    if (pessoalVerso) formData.set("documento_pessoal_verso", pessoalVerso)
     formData.set("comprovante_residencia", residenciaFile)
     const result = await uploadDocuments(pedidoId, formData)
     if (result.error) {
@@ -99,8 +101,20 @@ const DocumentUploadSection = ({ pedidoId, documentoStatus }: DocumentUploadSect
       </div>
 
       <div>
-        <p className="text-sm text-brand-gray-light mb-1.5">Documento pessoal (RG ou CNH) *</p>
-        <DocumentUpload onFileSelect={setPessoalFile} />
+        <p className="text-sm text-brand-gray-light mb-1.5">Documento de identidade *</p>
+        <p className="text-brand-warm-gray text-xs mb-2">
+          Envie frente e verso. RG: 2 fotos. CNH: pode mandar so 1 foto aberta mostrando os dois lados.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-brand-warm-gray mb-1">Foto 1 (frente) *</p>
+            <DocumentUpload onFileSelect={setPessoalFrente} />
+          </div>
+          <div>
+            <p className="text-xs text-brand-warm-gray mb-1">Foto 2 (verso, opcional)</p>
+            <DocumentUpload onFileSelect={setPessoalVerso} />
+          </div>
+        </div>
       </div>
 
       <div>
@@ -114,7 +128,7 @@ const DocumentUploadSection = ({ pedidoId, documentoStatus }: DocumentUploadSect
 
       <motion.button
         onClick={handleSubmit}
-        disabled={loading || !pessoalFile || !residenciaFile}
+        disabled={loading || !pessoalFrente || !residenciaFile}
         whileHover={{ opacity: 0.85 }}
         whileTap={{ scale: 0.97 }}
         className="w-full bg-brand-yellow text-brand-black font-medium py-3 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber disabled:opacity-50 disabled:cursor-not-allowed"
