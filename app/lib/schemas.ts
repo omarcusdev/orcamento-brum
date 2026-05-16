@@ -101,10 +101,7 @@ export const manualOrderInputSchema = z.object({
   metodo_pagamento: z.enum(["pix", "cartao", "dinheiro"]),
   pago: z.boolean(),
   frete: z.number().nonnegative(),
-}).refine(
-  (input) => input.items.filter((i) => i.is_consignado).length <= 1,
-  { message: "No maximo 1 item pode ser consignado" },
-)
+})
 
 export type ManualOrderInput = z.infer<typeof manualOrderInputSchema>
 

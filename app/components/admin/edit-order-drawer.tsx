@@ -119,11 +119,7 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
     setError(null)
     setItemBusy("add")
     try {
-      if (newItemConsignado) {
-        await addPedidoItem(pedido.id, newItemProdutoId, 1, true)
-      } else {
-        await addPedidoItem(pedido.id, newItemProdutoId, newItemQty, false)
-      }
+      await addPedidoItem(pedido.id, newItemProdutoId, newItemQty, newItemConsignado)
       setNewItemQty(1)
       setNewItemConsignado(false)
     } catch (err) {
@@ -134,7 +130,6 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
   }
 
   const handleRemoveItem = async (itemId: string) => {
-    if (!confirm("Remover este item do pedido?")) return
     setError(null)
     setItemBusy(itemId)
     try {
@@ -256,15 +251,14 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
                     <input
                       type="number"
                       min={1}
-                      value={newItemConsignado ? 1 : newItemQty}
-                      disabled={newItemConsignado}
+                      value={newItemQty}
                       onChange={(e) => setNewItemQty(Number(e.target.value))}
                       className={`${inputClass} w-20`}
                     />
                   </div>
                   <label className="flex items-center gap-2 text-xs text-white">
                     <input type="checkbox" checked={newItemConsignado} onChange={(e) => setNewItemConsignado(e.target.checked)} />
-                    Marcar como consignado
+                    Marcar como consignado (paga so se usar)
                   </label>
                   <button
                     onClick={handleAddItem}

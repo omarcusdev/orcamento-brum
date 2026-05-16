@@ -33,23 +33,23 @@ const inputClass = "w-full bg-brand-dark border border-white/10 rounded-lg px-3 
 const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 const computeLineSubtotal = (produto: Produto | undefined, item: DraftItem, metodo: "pix" | "cartao" | "dinheiro") => {
-  if (!produto) return { subtotal: 0, firstUnitPrice: 0, secondUnitPrice: 0 }
+  if (!produto) return { subtotal: 0, firstUnitPrice: 0, secondUnitPrice: 0, unitPrice: 0 }
   const firstUnitPrice = metodo === "cartao" && produto.preco_cartao
     ? Number(produto.preco_cartao)
     : Number(produto.preco_avista)
   const secondUnitPrice = produto.preco_segundo_barril != null
     ? Number(produto.preco_segundo_barril)
     : firstUnitPrice
-  if (item.is_consignado) {
-    return { subtotal: firstUnitPrice + secondUnitPrice, firstUnitPrice, secondUnitPrice }
-  }
   const qty = Math.max(0, item.quantidade)
+  if (item.is_consignado) {
+    return { subtotal: secondUnitPrice * qty, firstUnitPrice, secondUnitPrice, unitPrice: secondUnitPrice }
+  }
   const subtotal = qty === 0
     ? 0
     : qty === 1
       ? firstUnitPrice
       : firstUnitPrice + secondUnitPrice * (qty - 1)
-  return { subtotal, firstUnitPrice, secondUnitPrice }
+  return { subtotal, firstUnitPrice, secondUnitPrice, unitPrice: firstUnitPrice }
 }
 
 const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
@@ -130,7 +130,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item
       const next = { ...item, ...patch }
-      if (next.is_consignado) next.quantidade = 2
+      if (next.quantidade < 1) next.quantidade = 1
       return next
     }))
   }
@@ -148,14 +148,15 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
       ? Number(produto.preco_cartao)
       : Number(produto.preco_avista)
     const secondUnitPrice = produto.preco_segundo_barril != null ? Number(produto.preco_segundo_barril) : firstUnitPrice
+    const qty = Math.max(0, item.quantidade)
 
     if (item.is_consignado) {
-      return [
-        { subtotal: firstUnitPrice, is_consignado: false, consignado_status: null as string | null },
-        { subtotal: secondUnitPrice, is_consignado: true, consignado_status: "pendente" as string | null },
-      ]
+      return Array.from({ length: qty }, () => ({
+        subtotal: secondUnitPrice,
+        is_consignado: true,
+        consignado_status: "pendente" as string | null,
+      }))
     }
-    const qty = Math.max(0, item.quantidade)
     const subtotal = qty === 0 ? 0 : qty === 1 ? firstUnitPrice : firstUnitPrice + secondUnitPrice * (qty - 1)
     return [{ subtotal, is_consignado: false, consignado_status: null as string | null }]
   })
@@ -167,7 +168,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   const canSubmit =
     !submitting &&
     items.length > 0 &&
-    items.every((i) => i.is_consignado ? i.quantidade === 2 : i.quantidade >= 1) &&
+    items.every((i) => i.quantidade >= 1) &&
     !!enderecoText &&
     !!dataEvento &&
     !!horarioEvento &&
@@ -328,8 +329,6 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                   {items.map((item, idx) => {
                     const produto = produtos.find((p) => p.id === item.produto_id)
                     const hasSegundoBarril = produto?.preco_segundo_barril != null
-                    const otherConsignado = items.some((i, j) => j !== idx && i.is_consignado)
-                    const canConsign = hasSegundoBarril && (item.is_consignado || (!otherConsignado))
                     const calc = computeLineSubtotal(produto, item, metodoPagamento)
                     return (
                       <div key={idx} className="bg-brand-dark border border-white/10 rounded-lg p-3 space-y-2">
@@ -339,30 +338,28 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                           </select>
                           <input
                             type="number"
-                            min={item.is_consignado ? 2 : 1}
-                            max={item.is_consignado ? 2 : 100}
+                            min={1}
+                            max={100}
                             value={item.quantidade}
-                            disabled={item.is_consignado}
                             onChange={(e) => updateItem(idx, { quantidade: Number(e.target.value) })}
                             className={`${inputClass} w-20`}
                           />
                           <button onClick={() => removeItem(idx)} className="text-red-400 px-2 hover:bg-red-500/10 rounded">×</button>
                         </div>
                         {hasSegundoBarril && (
-                          <label className={`flex items-center gap-2 text-xs ${canConsign ? "text-white" : "text-brand-warm-gray"}`}>
+                          <label className="flex items-center gap-2 text-xs text-white">
                             <input
                               type="checkbox"
-                              disabled={!canConsign}
                               checked={item.is_consignado}
                               onChange={(e) => updateItem(idx, { is_consignado: e.target.checked })}
                             />
-                            <span>2º barril consignado</span>
-                            <span className="text-brand-warm-gray italic">(so paga se usar)</span>
+                            <span>Consignado</span>
+                            <span className="text-brand-warm-gray italic">(paga so se usar)</span>
                           </label>
                         )}
                         <p className="text-xs text-brand-warm-gray">
                           {item.is_consignado
-                            ? `${formatCurrency(calc.firstUnitPrice)} / ${formatCurrency(calc.subtotal)}`
+                            ? `${item.quantidade}x ${formatCurrency(calc.unitPrice)} = ${formatCurrency(calc.subtotal)} (consignado)`
                             : formatCurrency(calc.subtotal)}
                         </p>
                       </div>

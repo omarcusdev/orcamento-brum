@@ -17,7 +17,6 @@ const ConsignadoBanner = ({ itemId, produtoLabel, subtotal }: Props) => {
   const [error, setError] = useState<string | null>(null)
 
   const handleSettle = async (status: "usado" | "devolvido") => {
-    if (!confirm(`Marcar consignado como ${status}?`)) return
     setLoading(status)
     setError(null)
     try {
