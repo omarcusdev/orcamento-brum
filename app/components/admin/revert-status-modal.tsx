@@ -24,9 +24,6 @@ const RevertStatusModal = ({ pedidoId, currentStatus, onClose }: Props) => {
   const canCancel = currentStatus !== "recolhido" && currentStatus !== "cancelado"
 
   const handleRevert = async (target: PedidoStatus) => {
-    if (!confirm(`Voltar de "${statusConfig[currentStatus].label}" para "${statusConfig[target].label}"?`)) {
-      return
-    }
     setLoading(target)
     setError(null)
     try {
