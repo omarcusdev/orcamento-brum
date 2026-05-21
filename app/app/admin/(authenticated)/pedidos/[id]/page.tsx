@@ -37,7 +37,7 @@ const buildDispatchText = (pedido: any, items: any[], cliente: any) => {
     : pedido.endereco
 
   return [
-    `📍 Data do evento: ${dataFormatted} às ${pedido.horario_evento}`,
+    `📍 Data do evento: ${dataFormatted} às ${pedido.horario_evento.slice(0, 5)}`,
     `◼ Quantidade de Barris: ${itemLines}`,
     `◼ Preferencia de Chopeira: ${pedido.tipo_chopeira}`,
     `◼ Responsavel: ${cliente.nome}`,
