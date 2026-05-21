@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
+import CopyLinkButton from "@/components/copy-link-button"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -21,7 +22,7 @@ const ConfirmacaoPage = async ({ params }: Props) => {
     .select(`
       id, total, subtotal, data_evento, horario_evento, status,
       endereco, tipo_chopeira, metodo_pagamento, observacoes,
-      clientes ( nome, telefone ),
+      clientes ( nome, telefone, email ),
       pedido_itens ( quantidade, preco_unitario, subtotal, produtos ( marca, volume_litros ) )
     `)
     .eq("id", id)
@@ -30,7 +31,7 @@ const ConfirmacaoPage = async ({ params }: Props) => {
   if (!pedido) notFound()
 
   const rawCliente = pedido.clientes as unknown
-  const cliente = (Array.isArray(rawCliente) ? rawCliente[0] : rawCliente) as { nome: string; telefone: string } | null
+  const cliente = (Array.isArray(rawCliente) ? rawCliente[0] : rawCliente) as { nome: string; telefone: string; email: string | null } | null
   const rawItens = (pedido.pedido_itens as unknown[]) || []
   const itens = rawItens.map((item: any) => ({
     ...item,
@@ -52,9 +53,35 @@ const ConfirmacaoPage = async ({ params }: Props) => {
           </div>
           <h1 className="font-display text-4xl text-white uppercase tracking-wider mb-2">Pedido Recebido!</h1>
           <p className="text-brand-warm-gray">
-            Entraremos em contato pelo WhatsApp para confirmar.
+            Vamos confirmar os detalhes pelo WhatsApp em breve.
           </p>
         </div>
+
+        {cliente?.email ? (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-400"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-green-400 font-medium text-sm">Confirmação enviada para o seu email</p>
+              <p className="text-brand-gray-light text-xs mt-0.5 break-all">{cliente.email}</p>
+              <p className="text-brand-warm-gray text-xs mt-1">Não recebeu? Verifique a caixa de spam.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-brand-yellow/10 border border-brand-yellow/30 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-8 h-8 bg-brand-yellow/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-yellow"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-brand-yellow font-medium text-sm">Salve esse link</p>
+              <p className="text-brand-gray-light text-xs mt-1">É o seu comprovante e link de acompanhamento. Salve nos favoritos ou copie pra encontrar depois.</p>
+              <div className="mt-2">
+                <CopyLinkButton path={`/pedido/${pedido.id}`} />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-amber-500/15 border-2 border-amber-500/50 rounded-xl p-5 text-center space-y-3">
           <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">

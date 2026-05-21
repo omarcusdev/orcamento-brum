@@ -2,6 +2,7 @@ import { Resend } from "resend"
 import { createServiceClient } from "@/lib/supabase/service"
 
 const ADMIN_BASE_URL = "https://app-liart-one-77.vercel.app"
+const CUSTOMER_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.alfachopp.com.br"
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
@@ -274,5 +275,267 @@ export const sendNewOrderEmail = async (pedidoId: string) => {
     }
   } catch (err) {
     console.error("[email-notificacao] erro inesperado:", err)
+  }
+}
+
+const renderCustomerHtml = (data: {
+  pedidoId: string
+  clienteNome: string
+  dataEvento: string
+  horarioEvento: string
+  endereco: string
+  tipoChopeira: string
+  itens: { qtd: number; descricao: string; subtotal: number }[]
+  subtotal: number
+  frete: number
+  total: number
+  metodoPagamento: string | null
+  observacoes: string | null
+}) => {
+  const itensRows = data.itens
+    .map(
+      (i) => `
+        <tr>
+          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;">${i.qtd}× ${i.descricao}</td>
+          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;text-align:right;">${formatPrice(i.subtotal)}</td>
+        </tr>`
+    )
+    .join("")
+
+  const obsBlock = data.observacoes
+    ? `<tr><td colspan="2" style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;line-height:1.5;"><strong>Observações:</strong> ${data.observacoes}</td></tr>`
+    : ""
+
+  const freteLine = data.frete > 0 ? formatPrice(data.frete) : "a definir"
+  const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
+  const trackingUrl = `${CUSTOMER_BASE_URL}/pedido/${data.pedidoId}`
+  const firstName = data.clienteNome.split(" ")[0]
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Recebemos seu pedido</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f0e8;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f0e8" style="background-color:#f5f0e8;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;">
+        <tr>
+          <td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:24px 32px;border-top-left-radius:8px;border-top-right-radius:8px;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#e8b912;letter-spacing:2px;text-transform:uppercase;">ALFA Chopp Delivery</p>
+            <h1 style="margin:8px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;color:#ffffff;line-height:1.2;">Recebemos seu pedido!</h1>
+            <p style="margin:6px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#b5afa6;">#${data.pedidoId.slice(0, 8)}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <p style="margin:0 0 12px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.5;">Olá, ${firstName}!</p>
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;line-height:1.6;">Recebemos seu pedido e estamos verificando os detalhes. Vamos te confirmar pelo WhatsApp em breve.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#fef6e0" style="background-color:#fef6e0;border-radius:8px;border:1px solid #f0d99b;">
+              <tr>
+                <td style="padding:16px 20px;">
+                  <p style="margin:0 0 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8a6b00;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Próximo passo</p>
+                  <p style="margin:0 0 12px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.5;">Envie seu documento pessoal e comprovante de residência para liberar o pedido.</p>
+                  <a href="${trackingUrl}" target="_blank" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8a6b00;font-weight:bold;text-decoration:underline;">Enviar documentos →</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 24px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td colspan="2" style="padding:12px 0 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a8278;letter-spacing:1px;text-transform:uppercase;">Detalhes do pedido</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;width:120px;">Evento</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;vertical-align:top;">Endereço</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${data.endereco}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Chopeira</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;text-transform:capitalize;">${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Pagamento</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${pagamentoLabel}</td>
+              </tr>
+              ${obsBlock}
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;border-top:1px solid #eeeeee;">
+              <tr>
+                <td colspan="2" style="padding-top:16px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a8278;letter-spacing:1px;text-transform:uppercase;">Itens</td>
+              </tr>
+              ${itensRows}
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-top:1px solid #eeeeee;">
+              <tr>
+                <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Subtotal</td>
+                <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${formatPrice(data.subtotal)}</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Frete</td>
+                <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${freteLine}</td>
+              </tr>
+              <tr>
+                <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#1a1a1a;font-weight:bold;">Total</td>
+                <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:20px;color:#d4a017;font-weight:bold;text-align:right;">${formatPrice(data.total)}</td>
+              </tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
+              <tr>
+                <td align="center">
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td bgcolor="#e8b912" style="background-color:#e8b912;border-radius:6px;">
+                        <a href="${trackingUrl}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;font-weight:bold;text-decoration:none;letter-spacing:0.5px;">Acompanhar pedido →</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:12px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a8278;line-height:1.5;">Salve esse link — é o seu comprovante.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 24px 32px;border-top:1px solid #eeeeee;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8278;text-align:center;line-height:1.5;">Em caso de dúvidas, responda esse email ou aguarde nosso contato pelo WhatsApp.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`
+}
+
+const renderCustomerText = (data: {
+  pedidoId: string
+  clienteNome: string
+  dataEvento: string
+  horarioEvento: string
+  endereco: string
+  tipoChopeira: string
+  itens: { qtd: number; descricao: string; subtotal: number }[]
+  subtotal: number
+  frete: number
+  total: number
+  metodoPagamento: string | null
+  observacoes: string | null
+}) => {
+  const trackingUrl = `${CUSTOMER_BASE_URL}/pedido/${data.pedidoId}`
+  const freteLine = data.frete > 0 ? formatPrice(data.frete) : "a definir"
+  const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
+  const firstName = data.clienteNome.split(" ")[0]
+  const lines = [
+    `Olá, ${firstName}!`,
+    "",
+    `Recebemos seu pedido #${data.pedidoId.slice(0, 8)}. Vamos confirmar os detalhes pelo WhatsApp em breve.`,
+    "",
+    "Próximo passo: envie seu documento pessoal e comprovante de residência na página do pedido.",
+    "",
+    `Evento: ${formatDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
+    `Endereço: ${data.endereco}`,
+    `Chopeira: ${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}`,
+    `Pagamento: ${pagamentoLabel}`,
+    "",
+    "Itens:",
+    ...data.itens.map((i) => `  ${i.qtd}× ${i.descricao} — ${formatPrice(i.subtotal)}`),
+    "",
+    `Subtotal: ${formatPrice(data.subtotal)}`,
+    `Frete: ${freteLine}`,
+    `Total: ${formatPrice(data.total)}`,
+  ]
+  if (data.observacoes) lines.push("", `Observações: ${data.observacoes}`)
+  lines.push("", `Acompanhar pedido: ${trackingUrl}`, "Salve esse link — é o seu comprovante.")
+  return lines.join("\n")
+}
+
+export const sendCustomerOrderConfirmation = async (pedidoId: string) => {
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[email-cliente] RESEND_API_KEY ausente — pulando envio")
+    return
+  }
+
+  try {
+    const supabase = createServiceClient()
+
+    const { data: pedido, error: pedidoErr } = await supabase
+      .from("pedidos")
+      .select("*, clientes(nome, telefone, email)")
+      .eq("id", pedidoId)
+      .single()
+
+    if (pedidoErr || !pedido) {
+      console.error("[email-cliente] pedido não encontrado:", pedidoId, pedidoErr)
+      return
+    }
+
+    const cliente = Array.isArray(pedido.clientes) ? pedido.clientes[0] : pedido.clientes
+    const clienteEmail = cliente?.email?.trim()
+    if (!clienteEmail) return
+
+    const { data: rawItems } = await supabase
+      .from("pedido_itens")
+      .select("quantidade, subtotal, produtos(marca, volume_litros)")
+      .eq("pedido_id", pedidoId)
+
+    const itens = (rawItems ?? []).map((row) => {
+      const produto = Array.isArray(row.produtos) ? row.produtos[0] : row.produtos
+      return {
+        qtd: row.quantidade,
+        descricao: produto ? `${produto.marca} ${produto.volume_litros}L` : "Item",
+        subtotal: row.subtotal,
+      }
+    })
+
+    const clienteNome = cliente?.nome ?? "Cliente"
+
+    const payload = {
+      pedidoId,
+      clienteNome,
+      dataEvento: pedido.data_evento,
+      horarioEvento: pedido.horario_evento,
+      endereco: pedido.endereco,
+      tipoChopeira: pedido.tipo_chopeira,
+      itens,
+      subtotal: pedido.subtotal,
+      frete: pedido.frete,
+      total: pedido.total,
+      metodoPagamento: pedido.metodo_pagamento,
+      observacoes: pedido.observacoes,
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM ?? "ALFA Chopp <chopp@mail.ozapgpt.com.br>",
+      to: [clienteEmail],
+      subject: `Recebemos seu pedido — ALFA Chopp Delivery`,
+      html: renderCustomerHtml(payload),
+      text: renderCustomerText(payload),
+    })
+
+    if (result.error) {
+      console.error("[email-cliente] erro Resend:", result.error)
+    }
+  } catch (err) {
+    console.error("[email-cliente] erro inesperado:", err)
   }
 }
