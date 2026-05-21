@@ -26,6 +26,7 @@ type OrdersListProps = {
 }
 
 type ViewMode = "ativos" | "arquivados"
+type SortMode = "recente" | "evento"
 
 const normalizeOrders = (raw: unknown[]) =>
   raw.map((row) => {
@@ -41,6 +42,7 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
   const [filter, setFilter] = useState<PedidoStatus | "todos">("todos")
   const [search, setSearch] = useState("")
   const [view, setView] = useState<ViewMode>("ativos")
+  const [sort, setSort] = useState<SortMode>("recente")
 
   useEffect(() => {
     const supabase = createClient()
@@ -84,11 +86,17 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
     return acc
   }, {})
 
-  const filtered = visibleByView.filter((order) => {
-    const matchesFilter = filter === "todos" || order.status === filter
-    const matchesSearch = search === "" || order.clientes.nome.toLowerCase().includes(search.toLowerCase()) || order.endereco.toLowerCase().includes(search.toLowerCase())
-    return matchesFilter && matchesSearch
-  })
+  const filtered = visibleByView
+    .filter((order) => {
+      const matchesFilter = filter === "todos" || order.status === filter
+      const matchesSearch = search === "" || order.clientes.nome.toLowerCase().includes(search.toLowerCase()) || order.endereco.toLowerCase().includes(search.toLowerCase())
+      return matchesFilter && matchesSearch
+    })
+    .slice()
+    .sort((a, b) => {
+      if (sort === "recente") return b.created_at.localeCompare(a.created_at)
+      return (a.data_evento + a.horario_evento).localeCompare(b.data_evento + b.horario_evento)
+    })
 
   const ativosCount = orders.filter((o) => o.arquivado_em == null).length
   const arquivadosCount = orders.length - ativosCount
@@ -108,6 +116,22 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 px-4 py-2.5 rounded-lg bg-brand-surface border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
         />
+        <div className="inline-flex rounded-lg bg-brand-surface border border-white/10 p-0.5 self-stretch sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setSort("recente")}
+            className={`px-3 py-2 rounded-md text-xs font-semibold transition cursor-pointer ${sort === "recente" ? "bg-brand-yellow text-brand-black" : "text-brand-gray-light hover:text-white"}`}
+          >
+            Recentes
+          </button>
+          <button
+            type="button"
+            onClick={() => setSort("evento")}
+            className={`px-3 py-2 rounded-md text-xs font-semibold transition cursor-pointer ${sort === "evento" ? "bg-brand-yellow text-brand-black" : "text-brand-gray-light hover:text-white"}`}
+          >
+            Próximo evento
+          </button>
+        </div>
         <div className="inline-flex rounded-lg bg-brand-surface border border-white/10 p-0.5 self-stretch sm:self-auto">
           <button
             type="button"
