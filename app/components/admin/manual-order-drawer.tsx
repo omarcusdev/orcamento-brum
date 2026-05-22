@@ -41,9 +41,6 @@ const computeLineSubtotal = (produto: Produto | undefined, item: DraftItem, meto
     ? Number(produto.preco_segundo_barril)
     : firstUnitPrice
   const qty = Math.max(0, item.quantidade)
-  if (item.is_consignado) {
-    return { subtotal: secondUnitPrice * qty, firstUnitPrice, secondUnitPrice, unitPrice: secondUnitPrice }
-  }
   const subtotal = qty === 0
     ? 0
     : qty === 1
@@ -151,8 +148,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     const qty = Math.max(0, item.quantidade)
 
     if (item.is_consignado) {
-      return Array.from({ length: qty }, () => ({
-        subtotal: secondUnitPrice,
+      return Array.from({ length: qty }, (_, i) => ({
+        subtotal: i === 0 ? firstUnitPrice : secondUnitPrice,
         is_consignado: true,
         consignado_status: "pendente" as string | null,
       }))
@@ -359,7 +356,9 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                         )}
                         <p className="text-xs text-brand-warm-gray">
                           {item.is_consignado
-                            ? `${item.quantidade}x ${formatCurrency(calc.unitPrice)} = ${formatCurrency(calc.subtotal)} (consignado)`
+                            ? item.quantidade > 1
+                              ? `${formatCurrency(calc.firstUnitPrice)} + ${item.quantidade - 1}x ${formatCurrency(calc.secondUnitPrice)} = ${formatCurrency(calc.subtotal)} (consignado)`
+                              : `${formatCurrency(calc.subtotal)} (consignado)`
                             : formatCurrency(calc.subtotal)}
                         </p>
                       </div>

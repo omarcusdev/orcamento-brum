@@ -633,11 +633,12 @@ export const createManualOrder = async (input: ManualOrderInput) => {
     if (inputItem.is_consignado) {
       const consignadoQty = Math.max(1, Math.floor(inputItem.quantidade))
       for (let i = 0; i < consignadoQty; i += 1) {
+        const unitPrice = i === 0 ? firstUnitPrice : secondUnitPrice
         itemRows.push({
           produto_id: inputItem.produto_id,
           quantidade: 1,
-          preco_unitario: secondUnitPrice,
-          subtotal: secondUnitPrice,
+          preco_unitario: unitPrice,
+          subtotal: unitPrice,
           is_consignado: true,
           consignado_status: "pendente",
         })
@@ -874,15 +875,18 @@ export const addPedidoItem = async (
 
   if (isConsignado) {
     const consignadoQty = Math.max(1, Math.floor(quantidade))
-    const rows = Array.from({ length: consignadoQty }, () => ({
-      pedido_id: pedidoId,
-      produto_id: produtoId,
-      quantidade: 1,
-      preco_unitario: secondUnitPrice,
-      subtotal: secondUnitPrice,
-      is_consignado: true,
-      consignado_status: "pendente" as const,
-    }))
+    const rows = Array.from({ length: consignadoQty }, (_, i) => {
+      const unitPrice = i === 0 ? firstUnitPrice : secondUnitPrice
+      return {
+        pedido_id: pedidoId,
+        produto_id: produtoId,
+        quantidade: 1,
+        preco_unitario: unitPrice,
+        subtotal: unitPrice,
+        is_consignado: true,
+        consignado_status: "pendente" as const,
+      }
+    })
     const { error } = await supabase.from("pedido_itens").insert(rows)
     if (error) throw error
   } else {
