@@ -33,6 +33,20 @@ const docStatusConfig: Record<string, { label: string; className: string }> = {
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
+const formatRecebidoEm = (isoDate: string) => {
+  const created = new Date(isoDate)
+  const diffMs = Date.now() - created.getTime()
+  const diffMin = Math.floor(diffMs / 60_000)
+  if (diffMin < 1) return "agora"
+  if (diffMin < 60) return `há ${diffMin}min`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `há ${diffHr}h`
+  const diffDays = Math.floor(diffHr / 24)
+  if (diffDays === 1) return "ontem"
+  if (diffDays < 7) return `há ${diffDays} dias`
+  return created.toLocaleDateString("pt-BR")
+}
+
 const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
   const [busy, setBusy] = useState(false)
   const arquivado = !!pedido.arquivado_em
@@ -71,7 +85,10 @@ const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
         <div className="flex items-start justify-between mb-2">
           <div>
             <p className="font-semibold text-white">{pedido.clientes.nome}</p>
-            <p className="text-xs text-brand-warm-gray">{pedido.clientes.telefone}</p>
+            <p className="text-xs text-brand-warm-gray">
+              {pedido.clientes.telefone}
+              <span className="text-brand-warm-gray/60"> · Recebido {formatRecebidoEm(pedido.created_at)}</span>
+            </p>
           </div>
           <OrderStatusBadge status={pedido.status as PedidoStatus} />
         </div>
