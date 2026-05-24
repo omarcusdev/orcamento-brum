@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { createClient } from "@/lib/supabase/client"
+import { Button, Input, fieldLabelClass } from "@/components/ui"
 
 const LoginForm = () => {
   const router = useRouter()
@@ -64,26 +65,12 @@ const LoginForm = () => {
         className="bg-brand-surface rounded-2xl p-6 border border-white/10 space-y-4"
       >
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-brand-gray-light mb-1">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            className="w-full px-4 py-3 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-white placeholder-brand-warm-gray"
-            placeholder="seu@email.com"
-          />
+          <label htmlFor="email" className={fieldLabelClass}>Email</label>
+          <Input id="email" name="email" type="email" required placeholder="seu@email.com" />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-brand-gray-light mb-1">Senha</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            className="w-full px-4 py-3 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-white placeholder-brand-warm-gray"
-            placeholder="••••••••"
-          />
+          <label htmlFor="password" className={fieldLabelClass}>Senha</label>
+          <Input id="password" name="password" type="password" required placeholder="••••••••" />
         </div>
         <AnimatePresence>
           {error && (
@@ -97,15 +84,9 @@ const LoginForm = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.button
-          type="submit"
-          disabled={loading}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full bg-brand-yellow text-brand-black font-bold py-3 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} fullWidth size="lg">
           {loading ? "Entrando..." : "Entrar"}
-        </motion.button>
+        </Button>
       </motion.form>
     </motion.div>
   )

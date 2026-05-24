@@ -21,6 +21,8 @@ import type { Produto } from "@/lib/types"
 import { reorderProducts, toggleProductActive } from "@/lib/admin-actions"
 import { recomputeOrdens } from "@/lib/admin-ordem"
 import ProductForm from "@/components/admin/product-form"
+import { Plus } from "lucide-react"
+import { Button } from "@/components/ui"
 import ProductCardRow from "@/components/admin/product-card-row"
 import DeleteProductModal from "@/components/admin/delete-product-modal"
 
@@ -147,14 +149,10 @@ const ProductList = ({ produtos: initialProdutos }: ProductListProps) => {
         className="flex justify-between items-center mb-6"
       >
         <h1 className="font-display text-3xl font-bold text-white tracking-wide">CATALOGO</h1>
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => { setEditingProduct(undefined); setShowForm(true) }}
-          className="bg-brand-yellow text-brand-black font-semibold px-4 py-2 rounded-lg hover:brightness-110 transition cursor-pointer"
-        >
-          + Novo Produto
-        </motion.button>
+        <Button onClick={() => { setEditingProduct(undefined); setShowForm(true) }}>
+          <Plus className="h-4 w-4" />
+          Novo Produto
+        </Button>
       </motion.div>
       <motion.div
         initial={{ opacity: 0 }}

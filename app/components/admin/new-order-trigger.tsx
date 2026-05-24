@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { Plus } from "lucide-react"
 import ManualOrderDrawer from "@/components/admin/manual-order-drawer"
+import { Button } from "@/components/ui"
 import type { Produto } from "@/lib/types"
 
 type Props = {
@@ -13,12 +15,10 @@ const NewOrderTrigger = ({ produtos }: Props) => {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="bg-brand-yellow text-brand-black font-bold px-4 py-2 rounded-lg text-sm hover:brightness-110 transition cursor-pointer"
-      >
-        + Novo pedido manual
-      </button>
+      <Button onClick={() => setOpen(true)}>
+        <Plus className="h-4 w-4" />
+        Novo pedido manual
+      </Button>
       <ManualOrderDrawer open={open} onClose={() => setOpen(false)} produtos={produtos} />
     </>
   )

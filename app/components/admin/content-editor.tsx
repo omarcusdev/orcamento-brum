@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { saveConteudo } from "@/lib/admin-actions"
+import { Button } from "@/components/ui"
 import type { HeroContent, FeaturesContent, FaqContent, FooterContent, FeatureItem, FaqItem } from "@/lib/types"
 
 const ICON_OPTIONS = [
@@ -173,13 +174,9 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
                 <input value={hero.cta_whatsapp_texto} onChange={(e) => setHero({ ...hero, cta_whatsapp_texto: e.target.value })} className={inputClassName} />
               </div>
             </div>
-            <button
-              onClick={() => handleSave("hero", hero as unknown as Record<string, unknown>)}
-              disabled={saving}
-              className="px-6 py-2.5 bg-brand-yellow text-brand-black font-bold rounded-lg text-sm hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-            >
+            <Button onClick={() => handleSave("hero", hero as unknown as Record<string, unknown>)} disabled={saving}>
               {saving ? "Salvando..." : "Salvar Hero"}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -214,13 +211,9 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
             ))}
             <button onClick={addFeatureItem} className="text-brand-yellow text-sm font-medium hover:text-brand-amber transition cursor-pointer">+ Adicionar item</button>
             <div>
-              <button
-                onClick={() => handleSave("features", features as unknown as Record<string, unknown>)}
-                disabled={saving}
-                className="px-6 py-2.5 bg-brand-yellow text-brand-black font-bold rounded-lg text-sm hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-              >
+              <Button onClick={() => handleSave("features", features as unknown as Record<string, unknown>)} disabled={saving}>
                 {saving ? "Salvando..." : "Salvar Features"}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -249,13 +242,9 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
             ))}
             <button onClick={addFaqItem} className="text-brand-yellow text-sm font-medium hover:text-brand-amber transition cursor-pointer">+ Adicionar pergunta</button>
             <div>
-              <button
-                onClick={() => handleSave("faq", faq as unknown as Record<string, unknown>)}
-                disabled={saving}
-                className="px-6 py-2.5 bg-brand-yellow text-brand-black font-bold rounded-lg text-sm hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-              >
+              <Button onClick={() => handleSave("faq", faq as unknown as Record<string, unknown>)} disabled={saving}>
                 {saving ? "Salvando..." : "Salvar FAQ"}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -280,13 +269,9 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
             ))}
             <button onClick={addFooterLink} className="text-brand-yellow text-sm font-medium hover:text-brand-amber transition cursor-pointer">+ Adicionar link</button>
             <div>
-              <button
-                onClick={() => handleSave("footer", footer as unknown as Record<string, unknown>)}
-                disabled={saving}
-                className="px-6 py-2.5 bg-brand-yellow text-brand-black font-bold rounded-lg text-sm hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-              >
+              <Button onClick={() => handleSave("footer", footer as unknown as Record<string, unknown>)} disabled={saving}>
                 {saving ? "Salvando..." : "Salvar Footer"}
-              </button>
+              </Button>
             </div>
           </div>
         )}

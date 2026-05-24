@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react"
 import { GoogleMap, useJsApiLoader, Marker, Circle, Polygon, DrawingManager } from "@react-google-maps/api"
 import { saveDeliveryArea, createExclusionZone, deleteExclusionZone, renameExclusionZone } from "@/lib/admin-actions"
+import { Button, Input, fieldLabelClass } from "@/components/ui"
 import type { ZonaExclusao } from "@/lib/types"
 
 const libraries: ("places" | "drawing")[] = ["places", "drawing"]
@@ -112,23 +113,19 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
       <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
         <div className="flex items-end gap-4 mb-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-brand-gray-light mb-1.5">Raio de entrega (km)</label>
-            <input
+            <label className={fieldLabelClass}>Raio de entrega (km)</label>
+            <Input
               type="number"
+              inputMode="numeric"
               value={radius}
               onChange={(e) => setRadius(Number(e.target.value))}
               min={1}
               max={200}
-              className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white"
             />
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-2 bg-brand-yellow text-brand-black font-bold rounded-lg text-sm hover:brightness-110 transition disabled:opacity-50 cursor-pointer"
-          >
-            {saving ? "Salvando..." : "Salvar Area"}
-          </button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Salvando..." : "Salvar Área"}
+          </Button>
         </div>
         {message && <p className={`text-sm ${message.includes("Erro") ? "text-red-400" : "text-green-400"}`}>{message}</p>}
       </div>
@@ -224,12 +221,9 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
                     }}
                     className="flex-1 bg-transparent text-sm text-brand-gray-light placeholder-brand-warm-gray/60 focus:outline-none focus:text-white"
                   />
-                  <button
-                    onClick={() => handleDeleteZone(zone.id)}
-                    className="ml-3 text-red-400 text-sm hover:text-red-300 transition cursor-pointer"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteZone(zone.id)} className="ml-3 text-red-400 hover:text-red-300">
                     Remover
-                  </button>
+                  </Button>
                 </div>
               )
             })}

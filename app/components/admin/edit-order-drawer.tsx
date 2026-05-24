@@ -2,9 +2,21 @@
 
 import { useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { RefreshCcw, X } from "lucide-react"
 import { updatePedido, addPedidoItem, removePedidoItem, updatePedidoItem } from "@/lib/admin-actions"
 import AddressAutocomplete, { type AddressData } from "@/components/address-autocomplete"
 import { calculateOrderTotals } from "@/lib/pricing"
+import {
+  Button,
+  Checkbox,
+  Input,
+  MoneyInput,
+  NumberStepper,
+  Segmented,
+  Select,
+  Textarea,
+  fieldLabelClass,
+} from "@/components/ui"
 import type { Produto } from "@/lib/types"
 import type { UpdatePedidoInput } from "@/lib/schemas"
 
@@ -55,40 +67,7 @@ type Props = {
 
 const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
-const inputClass = "w-full bg-brand-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-brand-warm-gray focus:border-brand-yellow/40 focus:outline-none"
-
 const sectionHeaderClass = "text-xs font-semibold uppercase tracking-[0.18em] text-brand-yellow/80 mb-3 pb-1.5 border-b border-white/10"
-
-type SegmentedOption<T extends string> = { value: T; label: string }
-
-const Segmented = <T extends string>({
-  value,
-  options,
-  onChange,
-  ariaLabel,
-}: {
-  value: T
-  options: SegmentedOption<T>[]
-  onChange: (v: T) => void
-  ariaLabel: string
-}) => (
-  <div role="radiogroup" aria-label={ariaLabel} className="inline-flex w-full rounded-lg bg-brand-dark border border-white/10 p-0.5">
-    {options.map((opt) => (
-      <button
-        key={opt.value}
-        type="button"
-        role="radio"
-        aria-checked={value === opt.value}
-        onClick={() => onChange(opt.value)}
-        className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
-          value === opt.value ? "bg-brand-yellow text-brand-black" : "text-brand-gray-light hover:text-white"
-        }`}
-      >
-        {opt.label}
-      </button>
-    ))}
-  </div>
-)
 
 const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
   const original = useMemo(
@@ -287,7 +266,15 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
                   </span>
                 )}
               </div>
-              <button onClick={onClose} disabled={saving} className="text-brand-warm-gray hover:text-white text-2xl leading-none disabled:opacity-50 cursor-pointer">×</button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                aria-label="Fechar"
+                className="text-brand-warm-gray hover:text-white disabled:opacity-50 cursor-pointer p-1 rounded hover:bg-white/5 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </header>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -296,16 +283,16 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[11px] text-brand-warm-gray block mb-1 uppercase tracking-wider">Data</label>
-                      <input type="date" value={dataEvento} onChange={(e) => setDataEvento(e.target.value)} className={inputClass} />
+                      <label className={fieldLabelClass}>Data</label>
+                      <Input type="date" value={dataEvento} onChange={(e) => setDataEvento(e.target.value)} />
                     </div>
                     <div>
-                      <label className="text-[11px] text-brand-warm-gray block mb-1 uppercase tracking-wider">Horario</label>
-                      <input type="time" value={horarioEvento} onChange={(e) => setHorarioEvento(e.target.value)} className={inputClass} />
+                      <label className={fieldLabelClass}>Horário</label>
+                      <Input type="time" value={horarioEvento} onChange={(e) => setHorarioEvento(e.target.value)} />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[11px] text-brand-warm-gray block mb-1 uppercase tracking-wider">Chopeira</label>
+                    <label className={fieldLabelClass}>Chopeira</label>
                     <Segmented
                       value={tipoChopeira}
                       onChange={setTipoChopeira}
@@ -316,39 +303,35 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
                       ]}
                     />
                   </div>
-                  <textarea placeholder="Rampas / escadas (opcional)" value={rampasEscadas} onChange={(e) => setRampasEscadas(e.target.value)} className={`${inputClass} h-16 resize-none`} />
-                  <textarea placeholder="Observações (opcional)" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className={`${inputClass} h-16 resize-none`} />
+                  <Textarea placeholder="Rampas / escadas (opcional)" value={rampasEscadas} onChange={(e) => setRampasEscadas(e.target.value)} className="h-16" />
+                  <Textarea placeholder="Observações (opcional)" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className="h-16" />
                 </div>
               </section>
 
               <section>
                 <h3 className={sectionHeaderClass}>Endereço</h3>
                 <div className="space-y-2">
-                  <input
+                  <Input
                     type="text"
                     value={endereco}
                     onChange={(e) => setEndereco(e.target.value)}
                     placeholder="Rua, número, bairro..."
-                    className={inputClass}
                   />
                   {showAddressAutocomplete ? (
                     <div className="space-y-2 bg-brand-dark/50 border border-brand-yellow/20 rounded-lg p-2">
-                      <AddressAutocomplete onAddressSelect={handleAddressSelect} inputClassName={inputClass} />
-                      <button
-                        type="button"
-                        onClick={() => setShowAddressAutocomplete(false)}
-                        className="text-[11px] text-brand-warm-gray hover:text-white uppercase tracking-wider cursor-pointer"
-                      >
+                      <AddressAutocomplete onAddressSelect={handleAddressSelect} inputClassName="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 text-sm text-white placeholder-brand-warm-gray/70 focus:border-brand-yellow/40 focus:ring-1 focus:ring-brand-yellow/30 outline-none" />
+                      <Button variant="ghost" size="sm" onClick={() => setShowAddressAutocomplete(false)}>
                         Cancelar busca
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setShowAddressAutocomplete(true)}
-                      className="text-[11px] text-brand-yellow/90 hover:text-brand-yellow uppercase tracking-wider cursor-pointer"
+                      className="text-[11px] text-brand-yellow/90 hover:text-brand-yellow uppercase tracking-wider cursor-pointer inline-flex items-center gap-1.5"
                     >
-                      ↻ Trocar via Google
+                      <RefreshCcw className="h-3 w-3" />
+                      Trocar via Google
                     </button>
                   )}
                 </div>
@@ -369,31 +352,27 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
                   ))}
                 </ul>
 
-                <div className="mt-3 bg-brand-dark border border-white/10 rounded-lg p-3 space-y-2">
+                <div className="mt-3 bg-brand-dark border border-white/10 rounded-lg p-3 space-y-2.5">
                   <p className="text-[11px] text-brand-warm-gray uppercase tracking-wider">Adicionar item</p>
                   <div className="flex gap-2">
-                    <select value={newItemProdutoId} onChange={(e) => setNewItemProdutoId(e.target.value)} className={`${inputClass} flex-1`}>
+                    <Select value={newItemProdutoId} onChange={(e) => setNewItemProdutoId(e.target.value)} className="flex-1">
                       {produtos.map((p) => <option key={p.id} value={p.id}>{p.marca} {p.volume_litros}L</option>)}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      value={newItemQty}
-                      onChange={(e) => setNewItemQty(Number(e.target.value))}
-                      className={`${inputClass} w-20`}
-                    />
+                    </Select>
+                    <NumberStepper value={newItemQty} onChange={setNewItemQty} min={1} />
                   </div>
-                  <label className="flex items-center gap-2 text-xs text-white cursor-pointer">
-                    <input type="checkbox" checked={newItemConsignado} onChange={(e) => setNewItemConsignado(e.target.checked)} />
-                    Marcar como consignado (paga só se usar)
-                  </label>
-                  <button
+                  <Checkbox
+                    checked={newItemConsignado}
+                    onChange={(e) => setNewItemConsignado(e.target.checked)}
+                    label="Marcar como consignado (paga só se usar)"
+                  />
+                  <Button
+                    variant="ghost-yellow"
+                    fullWidth
                     onClick={handleAddItem}
                     disabled={itemBusy !== null || !newItemProdutoId}
-                    className="w-full bg-brand-yellow/15 border border-brand-yellow/40 text-brand-yellow py-2 rounded text-sm font-semibold hover:bg-brand-yellow/25 disabled:opacity-50 cursor-pointer"
                   >
                     {itemBusy === "add" ? "Adicionando..." : "+ Adicionar item"}
-                  </button>
+                  </Button>
                 </div>
               </section>
 
@@ -410,38 +389,37 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
                       { value: "dinheiro", label: "Dinheiro" },
                     ]}
                   />
-                  <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
-                    <input type="checkbox" checked={pago} onChange={(e) => setPago(e.target.checked)} />
-                    Cliente já pagou
-                  </label>
+                  <Checkbox checked={pago} onChange={(e) => setPago(e.target.checked)} label="Cliente já pagou" />
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[11px] text-brand-warm-gray block mb-1 uppercase tracking-wider">Frete (R$)</label>
-                      <input type="number" min={0} step={0.01} value={frete} onChange={(e) => setFrete(Number(e.target.value))} className={inputClass} />
+                      <label className={fieldLabelClass}>Frete</label>
+                      <MoneyInput value={frete} onChange={setFrete} min={0} aria-label="Frete" />
                     </div>
                     <div>
-                      <label className="text-[11px] text-brand-warm-gray block mb-1 uppercase tracking-wider">Desconto (R$)</label>
-                      <input type="number" min={0} step={0.01} value={desconto} onChange={(e) => setDesconto(Number(e.target.value))} className={inputClass} />
+                      <label className={fieldLabelClass}>Desconto</label>
+                      <MoneyInput value={desconto} onChange={setDesconto} min={0} aria-label="Desconto" />
                     </div>
                   </div>
                   <div className="bg-brand-dark border border-white/10 rounded-lg p-3 text-sm space-y-1">
                     <div className="flex justify-between text-brand-warm-gray">
                       <span>Subtotal {liveTotals.hasPendente ? "(usado/total)" : ""}</span>
-                      <span>{liveTotals.hasPendente ? `${formatCurrency(liveTotals.subtotalMin)} / ${formatCurrency(liveTotals.subtotalMax)}` : formatCurrency(liveTotals.subtotalMax)}</span>
+                      <span className="tabular-nums">
+                        {liveTotals.hasPendente ? `${formatCurrency(liveTotals.subtotalMin)} / ${formatCurrency(liveTotals.subtotalMax)}` : formatCurrency(liveTotals.subtotalMax)}
+                      </span>
                     </div>
                     {desconto > 0 && (
                       <div className="flex justify-between text-brand-warm-gray">
                         <span>Desconto</span>
-                        <span>−{formatCurrency(desconto)}</span>
+                        <span className="tabular-nums">−{formatCurrency(desconto)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-brand-warm-gray">
                       <span>Frete</span>
-                      <span>{formatCurrency(frete)}</span>
+                      <span className="tabular-nums">{formatCurrency(frete)}</span>
                     </div>
                     <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
                       <span>Total</span>
-                      <span className="text-brand-yellow">
+                      <span className="text-brand-yellow tabular-nums">
                         {liveTotals.hasPendente ? `${formatCurrency(liveTotals.totalMin)} / ${formatCurrency(liveTotals.totalMax)}` : formatCurrency(liveTotals.totalMax)}
                       </span>
                     </div>
@@ -453,20 +431,12 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
             </div>
 
             <footer className="px-6 py-4 border-t border-white/10 flex gap-2 bg-brand-surface">
-              <button
-                onClick={handleDiscard}
-                disabled={saving || !hasChanges}
-                className="flex-1 border border-white/10 text-brand-gray-light py-2.5 rounded-lg text-sm hover:bg-white/5 disabled:opacity-30 cursor-pointer"
-              >
+              <Button variant="secondary" onClick={handleDiscard} disabled={saving || !hasChanges} className="flex-1">
                 Descartar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex-[2] bg-brand-yellow text-brand-black font-bold py-2.5 rounded-lg text-sm hover:bg-brand-amber disabled:opacity-50 cursor-pointer"
-              >
+              </Button>
+              <Button variant="primary" onClick={handleSave} disabled={saving} className="flex-[2]">
                 {saving ? "Salvando..." : hasChanges ? `Salvar (${changedFields.length})` : "Sem alterações"}
-              </button>
+              </Button>
             </footer>
           </motion.aside>
         </motion.div>
@@ -488,16 +458,13 @@ const ItemRow = ({
   onUpdate: (patch: { quantidade?: number; preco_unitario?: number }) => Promise<void>
   onRemove: () => void
 }) => {
-  const [qty, setQty] = useState(item.quantidade)
   const [preco, setPreco] = useState(item.preco_unitario)
 
-  const qtyChanged = qty !== item.quantidade
   const precoChanged = preco !== item.preco_unitario
 
   const commitQty = (next: number) => {
     if (item.is_consignado) return
     if (next < 1 || next === item.quantidade) return
-    setQty(next)
     void onUpdate({ quantidade: next })
   }
 
@@ -511,7 +478,7 @@ const ItemRow = ({
   }
 
   return (
-    <li className={`bg-brand-dark border rounded-lg px-3 py-2 text-sm transition ${busy ? "border-brand-yellow/40 opacity-70" : qtyChanged || precoChanged ? "border-brand-yellow/30" : "border-white/10"}`}>
+    <li className={`bg-brand-dark border rounded-lg px-3 py-2.5 text-sm transition ${busy ? "border-brand-yellow/40 opacity-70" : precoChanged ? "border-brand-yellow/30" : "border-white/10"}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-brand-gray-light truncate">
@@ -522,54 +489,32 @@ const ItemRow = ({
           </p>
         </div>
         <button
+          type="button"
           disabled={busy || disabled}
           onClick={onRemove}
           aria-label="Remover item"
-          className="text-red-400 hover:bg-red-500/10 rounded px-2 disabled:opacity-30 cursor-pointer"
+          className="text-red-400 hover:bg-red-500/10 rounded p-1 disabled:opacity-30 cursor-pointer transition"
         >
-          ×
+          <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="flex items-center gap-2 mt-2">
+      <div className="flex items-center gap-3 mt-2.5">
         {item.is_consignado ? (
           <span className="text-[11px] text-brand-warm-gray uppercase tracking-wider">Qtd 1</span>
         ) : (
-          <div className="inline-flex items-center bg-brand-surface border border-white/10 rounded-md">
-            <button
-              type="button"
-              onClick={() => commitQty(qty - 1)}
-              disabled={busy || disabled || qty <= 1}
-              className="px-2.5 py-1 text-brand-gray-light hover:text-white disabled:opacity-30 cursor-pointer"
-              aria-label="Diminuir quantidade"
-            >
-              −
-            </button>
-            <span className="px-3 text-sm font-semibold text-white tabular-nums min-w-[2ch] text-center">{qty}</span>
-            <button
-              type="button"
-              onClick={() => commitQty(qty + 1)}
-              disabled={busy || disabled}
-              className="px-2.5 py-1 text-brand-gray-light hover:text-white disabled:opacity-30 cursor-pointer"
-              aria-label="Aumentar quantidade"
-            >
-              +
-            </button>
-          </div>
-        )}
-        <div className="flex items-center gap-1 flex-1">
-          <span className="text-[11px] text-brand-warm-gray uppercase tracking-wider">R$</span>
-          <input
-            type="number"
-            min={0}
-            step={0.01}
-            value={preco}
-            onChange={(e) => setPreco(Number(e.target.value))}
-            onBlur={commitPreco}
+          <NumberStepper
+            value={item.quantidade}
+            onChange={commitQty}
+            min={1}
             disabled={busy || disabled}
-            className="w-20 bg-brand-surface border border-white/10 rounded-md px-2 py-1 text-sm text-white tabular-nums focus:border-brand-yellow/40 focus:outline-none disabled:opacity-50"
+            size="sm"
+            ariaLabel="Quantidade"
           />
-          <span className="text-[11px] text-brand-warm-gray">/un</span>
+        )}
+        <div className="flex-1 max-w-[140px]">
+          <MoneyInput value={preco} onChange={setPreco} onBlur={commitPreco} min={0} disabled={busy || disabled} aria-label="Preço unitário" />
         </div>
+        <span className="text-[11px] text-brand-warm-gray">/un</span>
         <span className="text-white font-semibold tabular-nums">{formatCurrency(Number(item.subtotal))}</span>
       </div>
     </li>

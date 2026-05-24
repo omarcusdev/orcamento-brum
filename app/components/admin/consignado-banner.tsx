@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { settleConsignado } from "@/lib/admin-actions"
+import { Button } from "@/components/ui"
 
 type Props = {
   itemId: string
@@ -41,20 +42,12 @@ const ConsignadoBanner = ({ itemId, produtoLabel, subtotal }: Props) => {
         </p>
       </div>
       <div className="flex gap-2">
-        <button
-          disabled={loading !== null}
-          onClick={() => handleSettle("usado")}
-          className="flex-1 bg-green-700 hover:bg-green-600 text-white px-3 py-2 rounded text-sm disabled:opacity-50 cursor-pointer"
-        >
+        <Button variant="success" disabled={loading !== null} onClick={() => handleSettle("usado")} className="flex-1">
           {loading === "usado" ? "..." : "Marcar usado"}
-        </button>
-        <button
-          disabled={loading !== null}
-          onClick={() => handleSettle("devolvido")}
-          className="flex-1 bg-brand-dark border border-white/10 text-brand-gray-light px-3 py-2 rounded text-sm hover:border-white/20 disabled:opacity-50 cursor-pointer"
-        >
+        </Button>
+        <Button variant="secondary" disabled={loading !== null} onClick={() => handleSettle("devolvido")} className="flex-1">
           {loading === "devolvido" ? "..." : "Marcar devolvido"}
-        </button>
+        </Button>
       </div>
       {error && <p className="text-red-400 text-xs">{error}</p>}
     </motion.div>

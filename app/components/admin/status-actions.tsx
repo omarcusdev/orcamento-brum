@@ -7,6 +7,7 @@ import { statusConfig } from "@/components/order-status-badge"
 import { advanceOrderStatus, cancelOrder } from "@/lib/admin-actions"
 import DispatchModal from "@/components/admin/dispatch-modal"
 import RevertStatusModal from "@/components/admin/revert-status-modal"
+import { Button } from "@/components/ui"
 
 type StatusActionsProps = {
   pedidoId: string
@@ -61,13 +62,9 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
               {statusConfig[currentStatus].label}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowRevert(true)}
-            className="w-full text-sm text-brand-warm-gray hover:text-white border border-white/10 rounded-lg py-2 transition"
-          >
+          <Button type="button" variant="secondary" fullWidth onClick={() => setShowRevert(true)}>
             Voltar status
-          </button>
+          </Button>
         </div>
         {showRevert && (
           <RevertStatusModal
@@ -98,35 +95,19 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
               <span className="text-yellow-400 text-sm">Documentacao pendente de verificacao</span>
             </div>
           )}
-          <motion.button
-            onClick={handleAdvance}
-            disabled={loading}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full bg-brand-yellow text-brand-black font-bold py-3 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-          >
+          <Button onClick={handleAdvance} disabled={loading} fullWidth size="lg">
             {loading ? "Atualizando..." : `Mover para: ${statusConfig[nextStatus].label}`}
-          </motion.button>
+          </Button>
         </>
       )}
-      <motion.button
-        onClick={handleCancel}
-        disabled={loading}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full border border-red-500/30 text-red-400 font-medium py-3 rounded-lg hover:bg-red-500/10 transition cursor-pointer disabled:opacity-50"
-      >
+      <Button onClick={handleCancel} disabled={loading} variant="danger" fullWidth size="lg">
         Cancelar Pedido
-      </motion.button>
+      </Button>
 
       {canShowRevert && (
-        <button
-          type="button"
-          onClick={() => setShowRevert(true)}
-          className="w-full text-sm text-brand-warm-gray hover:text-white border border-white/10 rounded-lg py-2 transition"
-        >
+        <Button type="button" variant="secondary" fullWidth onClick={() => setShowRevert(true)}>
           Voltar status
-        </button>
+        </Button>
       )}
 
       {showDispatch && dispatchText && (

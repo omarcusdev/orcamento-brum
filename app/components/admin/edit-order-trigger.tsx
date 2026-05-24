@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { Pencil } from "lucide-react"
 import EditOrderDrawer from "@/components/admin/edit-order-drawer"
+import { Button } from "@/components/ui"
 import type { Produto } from "@/lib/types"
 
 type EditablePedido = {
@@ -52,12 +54,10 @@ const EditOrderTrigger = ({ pedido, items, produtos }: Props) => {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full text-sm text-brand-yellow underline hover:text-brand-amber"
-      >
+      <Button variant="ghost-yellow" fullWidth onClick={() => setOpen(true)}>
+        <Pencil className="h-3.5 w-3.5" />
         Editar pedido
-      </button>
+      </Button>
       <EditOrderDrawer
         open={open}
         onClose={() => setOpen(false)}

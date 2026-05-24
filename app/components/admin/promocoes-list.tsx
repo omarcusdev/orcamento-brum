@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import type { Produto } from "@/lib/types"
 import { updateProductSecondBarrelPrice } from "@/lib/admin-actions"
+import { Input } from "@/components/ui"
 
 type PromocoesListProps = {
   produtos: Produto[]
@@ -93,7 +94,7 @@ const PromocoesList = ({ produtos: initialProdutos }: PromocoesListProps) => {
             <label htmlFor={`promo-${produto.id}`} className="text-[10px] uppercase tracking-wide text-brand-warm-gray mb-1">
               2º barril (R$)
             </label>
-            <input
+            <Input
               id={`promo-${produto.id}`}
               type="number"
               step="0.01"
@@ -112,7 +113,7 @@ const PromocoesList = ({ produtos: initialProdutos }: PromocoesListProps) => {
                 }
               }}
               placeholder="—"
-              className="w-32 px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray/50"
+              className="w-32"
             />
           </div>
           {produto.preco_segundo_barril != null && (

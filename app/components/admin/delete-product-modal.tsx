@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import type { Produto } from "@/lib/types"
 import { deleteProduct } from "@/lib/admin-actions"
+import { Button } from "@/components/ui"
 
 type DeleteProductModalProps = {
   produto: Produto
@@ -53,24 +54,12 @@ const DeleteProductModal = ({ produto, onClose, onDeleted }: DeleteProductModalP
           <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4">{error}</p>
         )}
         <div className="flex gap-3">
-          <motion.button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            whileTap={{ scale: 0.97 }}
-            className="flex-1 border border-white/10 text-brand-gray-light font-medium py-2.5 rounded-lg hover:bg-white/5 transition cursor-pointer disabled:opacity-50"
-          >
+          <Button type="button" variant="secondary" onClick={onClose} disabled={loading} className="flex-1">
             Cancelar
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={handleConfirm}
-            disabled={loading}
-            whileTap={{ scale: 0.97 }}
-            className="flex-1 bg-red-500 text-white font-bold py-2.5 rounded-lg hover:bg-red-600 transition cursor-pointer disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" variant="danger" onClick={handleConfirm} disabled={loading} className="flex-1">
             {loading ? "Excluindo..." : "Excluir"}
-          </motion.button>
+          </Button>
         </div>
       </motion.div>
     </motion.div>

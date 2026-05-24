@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { dispatchToEntregador, fetchActiveEntregadores } from "@/lib/admin-actions"
+import { Button, Select, fieldLabelClass } from "@/components/ui"
 
 type DispatchModalProps = {
   pedidoId: string
@@ -75,37 +76,29 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-brand-warm-gray uppercase tracking-wider mb-1.5">
-                Selecionar Entregador
-              </label>
+              <label className={fieldLabelClass}>Selecionar Entregador</label>
               {loadingList ? (
-                <div className="px-4 py-3 rounded-md border border-white/10 bg-brand-dark text-brand-warm-gray text-sm">
+                <div className="px-4 py-3 rounded-lg border border-white/10 bg-brand-dark text-brand-warm-gray text-sm">
                   Carregando...
                 </div>
               ) : entregadores.length === 0 ? (
-                <div className="px-4 py-3 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
+                <div className="px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
                   Nenhum entregador ativo. Cadastre um em Entregadores.
                 </div>
               ) : (
-                <select
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-md border border-white/10 bg-brand-dark text-white text-sm focus:border-brand-yellow outline-none cursor-pointer appearance-none"
-                >
+                <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
                   {entregadores.map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.nome} — {e.telefone}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-brand-warm-gray uppercase tracking-wider mb-1.5">
-                Resumo do Pedido
-              </label>
-              <pre className="px-4 py-3 rounded-md border border-white/10 bg-brand-dark text-brand-gray-light text-xs leading-relaxed whitespace-pre-wrap font-mono">
+              <label className={fieldLabelClass}>Resumo do Pedido</label>
+              <pre className="px-4 py-3 rounded-lg border border-white/10 bg-brand-dark text-brand-gray-light text-xs leading-relaxed whitespace-pre-wrap font-mono">
                 {dispatchText}
               </pre>
             </div>
@@ -113,20 +106,12 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
             <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-3 rounded-lg border border-white/10 text-brand-gray-light text-sm font-medium hover:bg-white/5 transition cursor-pointer"
-              >
+              <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
                 Cancelar
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={loading || !selectedId || loadingList}
-                className="flex-[2] px-4 py-3 rounded-lg bg-brand-yellow text-brand-black text-sm font-bold hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-              >
+              </Button>
+              <Button onClick={handleConfirm} disabled={loading || !selectedId || loadingList} className="flex-[2]">
                 {copied ? "Copiado! Despachando..." : loading ? "Despachando..." : "📋 Copiar e Confirmar"}
-              </button>
+              </Button>
             </div>
           </div>
         </motion.div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { updateConfig } from "@/lib/admin-actions"
+import { Button, Checkbox, Input } from "@/components/ui"
 
 type ConfigFormProps = {
   whatsappNumero: string
@@ -54,22 +55,17 @@ const ConfigForm = ({ whatsappNumero: initialWhatsapp, emailDestinatario: initia
             <p className="text-sm text-brand-warm-gray mb-3">
               Número exibido nos botões de WhatsApp da landing page. Use o formato com código do país (ex: 5521999999999).
             </p>
-            <input
+            <Input
               type="text"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               placeholder="5521999999999"
-              className="w-full px-4 py-3 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-white placeholder-brand-warm-gray"
             />
           </div>
           <div className="flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={savingWhatsapp}
-              className="bg-brand-yellow text-brand-black font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-            >
+            <Button type="submit" disabled={savingWhatsapp}>
               {savingWhatsapp ? "Salvando..." : "Salvar"}
-            </button>
+            </Button>
             {savedWhatsapp && (
               <span className="text-green-400 text-sm font-medium">Salvo com sucesso!</span>
             )}
@@ -84,33 +80,26 @@ const ConfigForm = ({ whatsappNumero: initialWhatsapp, emailDestinatario: initia
             <p className="text-sm text-brand-warm-gray mb-3">
               Email que recebe um aviso toda vez que um novo pedido for criado pelo cliente.
             </p>
-            <input
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="financeiro@exemplo.com"
-              className="w-full px-4 py-3 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-white placeholder-brand-warm-gray"
             />
           </div>
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={emailAtivo}
-              onChange={(e) => setEmailAtivo(e.target.checked)}
-              className="w-4 h-4 accent-brand-yellow cursor-pointer"
-            />
-            <span className="text-sm text-brand-gray-light">
-              Notificações por email <span className="text-brand-warm-gray">— {emailAtivo ? "ativas" : "desativadas"}</span>
-            </span>
-          </label>
+          <Checkbox
+            checked={emailAtivo}
+            onChange={(e) => setEmailAtivo(e.target.checked)}
+            label={
+              <>
+                Notificações por email <span className="text-brand-warm-gray">— {emailAtivo ? "ativas" : "desativadas"}</span>
+              </>
+            }
+          />
           <div className="flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={savingEmail}
-              className="bg-brand-yellow text-brand-black font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-            >
+            <Button type="submit" disabled={savingEmail}>
               {savingEmail ? "Salvando..." : "Salvar"}
-            </button>
+            </Button>
             {savedEmail && (
               <span className="text-green-400 text-sm font-medium">Salvo com sucesso!</span>
             )}

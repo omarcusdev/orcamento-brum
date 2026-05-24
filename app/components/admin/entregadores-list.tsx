@@ -3,8 +3,10 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import type { Entregador } from "@/lib/types"
+import { Plus } from "lucide-react"
 import { toggleEntregadorAtivo } from "@/lib/admin-actions"
 import EntregadorModal from "@/components/admin/entregador-modal"
+import { Button } from "@/components/ui"
 
 const EntregadoresList = ({ initialEntregadores }: { initialEntregadores: Entregador[] }) => {
   const [showModal, setShowModal] = useState(false)
@@ -31,14 +33,10 @@ const EntregadoresList = ({ initialEntregadores }: { initialEntregadores: Entreg
     <>
       <div className="flex items-center justify-between mb-6">
         <div />
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleAdd}
-          className="bg-brand-yellow text-brand-black font-bold px-4 py-2 rounded-lg text-sm hover:brightness-110 transition cursor-pointer"
-        >
-          + Adicionar
-        </motion.button>
+        <Button onClick={handleAdd}>
+          <Plus className="h-4 w-4" />
+          Adicionar
+        </Button>
       </div>
 
       {initialEntregadores.length === 0 ? (

@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import type { Produto } from "@/lib/types"
 import { createProduct, updateProduct, uploadProductImage } from "@/lib/admin-actions"
 import ImageUpload from "@/components/admin/image-upload"
+import { Button, Input, MoneyInput, Select, fieldLabelClass } from "@/components/ui"
 
 type ProductFormProps = {
   produto?: Produto
@@ -16,11 +17,26 @@ const ProductForm = ({ produto, onClose }: ProductFormProps) => {
   const [error, setError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
 
+  const [marca, setMarca] = useState(produto?.marca ?? "")
+  const [descricao, setDescricao] = useState(produto?.descricao ?? "")
+  const [volumeLitros, setVolumeLitros] = useState<string>(String(produto?.volume_litros ?? 50))
+  const [tipo, setTipo] = useState<string>(produto?.tipo ?? "chopp")
+  const [precoAvista, setPrecoAvista] = useState<number>(Number(produto?.preco_avista ?? 0))
+  const [precoCartao, setPrecoCartao] = useState<number>(Number(produto?.preco_cartao ?? 0))
+  const [precoSegundoBarril, setPrecoSegundoBarril] = useState<number>(Number(produto?.preco_segundo_barril ?? 0))
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData()
+    formData.set("marca", marca)
+    formData.set("descricao", descricao)
+    formData.set("volume_litros", volumeLitros)
+    formData.set("tipo", tipo)
+    formData.set("preco_avista", String(precoAvista))
+    if (precoCartao > 0) formData.set("preco_cartao", String(precoCartao))
+    if (precoSegundoBarril > 0) formData.set("preco_segundo_barril", String(precoSegundoBarril))
     try {
       if (produto) {
         await updateProduct(produto.id, formData)
@@ -66,122 +82,63 @@ const ProductForm = ({ produto, onClose }: ProductFormProps) => {
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="marca" className="block text-sm font-medium text-brand-gray-light mb-1">Marca *</label>
-            <input
-              id="marca"
-              name="marca"
-              type="text"
-              required
-              defaultValue={produto?.marca}
-              className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
-            />
+            <label htmlFor="marca" className={fieldLabelClass}>Marca *</label>
+            <Input id="marca" type="text" required value={marca} onChange={(e) => setMarca(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="descricao" className="block text-sm font-medium text-brand-gray-light mb-1">Descricao</label>
-            <input
-              id="descricao"
-              name="descricao"
-              type="text"
-              defaultValue={produto?.descricao ?? ""}
-              className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
-            />
+            <label htmlFor="descricao" className={fieldLabelClass}>Descrição</label>
+            <Input id="descricao" type="text" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="volume_litros" className="block text-sm font-medium text-brand-gray-light mb-1">Volume (L) *</label>
-              <select
-                id="volume_litros"
-                name="volume_litros"
-                required
-                defaultValue={produto?.volume_litros ?? 50}
-                className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow outline-none text-sm text-white"
-              >
-                <option value={30}>30L</option>
-                <option value={50}>50L</option>
-              </select>
+              <label htmlFor="volume_litros" className={fieldLabelClass}>Volume (L) *</label>
+              <Select id="volume_litros" value={volumeLitros} onChange={(e) => setVolumeLitros(e.target.value)} required>
+                <option value="30">30L</option>
+                <option value="50">50L</option>
+              </Select>
             </div>
             <div>
-              <label htmlFor="tipo" className="block text-sm font-medium text-brand-gray-light mb-1">Tipo *</label>
-              <select
-                id="tipo"
-                name="tipo"
-                required
-                defaultValue={produto?.tipo ?? "chopp"}
-                className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow outline-none text-sm text-white"
-              >
+              <label htmlFor="tipo" className={fieldLabelClass}>Tipo *</label>
+              <Select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} required>
                 <option value="chopp">Chopp</option>
                 <option value="vinho">Vinho</option>
-              </select>
+              </Select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-gray-light mb-1">Foto do produto</label>
+            <label className={fieldLabelClass}>Foto do produto</label>
             <ImageUpload currentUrl={produto?.foto_url} onFileSelect={setImageFile} />
             <p className="text-xs text-brand-warm-gray mt-2">
-              Recomendado: imagem quadrada (1:1), minimo 500x500px. JPG, PNG ou WebP, ate 5MB.
+              Recomendado: imagem quadrada (1:1), mínimo 500x500px. JPG, PNG ou WebP, até 5MB.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="preco_avista" className="block text-sm font-medium text-brand-gray-light mb-1">Preco a vista *</label>
-              <input
-                id="preco_avista"
-                name="preco_avista"
-                type="number"
-                step="0.01"
-                required
-                defaultValue={produto?.preco_avista}
-                className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
-              />
+              <label className={fieldLabelClass}>Preço à vista *</label>
+              <MoneyInput value={precoAvista} onChange={setPrecoAvista} min={0} aria-label="Preço à vista" />
             </div>
             <div>
-              <label htmlFor="preco_cartao" className="block text-sm font-medium text-brand-gray-light mb-1">Preco cartao</label>
-              <input
-                id="preco_cartao"
-                name="preco_cartao"
-                type="number"
-                step="0.01"
-                defaultValue={produto?.preco_cartao ?? ""}
-                className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
-              />
+              <label className={fieldLabelClass}>Preço cartão</label>
+              <MoneyInput value={precoCartao} onChange={setPrecoCartao} min={0} aria-label="Preço cartão" />
             </div>
           </div>
           <div>
-            <label htmlFor="preco_segundo_barril" className="block text-sm font-medium text-brand-gray-light mb-1">
-              Preco do 2º barril <span className="text-brand-warm-gray">(promo, opcional)</span>
+            <label className={fieldLabelClass}>
+              Preço do 2º barril <span className="text-brand-warm-gray normal-case">(promo, opcional)</span>
             </label>
-            <input
-              id="preco_segundo_barril"
-              name="preco_segundo_barril"
-              type="number"
-              step="0.01"
-              defaultValue={produto?.preco_segundo_barril ?? ""}
-              placeholder="Ex: 385.00"
-              className="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
-            />
-            <p className="text-xs text-brand-warm-gray mt-1">A partir do 2º barril deste produto, esse preco substitui o preco a vista.</p>
+            <MoneyInput value={precoSegundoBarril} onChange={setPrecoSegundoBarril} min={0} aria-label="Preço do 2º barril" />
+            <p className="text-xs text-brand-warm-gray mt-1">A partir do 2º barril deste produto, esse preço substitui o preço à vista.</p>
           </div>
           {error && (
             <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
           )}
           <div className="flex gap-3 pt-2">
-            <motion.button
-              type="button"
-              onClick={onClose}
-              whileTap={{ scale: 0.97 }}
-              className="flex-1 border border-white/10 text-brand-gray-light font-medium py-2.5 rounded-lg hover:bg-white/5 transition cursor-pointer"
-            >
+            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
               Cancelar
-            </motion.button>
-            <motion.button
-              type="submit"
-              disabled={loading}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex-1 bg-brand-yellow text-brand-black font-bold py-2.5 rounded-lg hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" variant="primary" disabled={loading} className="flex-1">
               {loading ? "Salvando..." : "Salvar"}
-            </motion.button>
+            </Button>
           </div>
         </form>
       </motion.div>
