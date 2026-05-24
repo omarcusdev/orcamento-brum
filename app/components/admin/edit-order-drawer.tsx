@@ -434,7 +434,7 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
               <Button variant="secondary" onClick={handleDiscard} disabled={saving || !hasChanges} className="flex-1">
                 Descartar
               </Button>
-              <Button variant="primary" onClick={handleSave} disabled={saving} className="flex-[2]">
+              <Button variant="primary" onClick={handleSave} disabled={saving || !hasChanges} className="flex-[2]">
                 {saving ? "Salvando..." : hasChanges ? `Salvar (${changedFields.length})` : "Sem alterações"}
               </Button>
             </footer>
