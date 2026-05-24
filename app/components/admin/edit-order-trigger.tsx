@@ -25,6 +25,7 @@ type EditablePedido = {
   rampas_escadas: string | null
   tipo_chopeira: "gelo" | "eletrica"
   frete: number
+  desconto: number
   metodo_pagamento: "pix" | "cartao" | "dinheiro" | null
   pago: boolean
 }
@@ -33,6 +34,7 @@ type EditableItem = {
   id: string
   produto_id: string
   quantidade: number
+  preco_unitario: number
   is_consignado: boolean
   consignado_status: string | null
   subtotal: number

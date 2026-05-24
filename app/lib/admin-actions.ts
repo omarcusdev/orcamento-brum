@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
-import { productSchema, manualOrderInputSchema, updatePedidoSchema, type ManualOrderInput, type UpdatePedidoInput } from "@/lib/schemas"
+import { productSchema, manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
 import { calculateOrderTotals } from "@/lib/pricing"
 import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES } from "@/lib/admin-status"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
@@ -797,10 +797,11 @@ export const updatePedido = async (pedidoId: string, input: UpdatePedidoInput) =
 
   if (Object.keys(updates).length === 0) return
 
-  if ("frete" in updates) {
-    const desconto = Number(pedido.desconto ?? 0)
+  if ("frete" in updates || "desconto" in updates) {
     const subtotal = Number(pedido.subtotal ?? 0)
-    updates.total = Number((subtotal - desconto + Number(updates.frete as number)).toFixed(2))
+    const nextFrete = "frete" in updates ? Number(updates.frete) : Number(pedido.frete ?? 0)
+    const nextDesconto = "desconto" in updates ? Number(updates.desconto) : Number(pedido.desconto ?? 0)
+    updates.total = Number((subtotal - nextDesconto + nextFrete).toFixed(2))
   }
 
   updates.updated_at = new Date().toISOString()
@@ -915,6 +916,57 @@ export const addPedidoItem = async (
   })
 
   revalidatePath(`/admin/pedidos/${pedidoId}`)
+}
+
+export const updatePedidoItem = async (itemId: string, input: UpdatePedidoItemInput) => {
+  const parsed = updatePedidoItemSchema.safeParse(input)
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos")
+  const changes = parsed.data
+  if (changes.quantidade === undefined && changes.preco_unitario === undefined) return
+
+  const { supabase, user } = await requireAdmin()
+
+  const { data: item } = await supabase
+    .from("pedido_itens")
+    .select("id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, is_consignado, consignado_status, pedidos:pedido_id(status)")
+    .eq("id", itemId)
+    .single()
+  if (!item) throw new Error("Item nao encontrado")
+  const pedidoStatus = Array.isArray(item.pedidos) ? item.pedidos[0]?.status : (item.pedidos as { status?: string } | null)?.status
+  if (pedidoStatus && LOCKED_EDIT_STATUSES.includes(pedidoStatus)) throw new Error("Pedido travado")
+  if (item.is_consignado && changes.quantidade !== undefined && changes.quantidade !== 1) {
+    throw new Error("Itens consignado tem quantidade fixa de 1 por linha")
+  }
+
+  const nextQuantidade = changes.quantidade ?? item.quantidade
+  const nextPrecoUnitario = changes.preco_unitario ?? Number(item.preco_unitario)
+  const nextSubtotal = Number((nextPrecoUnitario * nextQuantidade).toFixed(2))
+
+  const updates: Record<string, unknown> = {
+    quantidade: nextQuantidade,
+    preco_unitario: nextPrecoUnitario,
+    subtotal: nextSubtotal,
+  }
+
+  const { error: updateErr } = await supabase.from("pedido_itens").update(updates).eq("id", itemId)
+  if (updateErr) throw updateErr
+
+  await recalcPedidoTotals(item.pedido_id)
+
+  await supabase.from("pedido_edit_log").insert({
+    pedido_id: item.pedido_id,
+    field: "items.updated",
+    old_value: {
+      id: itemId,
+      quantidade: item.quantidade,
+      preco_unitario: Number(item.preco_unitario),
+      subtotal: Number(item.subtotal),
+    },
+    new_value: { id: itemId, ...updates },
+    changed_by: user.id,
+  })
+
+  revalidatePath(`/admin/pedidos/${item.pedido_id}`)
 }
 
 export const removePedidoItem = async (itemId: string) => {

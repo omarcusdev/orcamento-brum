@@ -113,6 +113,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
     rampas_escadas: pedido.rampas_escadas,
     tipo_chopeira: pedido.tipo_chopeira as "gelo" | "eletrica",
     frete: Number(pedido.frete ?? 0),
+    desconto: Number(pedido.desconto ?? 0),
     metodo_pagamento: pedido.metodo_pagamento as "pix" | "cartao" | "dinheiro" | null,
     pago: !!pedido.pago,
   }
@@ -120,6 +121,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
     id: item.id,
     produto_id: item.produto_id,
     quantidade: item.quantidade,
+    preco_unitario: Number(item.preco_unitario),
     is_consignado: !!item.is_consignado,
     consignado_status: item.consignado_status,
     subtotal: Number(item.subtotal),

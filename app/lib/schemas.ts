@@ -114,8 +114,16 @@ export const updatePedidoSchema = z.object({
   rampas_escadas: z.string().max(500).nullable().optional(),
   tipo_chopeira: z.enum(["gelo", "eletrica"]).optional(),
   frete: z.number().nonnegative().optional(),
+  desconto: z.number().nonnegative().optional(),
   metodo_pagamento: z.enum(["pix", "cartao", "dinheiro"]).nullable().optional(),
   pago: z.boolean().optional(),
 })
 
 export type UpdatePedidoInput = z.infer<typeof updatePedidoSchema>
+
+export const updatePedidoItemSchema = z.object({
+  quantidade: z.number().int().positive().optional(),
+  preco_unitario: z.number().nonnegative().optional(),
+})
+
+export type UpdatePedidoItemInput = z.infer<typeof updatePedidoItemSchema>
