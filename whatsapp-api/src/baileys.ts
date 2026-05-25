@@ -7,7 +7,7 @@ import { Boom } from "@hapi/boom"
 import pino from "pino"
 import QRCode from "qrcode-terminal"
 
-const logger = pino({ level: "silent" })
+const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 
 let socket: WASocket | null = null
 let connectionStatus: "disconnected" | "connecting" | "connected" = "disconnected"

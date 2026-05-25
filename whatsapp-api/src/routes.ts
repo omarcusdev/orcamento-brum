@@ -15,6 +15,11 @@ const authMiddleware = async (request: FastifyRequest, reply: FastifyReply) => {
 }
 
 const registerRoutes = (app: FastifyInstance) => {
+  app.get("/health", async (_request, reply) => {
+    const connected = getStatus() === "connected"
+    return reply.code(connected ? 200 : 503).send({ connected })
+  })
+
   app.get("/status", { preHandler: authMiddleware }, async () => ({
     status: getStatus(),
     timestamp: new Date().toISOString(),
