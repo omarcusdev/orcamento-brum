@@ -37,8 +37,10 @@ Editable in: `confirmado`, `enviar_para_entregador`, `em_rota`. Locked from `ent
 - Supabase service client (`createServiceClient`) only when bypassing RLS is needed (storage uploads). Otherwise use auth-aware client from `requireAdmin()`.
 - New tables need explicit admin UPDATE/DELETE RLS policies — migration 021 was a corrective for `pedido_itens` missing these.
 - Documento de identidade is `clientes.documento_pessoal_urls TEXT[]` (1-2 photos). Storage paths: `{clienteId}/pessoal-1` / `{clienteId}/pessoal-2`.
+- **UI primitives** live in `app/components/ui/` — `Button` (variants primary/secondary/ghost/ghost-yellow/danger/success), `Input`, `Textarea`, `Select`, `Checkbox`, `Segmented`, `MoneyInput` (R$ prefix + pt-BR comma), `NumberStepper` (−/+ integers), plus `fieldLabelClass`. Import from `@/components/ui`. Use these instead of native `<input>`/`<button>`/inline classNames in admin. `type=number` spinners are hidden globally in `globals.css`.
 
 ## Most recent work
+- **2026-05-24** — UI primitives library + admin redesign: created `components/ui/`, refactored all admin forms/drawers/modals to use them. EditOrderDrawer rebuilt (sectioned layout, live total, diff counter, inline item qty/price edit, desconto field). New `updatePedidoItem` action + `desconto` in `updatePedidoSchema`. Commits `7f46518`→`f198c65`.
 - **2026-05-14** — Admin operacional features: manual order drawer, voltar status, identidade frente+verso, consignado, desverificar doc, editar pedido. Spec: `docs/superpowers/specs/2026-05-13-admin-operacional-design.md`.
 
 ## Deploy
