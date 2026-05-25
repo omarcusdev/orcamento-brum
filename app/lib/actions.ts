@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service"
 import { createOrderSchema } from "@/lib/schemas"
 import { isAddressInDeliveryArea } from "@/lib/geo"
 import { sendNewOrderEmail, sendCustomerOrderConfirmation } from "@/lib/email"
+import { sendCustomerWhatsAppConfirmation } from "@/lib/whatsapp/notificacoes"
 import { calculateLine } from "@/lib/pricing"
 
 export const createOrder = async (input: unknown): Promise<{ pedidoId: string; clienteId: string; error?: never } | { error: string; pedidoId?: never; clienteId?: never }> => {
@@ -154,6 +155,7 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
 
   after(() => sendNewOrderEmail(pedido.id))
   after(() => sendCustomerOrderConfirmation(pedido.id))
+  after(() => sendCustomerWhatsAppConfirmation(pedido.id))
 
   return { pedidoId: pedido.id, clienteId }
 }
