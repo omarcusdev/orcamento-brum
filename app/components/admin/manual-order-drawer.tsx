@@ -6,7 +6,7 @@ import { X } from "lucide-react"
 import { createManualOrder, searchClientes } from "@/lib/admin-actions"
 import type { Produto } from "@/lib/types"
 import type { ManualOrderInput } from "@/lib/schemas"
-import { calculateOrderTotals } from "@/lib/pricing"
+import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
 import {
   Button,
   Checkbox,
@@ -44,21 +44,13 @@ const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "curren
 
 const sectionHeaderClass = "text-xs font-semibold uppercase tracking-[0.18em] text-brand-yellow/80 mb-3 pb-1.5 border-b border-white/10"
 
-const computeLineSubtotal = (produto: Produto | undefined, item: DraftItem, metodo: "pix" | "cartao" | "dinheiro") => {
-  if (!produto) return { subtotal: 0, firstUnitPrice: 0, secondUnitPrice: 0, unitPrice: 0 }
-  const firstUnitPrice = metodo === "cartao" && produto.preco_cartao
-    ? Number(produto.preco_cartao)
-    : Number(produto.preco_avista)
-  const secondUnitPrice = produto.preco_segundo_barril != null
-    ? Number(produto.preco_segundo_barril)
-    : firstUnitPrice
-  const qty = Math.max(0, item.quantidade)
-  const subtotal = qty === 0
-    ? 0
-    : qty === 1
-      ? firstUnitPrice
-      : firstUnitPrice + secondUnitPrice * (qty - 1)
-  return { subtotal, firstUnitPrice, secondUnitPrice, unitPrice: firstUnitPrice }
+const describeBarrels = (barrelPrices: number[]) => {
+  if (barrelPrices.length <= 1) return formatCurrency(barrelPrices[0] ?? 0)
+  const [first, ...rest] = barrelPrices
+  const allEqual = rest.every((price) => price === first)
+  return allEqual
+    ? `${barrelPrices.length}x ${formatCurrency(first)}`
+    : `${formatCurrency(first)} + ${rest.length}x ${formatCurrency(rest[0])}`
 }
 
 const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
@@ -150,25 +142,17 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
 
   const hasConsignado = items.some((i) => i.is_consignado)
 
-  const itemRowsForTotals = items.flatMap((item) => {
-    const produto = produtos.find((p) => p.id === item.produto_id)
-    if (!produto) return []
-    const firstUnitPrice = metodoPagamento === "cartao" && produto.preco_cartao
-      ? Number(produto.preco_cartao)
-      : Number(produto.preco_avista)
-    const secondUnitPrice = produto.preco_segundo_barril != null ? Number(produto.preco_segundo_barril) : firstUnitPrice
-    const qty = Math.max(0, item.quantidade)
+  const pricedLines = priceManualOrderLines(items, produtos, metodoPagamento)
 
-    if (item.is_consignado) {
-      return Array.from({ length: qty }, (_, i) => ({
-        subtotal: i === 0 ? firstUnitPrice : secondUnitPrice,
-        is_consignado: true,
-        consignado_status: "pendente" as string | null,
-      }))
-    }
-    const subtotal = qty === 0 ? 0 : qty === 1 ? firstUnitPrice : firstUnitPrice + secondUnitPrice * (qty - 1)
-    return [{ subtotal, is_consignado: false, consignado_status: null as string | null }]
-  })
+  const itemRowsForTotals = pricedLines.flatMap((line) =>
+    line.is_consignado
+      ? line.barrelPrices.map((price) => ({
+          subtotal: price,
+          is_consignado: true,
+          consignado_status: "pendente" as string | null,
+        }))
+      : [{ subtotal: line.subtotal, is_consignado: false, consignado_status: null as string | null }],
+  )
 
   const totals = calculateOrderTotals(itemRowsForTotals)
   const totalMin = totals.subtotalMin + frete
@@ -364,7 +348,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                   {items.map((item, idx) => {
                     const produto = produtos.find((p) => p.id === item.produto_id)
                     const hasSegundoBarril = produto?.preco_segundo_barril != null
-                    const calc = computeLineSubtotal(produto, item, metodoPagamento)
+                    const calc = pricedLines[idx]
                     return (
                       <div key={idx} className="bg-brand-dark border border-white/10 rounded-lg p-3 space-y-2.5">
                         <div className="flex items-center gap-2">
@@ -399,9 +383,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                         )}
                         <p className="text-xs text-brand-warm-gray">
                           {item.is_consignado
-                            ? item.quantidade > 1
-                              ? `${formatCurrency(calc.firstUnitPrice)} + ${item.quantidade - 1}x ${formatCurrency(calc.secondUnitPrice)} = ${formatCurrency(calc.subtotal)} (consignado)`
-                              : `${formatCurrency(calc.subtotal)} (consignado)`
+                            ? `${describeBarrels(calc.barrelPrices)}${item.quantidade > 1 ? ` = ${formatCurrency(calc.subtotal)}` : ""} (consignado)`
                             : formatCurrency(calc.subtotal)}
                         </p>
                       </div>
