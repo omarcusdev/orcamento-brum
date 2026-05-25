@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
 import { productSchema, manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
-import { calculateOrderTotals } from "@/lib/pricing"
+import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
 import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES } from "@/lib/admin-status"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
 
@@ -618,45 +618,31 @@ export const createManualOrder = async (input: ManualOrderInput) => {
     is_consignado: boolean
     consignado_status: "pendente" | null
   }
-  const itemRows: ItemRow[] = []
   for (const inputItem of data.items) {
     const produto = produtos.find((p) => p.id === inputItem.produto_id)
     if (!produto) throw new Error(`Produto nao encontrado: ${inputItem.produto_id}`)
     if (!produto.ativo) throw new Error("Produto indisponivel")
-    const firstUnitPrice = data.metodo_pagamento === "cartao" && produto.preco_cartao
-      ? Number(produto.preco_cartao)
-      : Number(produto.preco_avista)
-    const secondUnitPrice = produto.preco_segundo_barril != null
-      ? Number(produto.preco_segundo_barril)
-      : firstUnitPrice
-
-    if (inputItem.is_consignado) {
-      const consignadoQty = Math.max(1, Math.floor(inputItem.quantidade))
-      for (let i = 0; i < consignadoQty; i += 1) {
-        const unitPrice = i === 0 ? firstUnitPrice : secondUnitPrice
-        itemRows.push({
-          produto_id: inputItem.produto_id,
-          quantidade: 1,
-          preco_unitario: unitPrice,
-          subtotal: unitPrice,
-          is_consignado: true,
-          consignado_status: "pendente",
-        })
-      }
-    } else {
-      const qty = inputItem.quantidade
-      const subtotalLine = qty === 1 ? firstUnitPrice : firstUnitPrice + secondUnitPrice * (qty - 1)
-      const unitAverage = qty > 0 ? subtotalLine / qty : firstUnitPrice
-      itemRows.push({
-        produto_id: inputItem.produto_id,
-        quantidade: qty,
-        preco_unitario: Number(unitAverage.toFixed(2)),
-        subtotal: Number(subtotalLine.toFixed(2)),
-        is_consignado: false,
-        consignado_status: null,
-      })
-    }
   }
+
+  const itemRows: ItemRow[] = priceManualOrderLines(data.items, produtos, data.metodo_pagamento).flatMap((line): ItemRow[] =>
+    line.is_consignado
+      ? line.barrelPrices.map((price) => ({
+          produto_id: line.produto_id,
+          quantidade: 1,
+          preco_unitario: price,
+          subtotal: price,
+          is_consignado: true,
+          consignado_status: "pendente" as const,
+        }))
+      : [{
+          produto_id: line.produto_id,
+          quantidade: line.quantidade,
+          preco_unitario: line.precoUnitario,
+          subtotal: line.subtotal,
+          is_consignado: false,
+          consignado_status: null,
+        }],
+  )
 
   const totals = calculateOrderTotals(
     itemRows.map((r) => ({

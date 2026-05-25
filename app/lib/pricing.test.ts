@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { calculateLine, getBasePrice, calculateOrderTotals } from "./pricing"
+import { calculateLine, getBasePrice, calculateOrderTotals, priceManualOrderLines } from "./pricing"
 
 const baseProduct = {
   preco_avista: 500,
@@ -129,5 +129,99 @@ describe("calculateOrderTotals", () => {
     expect(totals.subtotalMin).toBe(0)
     expect(totals.subtotalMax).toBe(0)
     expect(totals.hasPendente).toBe(false)
+  })
+})
+
+describe("priceManualOrderLines", () => {
+  const brahma = { id: "brahma", preco_avista: 880, preco_cartao: 920, preco_segundo_barril: 730 }
+  const heineken = { id: "heineken", preco_avista: 950, preco_cartao: null, preco_segundo_barril: 750 }
+  const semPromo = { id: "vinho", preco_avista: 650, preco_cartao: null, preco_segundo_barril: null }
+
+  it("aplica o preco do 2o barril ao consignado quando ha um barril firme do mesmo produto", () => {
+    const priced = priceManualOrderLines(
+      [
+        { produto_id: "brahma", quantidade: 1, is_consignado: false },
+        { produto_id: "brahma", quantidade: 1, is_consignado: true },
+      ],
+      [brahma],
+    )
+    expect(priced[0].subtotal).toBe(880)
+    expect(priced[1].subtotal).toBe(730)
+    expect(priced[1].barrelPrices).toEqual([730])
+  })
+
+  it("aplica o preco do 2o barril na segunda linha firme do mesmo produto", () => {
+    const priced = priceManualOrderLines(
+      [
+        { produto_id: "brahma", quantidade: 1, is_consignado: false },
+        { produto_id: "brahma", quantidade: 1, is_consignado: false },
+      ],
+      [brahma],
+    )
+    expect(priced[0].subtotal).toBe(880)
+    expect(priced[1].subtotal).toBe(730)
+  })
+
+  it("trata firme antes do consignado mesmo se o consignado vier primeiro na lista", () => {
+    const priced = priceManualOrderLines(
+      [
+        { produto_id: "brahma", quantidade: 1, is_consignado: true },
+        { produto_id: "brahma", quantidade: 1, is_consignado: false },
+      ],
+      [brahma],
+    )
+    const firme = priced.find((l) => !l.is_consignado)!
+    const consignado = priced.find((l) => l.is_consignado)!
+    expect(firme.subtotal).toBe(880)
+    expect(consignado.subtotal).toBe(730)
+  })
+
+  it("aplica promo nas unidades extras dentro de uma unica linha firme", () => {
+    const priced = priceManualOrderLines([{ produto_id: "brahma", quantidade: 2, is_consignado: false }], [brahma])
+    expect(priced[0].barrelPrices).toEqual([880, 730])
+    expect(priced[0].subtotal).toBe(1610)
+    expect(priced[0].precoUnitario).toBe(805)
+  })
+
+  it("mantem o primeiro consignado no preco cheio quando nao ha barril firme", () => {
+    const priced = priceManualOrderLines([{ produto_id: "brahma", quantidade: 2, is_consignado: true }], [brahma])
+    expect(priced[0].barrelPrices).toEqual([880, 730])
+  })
+
+  it("conta barris de forma independente por produto", () => {
+    const priced = priceManualOrderLines(
+      [
+        { produto_id: "brahma", quantidade: 1, is_consignado: false },
+        { produto_id: "heineken", quantidade: 1, is_consignado: false },
+      ],
+      [brahma, heineken],
+    )
+    expect(priced[0].subtotal).toBe(880)
+    expect(priced[1].subtotal).toBe(950)
+  })
+
+  it("usa preco_cartao como base do primeiro barril quando metodo e cartao", () => {
+    const priced = priceManualOrderLines(
+      [
+        { produto_id: "brahma", quantidade: 1, is_consignado: false },
+        { produto_id: "brahma", quantidade: 1, is_consignado: true },
+      ],
+      [brahma],
+      "cartao",
+    )
+    expect(priced[0].subtotal).toBe(920)
+    expect(priced[1].subtotal).toBe(730)
+  })
+
+  it("cobra preco cheio em todas as linhas quando nao ha preco_segundo_barril", () => {
+    const priced = priceManualOrderLines(
+      [
+        { produto_id: "vinho", quantidade: 1, is_consignado: false },
+        { produto_id: "vinho", quantidade: 1, is_consignado: true },
+      ],
+      [semPromo],
+    )
+    expect(priced[0].subtotal).toBe(650)
+    expect(priced[1].subtotal).toBe(650)
   })
 })
