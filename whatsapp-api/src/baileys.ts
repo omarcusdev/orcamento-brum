@@ -1,5 +1,6 @@
 import makeWASocket, {
   DisconnectReason,
+  fetchLatestBaileysVersion,
   useMultiFileAuthState,
   WASocket,
 } from "@whiskeysockets/baileys"
@@ -16,10 +17,12 @@ const AUTH_DIR = "./auth_info"
 
 const connectToWhatsApp = async (): Promise<void> => {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+  const { version } = await fetchLatestBaileysVersion()
 
   connectionStatus = "connecting"
 
   socket = makeWASocket({
+    version,
     auth: state,
     logger,
     printQRInTerminal: false,
