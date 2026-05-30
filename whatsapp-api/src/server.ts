@@ -15,9 +15,9 @@ const start = async () => {
 
   registerRoutes(app)
 
-  await connectToWhatsApp()
-
   await app.listen({ port: PORT, host: "0.0.0.0" })
+
+  connectToWhatsApp().catch((err) => console.error("connectToWhatsApp failed:", err))
 }
 
 start()

@@ -17,12 +17,18 @@ const AUTH_DIR = "./auth_info"
 
 const connectToWhatsApp = async (): Promise<void> => {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
-  const { version } = await fetchLatestBaileysVersion()
+
+  let version: [number, number, number] | undefined
+  try {
+    version = (await fetchLatestBaileysVersion()).version
+  } catch (err) {
+    console.error("fetchLatestBaileysVersion failed, using bundled default:", err)
+  }
 
   connectionStatus = "connecting"
 
   socket = makeWASocket({
-    version,
+    ...(version ? { version } : {}),
     auth: state,
     logger,
     printQRInTerminal: false,
@@ -35,6 +41,7 @@ const connectToWhatsApp = async (): Promise<void> => {
 
     if (qr) {
       console.log("Scan this QR code to connect WhatsApp:")
+      console.log("WA_QR " + qr)
       QRCode.generate(qr, { small: true })
     }
 
@@ -60,9 +67,11 @@ const sendMessage = async (phoneNumber: string, message: string): Promise<boolea
     throw new Error("WhatsApp not connected")
   }
 
+  const digits = phoneNumber.replace(/\D/g, "")
+  const normalized = digits.length <= 11 ? `55${digits}` : digits
   const jid = phoneNumber.includes("@s.whatsapp.net")
     ? phoneNumber
-    : `${phoneNumber.replace(/\D/g, "")}@s.whatsapp.net`
+    : `${normalized}@s.whatsapp.net`
 
   await socket.sendMessage(jid, { text: message })
   return true
