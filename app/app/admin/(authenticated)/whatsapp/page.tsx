@@ -18,15 +18,17 @@ const WhatsappPage = async () => {
       <h1 className="font-display text-2xl font-bold text-white mb-6">WhatsApp</h1>
 
       <div className="space-y-10">
-        <section>
-          <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">CONEXAO</h2>
-          <WhatsAppConnection initial={connection} />
-        </section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
+          <section>
+            <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">CONEXAO</h2>
+            <WhatsAppConnection initial={connection} />
+          </section>
 
-        <section>
-          <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">ALERTA POR EMAIL</h2>
-          <WhatsappAlertEmail initialEmail={alertEmail} />
-        </section>
+          <section>
+            <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">ALERTA POR EMAIL</h2>
+            <WhatsappAlertEmail initialEmail={alertEmail} />
+          </section>
+        </div>
 
         <section>
           <h2 className="font-display text-lg font-bold text-white tracking-wide mb-1">CONVERSAS</h2>
