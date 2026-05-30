@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button, Textarea } from "@/components/ui"
 import {
@@ -22,13 +22,23 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
   const [mensagens, setMensagens] = useState<MensagemChat[]>([])
   const [texto, setTexto] = useState("")
   const [enviando, setEnviando] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState(false)
 
-  const refetchConversas = useCallback(async () => setConversas(await getConversas()), [])
-  const refetchMensagens = useCallback(async () => {
-    if (selId) setMensagens(await getConversaMensagens(selId))
+  // A seleção atual lida dentro do handler do Realtime sem recriar a subscription.
+  const selIdRef = useRef(selId)
+  useEffect(() => {
+    selIdRef.current = selId
   }, [selId])
 
-  // Realtime nas duas tabelas (mesmo padrão de orders-list.tsx).
+  const threadRef = useRef<HTMLDivElement>(null)
+
+  const refetchConversas = useCallback(async () => setConversas(await getConversas()), [])
+  const refetchSelecionada = useCallback(async () => {
+    const id = selIdRef.current
+    if (id) setMensagens(await getConversaMensagens(id))
+  }, [])
+
+  // Uma única subscription estável pro ciclo de vida do componente (padrão de orders-list.tsx).
   useEffect(() => {
     const supabase = createClient()
     const channel = supabase
@@ -37,14 +47,13 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
         refetchConversas()
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "mensagens_conversa_whatsapp" }, () => {
-        refetchConversas()
-        refetchMensagens()
+        refetchSelecionada()
       })
       .subscribe()
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [refetchConversas, refetchMensagens])
+  }, [refetchConversas, refetchSelecionada])
 
   // Ao selecionar: carrega a thread e zera não-lidas (sem mandar "visto" pro WhatsApp).
   useEffect(() => {
@@ -53,12 +62,24 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
     markConversaRead(selId).then(refetchConversas)
   }, [selId, refetchConversas])
 
+  // Mantém a thread rolada na última mensagem (no load e a cada nova).
+  useEffect(() => {
+    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight
+  }, [mensagens])
+
   const handleSend = async () => {
     if (!selId || !texto.trim()) return
     setEnviando(true)
-    const r = await enviarRespostaChat(selId, texto)
-    if (r.ok) setTexto("")
-    setEnviando(false)
+    setErroEnvio(false)
+    try {
+      const r = await enviarRespostaChat(selId, texto)
+      if (r.ok) setTexto("")
+      else setErroEnvio(true)
+    } catch {
+      setErroEnvio(true)
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -94,7 +115,7 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
       <div className="flex-1 flex flex-col bg-brand-surface rounded-xl border border-white/10 p-4">
         {selId ? (
           <>
-            <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-3">
+            <div ref={threadRef} className="flex-1 overflow-y-auto flex flex-col gap-2 mb-3">
               {mensagens.map((m) => (
                 <div
                   key={m.id}
@@ -121,6 +142,9 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
                 {enviando ? "Enviando…" : "Enviar"}
               </Button>
             </div>
+            {erroEnvio && (
+              <p className="text-xs text-red-400 mt-1">Falha ao enviar — verifique a conexão do WhatsApp e tente de novo.</p>
+            )}
           </>
         ) : (
           <p className="m-auto text-brand-warm-gray">Selecione uma conversa.</p>

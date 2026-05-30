@@ -22,6 +22,10 @@ describe("parseInboundPayload", () => {
     expect(parseInboundPayload({ telefone: "55", corpo: "oi" })).toBeNull()
   })
 
+  it("rejeita timestamp inválido", () => {
+    expect(parseInboundPayload({ ...valid, ocorridaEm: "oi" })).toBeNull()
+  })
+
   it("rejeita não-objeto", () => {
     expect(parseInboundPayload(null)).toBeNull()
     expect(parseInboundPayload("nope")).toBeNull()

@@ -26,23 +26,46 @@ create table if not exists mensagens_conversa_whatsapp (
 create index if not exists idx_mensagens_conversa on mensagens_conversa_whatsapp (conversa_id, ocorrida_em);
 create index if not exists idx_conversas_ultima on conversas_whatsapp (ultima_mensagem_em desc nulls last);
 
+-- clientes.telefone é salvo MASCARADO (ex.: "(21) 99812-3344"); o match por telefone precisa
+-- de uma coluna só-dígitos pra LIKE funcionar (o traço quebraria a janela de 8 dígitos).
+alter table clientes
+  add column if not exists telefone_digits text
+  generated always as (regexp_replace(coalesce(telefone, ''), '[^0-9]', '', 'g')) stored;
+create index if not exists idx_clientes_telefone_digits on clientes (telefone_digits);
+
 -- RLS: admin-only (mirror of mensagens_whatsapp, migration 004). Service role bypasses RLS.
 alter table conversas_whatsapp enable row level security;
 alter table mensagens_conversa_whatsapp enable row level security;
 
+-- Idempotente: drop-before-create (padrão da migration 004).
+drop policy if exists "conversas_whatsapp_select_admin" on conversas_whatsapp;
+drop policy if exists "conversas_whatsapp_insert_admin" on conversas_whatsapp;
+drop policy if exists "conversas_whatsapp_update_admin" on conversas_whatsapp;
+drop policy if exists "conversas_whatsapp_delete_admin" on conversas_whatsapp;
 create policy "conversas_whatsapp_select_admin" on conversas_whatsapp for select using (is_admin());
 create policy "conversas_whatsapp_insert_admin" on conversas_whatsapp for insert with check (is_admin());
 create policy "conversas_whatsapp_update_admin" on conversas_whatsapp for update using (is_admin());
 create policy "conversas_whatsapp_delete_admin" on conversas_whatsapp for delete using (is_admin());
 
+drop policy if exists "mensagens_conversa_whatsapp_select_admin" on mensagens_conversa_whatsapp;
+drop policy if exists "mensagens_conversa_whatsapp_insert_admin" on mensagens_conversa_whatsapp;
+drop policy if exists "mensagens_conversa_whatsapp_update_admin" on mensagens_conversa_whatsapp;
+drop policy if exists "mensagens_conversa_whatsapp_delete_admin" on mensagens_conversa_whatsapp;
 create policy "mensagens_conversa_whatsapp_select_admin" on mensagens_conversa_whatsapp for select using (is_admin());
 create policy "mensagens_conversa_whatsapp_insert_admin" on mensagens_conversa_whatsapp for insert with check (is_admin());
 create policy "mensagens_conversa_whatsapp_update_admin" on mensagens_conversa_whatsapp for update using (is_admin());
 create policy "mensagens_conversa_whatsapp_delete_admin" on mensagens_conversa_whatsapp for delete using (is_admin());
 
--- Realtime (mirror of migration 014).
-alter publication supabase_realtime add table conversas_whatsapp;
-alter publication supabase_realtime add table mensagens_conversa_whatsapp;
+-- Realtime (mirror of migration 014 — guard pra re-run safety).
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'conversas_whatsapp') then
+    alter publication supabase_realtime add table conversas_whatsapp;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'mensagens_conversa_whatsapp') then
+    alter publication supabase_realtime add table mensagens_conversa_whatsapp;
+  end if;
+end $$;
 
 -- Upsert conversa + insert message (de-duped) + bump aggregates only on a real insert.
 create or replace function register_inbound_whatsapp(
@@ -53,11 +76,19 @@ create or replace function register_inbound_whatsapp(
   p_direcao text,
   p_corpo text,
   p_ocorrida_em timestamptz
-) returns uuid as $$
+) returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
 declare
   conv_id uuid;
   msg_id uuid;
 begin
+  if p_wa_message_id is null or p_wa_message_id = '' then
+    raise exception 'wa_message_id is required';
+  end if;
+
   insert into conversas_whatsapp (telefone, cliente_id, nome_exibicao)
   values (p_telefone, p_cliente_id, p_nome)
   on conflict (telefone) do update set
@@ -76,11 +107,17 @@ begin
   end if;
 
   update conversas_whatsapp set
-    ultima_mensagem_em      = greatest(coalesce(ultima_mensagem_em, p_ocorrida_em), p_ocorrida_em),
-    ultima_mensagem_preview = left(p_corpo, 120),
-    nao_lidas               = nao_lidas + case when p_direcao = 'entrada' then 1 else 0 end
+    nao_lidas               = nao_lidas + case when p_direcao = 'entrada' then 1 else 0 end,
+    ultima_mensagem_preview = case
+                                when p_ocorrida_em >= coalesce(ultima_mensagem_em, p_ocorrida_em) then left(p_corpo, 120)
+                                else ultima_mensagem_preview
+                              end,
+    ultima_mensagem_em      = greatest(coalesce(ultima_mensagem_em, p_ocorrida_em), p_ocorrida_em)
   where id = conv_id;
 
   return conv_id;
 end;
-$$ language plpgsql security definer;
+$$;
+
+-- SECURITY DEFINER bypassa RLS: só o service role pode chamar (padrão da migration 004).
+revoke execute on function register_inbound_whatsapp(text, uuid, text, text, text, text, timestamptz) from anon, authenticated;

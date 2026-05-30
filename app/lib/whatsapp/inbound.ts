@@ -18,6 +18,7 @@ export const parseInboundPayload = (raw: unknown): InboundPayload | null => {
   if (c.direcao !== "entrada" && c.direcao !== "saida") return null
   if (!isNonEmptyString(c.corpo)) return null
   if (!isNonEmptyString(c.ocorridaEm)) return null
+  if (Number.isNaN(Date.parse(c.ocorridaEm))) return null
   return {
     telefone: c.telefone,
     waMessageId: c.waMessageId,

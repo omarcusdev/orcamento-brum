@@ -19,11 +19,11 @@ export async function POST(request: Request) {
   const supabase = createServiceClient()
   const telefoneE164 = toBrazilE164(payload.telefone)
 
-  // Candidatos pelos últimos 8 dígitos — barato e suficiente pro volume do MVP.
+  // clientes.telefone é salvo mascarado; casa contra os dígitos normalizados (telefone_digits).
   const { data: candidatos } = await supabase
     .from("clientes")
     .select("id, nome, telefone")
-    .ilike("telefone", `%${last8(payload.telefone)}%`)
+    .like("telefone_digits", `%${last8(payload.telefone)}%`)
 
   const match = matchClienteByPhone(payload.telefone, candidatos ?? [])
 

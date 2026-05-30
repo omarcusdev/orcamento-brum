@@ -1,3 +1,5 @@
+import { normalizeMessageContent } from "@whiskeysockets/baileys"
+
 type Direcao = "entrada" | "saida"
 
 export type InboundPayload = {
@@ -11,7 +13,12 @@ export type InboundPayload = {
 const MEDIA_KEYS = ["imageMessage", "audioMessage", "videoMessage", "documentMessage", "stickerMessage"] as const
 
 const textOf = (m: any): string | null =>
-  m?.conversation ?? m?.extendedTextMessage?.text ?? null
+  m?.conversation ??
+  m?.extendedTextMessage?.text ??
+  m?.imageMessage?.caption ??
+  m?.videoMessage?.caption ??
+  m?.documentMessage?.caption ??
+  null
 
 // Pure: WAMessage -> normalized payload, or null to skip (group, protocol, empty).
 export const extractInbound = (msg: any): InboundPayload | null => {
@@ -25,9 +32,12 @@ export const extractInbound = (msg: any): InboundPayload | null => {
 
   const direcao: Direcao = msg?.key?.fromMe ? "saida" : "entrada"
 
-  let corpo = textOf(msg?.message)
+  // WhatsApp embrulha o conteúdo (ephemeralMessage/viewOnce/edited); normaliza antes de ler.
+  const content: any = normalizeMessageContent(msg?.message)
+
+  let corpo = textOf(content)
   if (!corpo) {
-    const hasMedia = MEDIA_KEYS.some((k) => msg?.message?.[k])
+    const hasMedia = MEDIA_KEYS.some((k) => content?.[k])
     if (!hasMedia) return null // protocolo/efêmero/vazio
     corpo = "[mídia recebida — ver no celular]"
   }
@@ -49,11 +59,14 @@ export const forwardInbound = async (payload: InboundPayload): Promise<void> => 
     return
   }
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "x-inbound-secret": secret, "content-type": "application/json" },
       body: JSON.stringify(payload),
     })
+    if (!res.ok) {
+      console.error("forwardInbound non-2xx:", res.status)
+    }
   } catch (err) {
     console.error("forwardInbound failed:", err)
   }
