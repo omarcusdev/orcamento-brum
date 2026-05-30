@@ -1,4 +1,5 @@
 import type { WhatsAppResult } from "."
+import { toBrazilE164 } from "./phone"
 
 const REQUEST_TIMEOUT_MS = 10_000
 
@@ -18,7 +19,7 @@ export const sendViaBaileys = async (telefone: string, mensagem: string): Promis
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/send-message`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": apiKey },
-      body: JSON.stringify({ telefone, mensagem }),
+      body: JSON.stringify({ telefone: toBrazilE164(telefone), mensagem }),
       signal: controller.signal,
     })
 
