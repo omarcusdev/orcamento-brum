@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import QRCode from "qrcode"
 import { requireAdmin } from "@/lib/auth"
 import {
@@ -44,4 +45,34 @@ export const connectWhatsapp = async (
 export const disconnectWhatsapp = async (): Promise<{ ok: boolean }> => {
   await requireAdmin()
   return postLogout()
+}
+
+// Down-alert recipient: same configuracoes key sendWhatsAppDownAlert reads in lib/email.ts.
+const ALERT_EMAIL_KEY = "email_notificacao_destinatario"
+
+export const getWhatsappAlertEmail = async (): Promise<string> => {
+  const { supabase } = await requireAdmin()
+
+  const { data } = await supabase
+    .from("configuracoes")
+    .select("valor")
+    .eq("chave", ALERT_EMAIL_KEY)
+    .single()
+
+  return data?.valor?.trim() ?? ""
+}
+
+export const setWhatsappAlertEmail = async (email: string): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  const { error } = await supabase
+    .from("configuracoes")
+    .update({ valor: email.trim(), updated_at: new Date().toISOString() })
+    .eq("chave", ALERT_EMAIL_KEY)
+
+  if (error) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  revalidatePath("/admin/configuracoes")
+  return { ok: true }
 }
