@@ -17,6 +17,8 @@ let paired = false
 let currentQr: string | null = null
 let currentCode: string | null = null
 let pairingMethod: "qr" | "code" | null = null
+let pairingPhone: string | null = null
+let codeRequested = false
 
 let alertSent = false
 let offlineTimer: ReturnType<typeof setTimeout> | null = null
@@ -56,6 +58,20 @@ const clearOfflineTimer = (): void => {
     clearTimeout(offlineTimer)
     offlineTimer = null
   }
+}
+
+const resetToIdle = (): void => {
+  try {
+    socket?.end(undefined)
+  } catch {}
+  socket = null
+  connectionStatus = "disconnected"
+  currentQr = null
+  currentCode = null
+  pairingMethod = null
+  pairingPhone = null
+  codeRequested = false
+  clearOfflineTimer()
 }
 
 // Brazil E.164: strip non-digits, prepend country code 55 for local-length numbers.
@@ -101,12 +117,29 @@ const createSocket = async (): Promise<WASocket> => {
 
     const { connection, lastDisconnect, qr } = update
 
-    // Only surface a QR during an active QR pairing attempt; in code mode currentQr stays null.
-    if (qr && pairingMethod === "qr") {
-      currentQr = qr
-      console.log("Scan this QR code to connect WhatsApp:")
-      console.log("WA_QR " + qr)
-      QRCode.generate(qr, { small: true })
+    // The qr event signals the socket is ready to pair.
+    if (qr) {
+      if (pairingMethod === "code") {
+        // Request the 8-char code now that the connection is ready (calling it earlier throws).
+        if (pairingPhone && !codeRequested) {
+          codeRequested = true
+          newSocket
+            .requestPairingCode(pairingPhone)
+            .then((code) => {
+              currentCode = code
+              console.log("WhatsApp pairing code:", code)
+            })
+            .catch((err) => {
+              console.error("requestPairingCode failed:", err)
+              resetToIdle()
+            })
+        }
+      } else if (pairingMethod === "qr") {
+        currentQr = qr
+        console.log("Scan this QR code to connect WhatsApp:")
+        console.log("WA_QR " + qr)
+        QRCode.generate(qr, { small: true })
+      }
     }
 
     if (connection === "close") {
@@ -196,31 +229,19 @@ const startPairing = async (method: "qr" | "code", phone?: string): Promise<void
     return
   }
 
+  if (method === "code" && !phone) {
+    throw new Error("phone is required for code pairing")
+  }
+
   pairingMethod = method
+  pairingPhone = method === "code" && phone ? normalizePhone(phone) : null
+  codeRequested = false
   currentQr = null
   currentCode = null
   connectionStatus = "connecting"
+  // The pairing code (code mode) is requested inside the connection.update handler once the
+  // socket is ready to pair — requesting it synchronously here throws (WS not yet established).
   socket = await createSocket()
-
-  if (method === "code") {
-    if (!phone) {
-      throw new Error("phone is required for code pairing")
-    }
-    try {
-      currentCode = await socket.requestPairingCode(normalizePhone(phone))
-      console.log("WhatsApp pairing code:", currentCode)
-    } catch (err) {
-      console.error("requestPairingCode failed:", err)
-      try {
-        socket.end(undefined)
-      } catch {}
-      socket = null
-      connectionStatus = "disconnected"
-      pairingMethod = null
-      currentCode = null
-      throw err
-    }
-  }
 }
 
 const logout = async (): Promise<void> => {
