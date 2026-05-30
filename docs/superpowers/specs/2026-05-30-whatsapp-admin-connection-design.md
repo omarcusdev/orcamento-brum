@@ -100,6 +100,23 @@ A camada de **envio** (`sendWhatsAppMessage`) continua provider-neutra. A camada
 3. Clicar "Desconectar / trocar número" → status cai, QR reaparece.
 4. Alerta: derrubar a sessão (logout) → VPS chama `/api/whatsapp/alert` → validar que a rota foi atingida (e email, se Resend no ambiente).
 
+## Atualização v1.1 — pareamento on-demand + código de telefone
+
+Mudança de comportamento sobre o v1 (que gerava QR perpetuamente porque reconectava mesmo sem pareamento):
+
+- **Auto-reconnect só quando PAREADO** (`creds.registered`). Não pareado = **ocioso** (sem socket/QR) até ação do operador. Isso elimina o ciclo infinito de QR e reduz tentativas/risco de ban.
+- **Botão Conectar** inicia uma tentativa de pareamento **limitada no tempo**; se não escanear/parear na janela, volta ao ocioso (clica de novo). Uma tentativa = uma janela finita de QR rotacionando no mesmo socket.
+- **Dois métodos de pareamento:** QR (escanear) **ou** código de telefone (`socket.requestPairingCode(numero)` → código de 8 caracteres digitado no WhatsApp → Aparelhos conectados → Conectar com número).
+- **`/logout` (trocar número)** volta ao ocioso (não reinicia pareamento automático).
+- **Alertas** (loggedOut/offline) só valem para sessão que estava pareada; ocioso não alerta.
+
+**Contrato v1.1 (servidor):**
+- `GET /connection` (authed) → `{ status: "disconnected"|"connecting"|"connected", paired: boolean, qr: string|null, code: string|null, me: string|null }`. Substitui o `GET /qr`.
+- `POST /connect` (authed) body `{ method: "qr" }` ou `{ method: "code", phone: string }` → inicia a tentativa de pareamento → `{ ok: true }`. Em modo code, o código aparece em `GET /connection.code`.
+- `POST /logout` (authed) → logout + wipe auth_info → ocioso → `{ ok: true }`.
+
+**UI (estados):** connected → ● + número + desconectar; paired-mas-caiu → "Reconectando…"; não-pareado-ocioso → escolha "Conectar via QR" / "Conectar via código" (+ input de número no modo code); pareando → QR (auto-refresh) ou código exibido.
+
 ## Follow-ups (fora do v1)
 
 - **v2 — monitor externo de uptime** no `/health` (cobre "VPS/processo totalmente fora", que o evento do Baileys não enxerga). Fecha o OZA-32.
