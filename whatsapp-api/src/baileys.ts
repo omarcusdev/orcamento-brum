@@ -8,6 +8,7 @@ import { Boom } from "@hapi/boom"
 import { rm } from "node:fs/promises"
 import pino from "pino"
 import QRCode from "qrcode-terminal"
+import { extractInbound, forwardInbound } from "./inbound.js"
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 
@@ -106,9 +107,21 @@ const createSocket = async (): Promise<WASocket> => {
     auth: state,
     logger,
     printQRInTerminal: false,
+    markOnlineOnConnect: false,
   })
 
   newSocket.ev.on("creds.update", saveCreds)
+
+  newSocket.ev.on("messages.upsert", ({ messages, type }) => {
+    if (socket !== newSocket) return       // ignore superseded sockets (same guard as connection.update)
+    if (type !== "notify") return          // skip 'append' backfill
+    for (const msg of messages) {
+      const payload = extractInbound(msg)
+      if (payload) {
+        forwardInbound(payload).catch((err) => console.error("inbound forward error:", err))
+      }
+    }
+  })
 
   newSocket.ev.on("connection.update", (update) => {
     // Ignore events from a superseded socket (e.g. a previous /connect attempt) so its
