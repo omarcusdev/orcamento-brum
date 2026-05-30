@@ -12,6 +12,7 @@ const navItems = [
   { href: "/admin/promocoes", label: "Promo" },
   { href: "/admin/area-entrega", label: "Area" },
   { href: "/admin/conteudo", label: "Conteudo" },
+  { href: "/admin/whatsapp", label: "WhatsApp" },
   { href: "/admin/configuracoes", label: "Config" },
 ]
 

@@ -468,6 +468,109 @@ const renderCustomerText = (data: {
   return lines.join("\n")
 }
 
+const WHATSAPP_ADMIN_URL = `${ADMIN_BASE_URL}/admin/whatsapp`
+
+const renderWhatsAppDownHtml = (reasonLabel: string) => `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>WhatsApp desconectado</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f0e8;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f0e8" style="background-color:#f5f0e8;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;">
+        <tr>
+          <td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:24px 32px;border-top-left-radius:8px;border-top-right-radius:8px;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#e8b912;letter-spacing:2px;text-transform:uppercase;">ALFA Chopp Delivery</p>
+            <h1 style="margin:8px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;color:#ffffff;line-height:1.2;">WhatsApp desconectado</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 32px;">
+            <p style="margin:0 0 12px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.5;">A conexão do WhatsApp caiu (${reasonLabel}). Os pedidos não estão sendo confirmados automaticamente pelo WhatsApp até a reconexão.</p>
+            <p style="margin:0 0 24px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;line-height:1.6;">Acesse o painel, leia o QR code com o celular e o envio volta ao normal.</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center">
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td bgcolor="#e8b912" style="background-color:#e8b912;border-radius:6px;">
+                        <a href="${WHATSAPP_ADMIN_URL}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;font-weight:bold;text-decoration:none;letter-spacing:0.5px;">Reconectar o WhatsApp →</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 24px 32px;border-top:1px solid #eeeeee;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8278;text-align:center;line-height:1.5;">Alerta automático · ALFA Chopp Delivery</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`
+
+const reasonLabels: Record<"logged_out" | "offline", string> = {
+  logged_out: "a sessão foi desconectada pelo WhatsApp",
+  offline: "o aparelho ficou offline por tempo demais",
+}
+
+export const sendWhatsAppDownAlert = async (reason: "logged_out" | "offline") => {
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[whatsapp-alert] RESEND_API_KEY ausente — pulando envio")
+    return
+  }
+
+  try {
+    const supabase = createServiceClient()
+
+    const { data: configRow } = await supabase
+      .from("configuracoes")
+      .select("valor")
+      .eq("chave", "email_notificacao_destinatario")
+      .single()
+
+    const destinatario = configRow?.valor?.trim()
+    if (!destinatario) {
+      console.error("[whatsapp-alert] destinatário não configurado")
+      return
+    }
+
+    const reasonLabel = reasonLabels[reason]
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM ?? "ALFA Chopp <chopp@mail.ozapgpt.com.br>",
+      to: [destinatario],
+      subject: "WhatsApp desconectado — reconecte no painel",
+      html: renderWhatsAppDownHtml(reasonLabel),
+      text: [
+        "WhatsApp desconectado",
+        "",
+        `A conexão do WhatsApp caiu (${reasonLabel}). Os pedidos não estão sendo confirmados automaticamente até a reconexão.`,
+        "",
+        `Reconecte em: ${WHATSAPP_ADMIN_URL}`,
+      ].join("\n"),
+    })
+
+    if (result.error) {
+      console.error("[whatsapp-alert] erro Resend:", result.error)
+    }
+  } catch (err) {
+    console.error("[whatsapp-alert] erro inesperado:", err)
+  }
+}
+
 export const sendCustomerOrderConfirmation = async (pedidoId: string) => {
   if (!process.env.RESEND_API_KEY) {
     console.error("[email-cliente] RESEND_API_KEY ausente — pulando envio")
