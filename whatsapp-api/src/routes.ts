@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
-import { sendMessage, getStatus } from "./baileys.js"
+import { sendMessage, getStatus, getConnectionInfo, logoutAndReconnect } from "./baileys.js"
 
 const API_KEY = process.env.WHATSAPP_API_KEY
 
@@ -24,6 +24,13 @@ const registerRoutes = (app: FastifyInstance) => {
     status: getStatus(),
     timestamp: new Date().toISOString(),
   }))
+
+  app.get("/qr", { preHandler: authMiddleware }, async () => getConnectionInfo())
+
+  app.post("/logout", { preHandler: authMiddleware }, async () => {
+    await logoutAndReconnect()
+    return { ok: true }
+  })
 
   app.post<{
     Body: { telefone: string; mensagem: string }
