@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify"
-import { sendMessage, getStatus, getConnectionInfo, logoutAndReconnect } from "./baileys.js"
+import { sendMessage, getStatus, getConnectionInfo, startPairing, logout } from "./baileys.js"
 
 const API_KEY = process.env.WHATSAPP_API_KEY
 
@@ -25,10 +25,31 @@ const registerRoutes = (app: FastifyInstance) => {
     timestamp: new Date().toISOString(),
   }))
 
-  app.get("/qr", { preHandler: authMiddleware }, async () => getConnectionInfo())
+  app.get("/connection", { preHandler: authMiddleware }, async () => getConnectionInfo())
+
+  app.post<{
+    Body: { method: "qr" } | { method: "code"; phone: string }
+  }>("/connect", { preHandler: authMiddleware }, async (request, reply) => {
+    const { method } = request.body
+
+    if (method !== "qr" && method !== "code") {
+      return reply.code(400).send({ error: "method must be 'qr' or 'code'" })
+    }
+
+    if (method === "code" && !request.body.phone) {
+      return reply.code(400).send({ error: "phone is required for code pairing" })
+    }
+
+    try {
+      await startPairing(method, method === "code" ? request.body.phone : undefined)
+    } catch {
+      return reply.code(502).send({ error: "Failed to start pairing" })
+    }
+    return { ok: true }
+  })
 
   app.post("/logout", { preHandler: authMiddleware }, async () => {
-    await logoutAndReconnect()
+    await logout()
     return { ok: true }
   })
 

@@ -13,7 +13,10 @@ const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 
 let socket: WASocket | null = null
 let connectionStatus: "disconnected" | "connecting" | "connected" = "disconnected"
+let paired = false
 let currentQr: string | null = null
+let currentCode: string | null = null
+let pairingMethod: "qr" | "code" | null = null
 
 let alertSent = false
 let offlineTimer: ReturnType<typeof setTimeout> | null = null
@@ -55,7 +58,22 @@ const clearOfflineTimer = (): void => {
   }
 }
 
-const connectToWhatsApp = async (): Promise<void> => {
+// Brazil E.164: strip non-digits, prepend country code 55 for local-length numbers.
+const normalizePhone = (phone: string): string => {
+  const digits = phone.replace(/\D/g, "")
+  return digits.length <= 11 ? `55${digits}` : digits
+}
+
+const createSocket = async (): Promise<WASocket> => {
+  if (socket) {
+    try {
+      socket.end(undefined)
+    } catch (err) {
+      console.error("Error tearing down previous socket:", err)
+    }
+    socket = null
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
 
   let version: [number, number, number] | undefined
@@ -65,21 +83,26 @@ const connectToWhatsApp = async (): Promise<void> => {
     console.error("fetchLatestBaileysVersion failed, using bundled default:", err)
   }
 
-  connectionStatus = "connecting"
+  paired = state.creds.registered
 
-  socket = makeWASocket({
+  const newSocket = makeWASocket({
     ...(version ? { version } : {}),
     auth: state,
     logger,
     printQRInTerminal: false,
   })
 
-  socket.ev.on("creds.update", saveCreds)
+  newSocket.ev.on("creds.update", saveCreds)
 
-  socket.ev.on("connection.update", (update) => {
+  newSocket.ev.on("connection.update", (update) => {
+    // Ignore events from a superseded socket (e.g. a previous /connect attempt) so its
+    // late close can't clobber the current socket's module state.
+    if (socket !== newSocket) return
+
     const { connection, lastDisconnect, qr } = update
 
-    if (qr) {
+    // Only surface a QR during an active QR pairing attempt; in code mode currentQr stays null.
+    if (qr && pairingMethod === "qr") {
       currentQr = qr
       console.log("Scan this QR code to connect WhatsApp:")
       console.log("WA_QR " + qr)
@@ -89,17 +112,35 @@ const connectToWhatsApp = async (): Promise<void> => {
     if (connection === "close") {
       connectionStatus = "disconnected"
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode
+      const wasPaired = paired
+
+      if (statusCode === DisconnectReason.restartRequired) {
+        // Baileys fires this right after a successful QR scan / code entry: creds are now
+        // persisted (registered=true). We MUST recreate the socket to finish authenticated
+        // login — without this, pairing never completes.
+        console.log("Restart required after pairing. Reconnecting to finish login...")
+        connectionStatus = "connecting"
+        reconnect().catch((err) => console.error("post-pair reconnect failed:", err))
+        return
+      }
 
       if (statusCode === DisconnectReason.loggedOut) {
-        console.log("Logged out. Please re-pair via the admin WhatsApp page.")
+        console.log("Logged out. Re-pair via the admin WhatsApp page.")
+        socket = null
+        paired = false
+        currentQr = null
+        currentCode = null
+        pairingMethod = null
         clearOfflineTimer()
-        if (!alertSent) {
+        if (wasPaired && !alertSent) {
           alertSent = true
           sendDownAlert("logged_out")
         }
-      } else {
+      } else if (wasPaired) {
         console.log("Connection closed. Reconnecting...")
-        setTimeout(connectToWhatsApp, 3000)
+        setTimeout(() => {
+          reconnect().catch((err) => console.error("reconnect failed:", err))
+        }, 3000)
 
         if (!offlineTimer && !alertSent) {
           offlineTimer = setTimeout(() => {
@@ -110,18 +151,79 @@ const connectToWhatsApp = async (): Promise<void> => {
             }
           }, ALERT_GRACE_MS)
         }
+      } else {
+        // Unpaired pairing window closed without a scan/code: go idle, do NOT reconnect.
+        console.log("Pairing attempt ended without pairing. Idle until next /connect.")
+        socket = null
+        currentQr = null
+        currentCode = null
+        pairingMethod = null
+        clearOfflineTimer()
       }
     } else if (connection === "open") {
       connectionStatus = "connected"
+      paired = true
       currentQr = null
+      currentCode = null
+      pairingMethod = null
       alertSent = false
       clearOfflineTimer()
       console.log("WhatsApp connected successfully!")
     }
   })
+
+  return newSocket
 }
 
-const logoutAndReconnect = async (): Promise<void> => {
+// Resilience reconnect for an already-paired session; no QR/code, keeps existing creds.
+const reconnect = async (): Promise<void> => {
+  connectionStatus = "connecting"
+  socket = await createSocket()
+}
+
+// On boot connect only if a real session exists; otherwise stay idle (no socket, no QR/code).
+const init = async (): Promise<void> => {
+  const { state } = await useMultiFileAuthState(AUTH_DIR)
+  if (!state.creds.registered) {
+    console.log("No paired session. Idle until operator connects via the admin WhatsApp page.")
+    return
+  }
+  await reconnect()
+}
+
+const startPairing = async (method: "qr" | "code", phone?: string): Promise<void> => {
+  if (connectionStatus === "connected") {
+    return
+  }
+
+  pairingMethod = method
+  currentQr = null
+  currentCode = null
+  connectionStatus = "connecting"
+  socket = await createSocket()
+
+  if (method === "code") {
+    if (!phone) {
+      throw new Error("phone is required for code pairing")
+    }
+    try {
+      currentCode = await socket.requestPairingCode(normalizePhone(phone))
+      console.log("WhatsApp pairing code:", currentCode)
+    } catch (err) {
+      console.error("requestPairingCode failed:", err)
+      try {
+        socket.end(undefined)
+      } catch {}
+      socket = null
+      connectionStatus = "disconnected"
+      pairingMethod = null
+      currentCode = null
+      throw err
+    }
+  }
+}
+
+const logout = async (): Promise<void> => {
   try {
     await socket?.logout()
   } catch (err) {
@@ -136,11 +238,12 @@ const logoutAndReconnect = async (): Promise<void> => {
 
   socket = null
   connectionStatus = "disconnected"
+  paired = false
   currentQr = null
+  currentCode = null
+  pairingMethod = null
   alertSent = false
   clearOfflineTimer()
-
-  await connectToWhatsApp()
 }
 
 const sendMessage = async (phoneNumber: string, message: string): Promise<boolean> => {
@@ -148,8 +251,7 @@ const sendMessage = async (phoneNumber: string, message: string): Promise<boolea
     throw new Error("WhatsApp not connected")
   }
 
-  const digits = phoneNumber.replace(/\D/g, "")
-  const normalized = digits.length <= 11 ? `55${digits}` : digits
+  const normalized = normalizePhone(phoneNumber)
   const jid = phoneNumber.includes("@s.whatsapp.net")
     ? phoneNumber
     : `${normalized}@s.whatsapp.net`
@@ -170,8 +272,10 @@ const extractPhone = (jid: string | undefined): string | null => {
 
 const getConnectionInfo = () => ({
   status: connectionStatus,
+  paired,
   qr: connectionStatus === "connected" ? null : currentQr,
+  code: connectionStatus === "connected" ? null : currentCode,
   me: connectionStatus === "connected" ? extractPhone(socket?.user?.id) : null,
 })
 
-export { connectToWhatsApp, sendMessage, getStatus, getConnectionInfo, logoutAndReconnect }
+export { init, startPairing, sendMessage, getStatus, getConnectionInfo, logout }

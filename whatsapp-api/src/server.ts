@@ -1,6 +1,6 @@
 import Fastify from "fastify"
 import rateLimit from "@fastify/rate-limit"
-import { connectToWhatsApp } from "./baileys.js"
+import { init } from "./baileys.js"
 import { registerRoutes } from "./routes.js"
 
 const PORT = Number(process.env.PORT) || 3001
@@ -17,7 +17,7 @@ const start = async () => {
 
   await app.listen({ port: PORT, host: "0.0.0.0" })
 
-  connectToWhatsApp().catch((err) => console.error("connectToWhatsApp failed:", err))
+  init().catch((err) => console.error("init failed:", err))
 }
 
 start()

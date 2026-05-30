@@ -2,34 +2,50 @@ const REQUEST_TIMEOUT_MS = 10_000
 
 export type WhatsappConnectionStatus = "disconnected" | "connecting" | "connected"
 
-export type QrResponse = {
+export type ConnectionResponse = {
   status: WhatsappConnectionStatus
+  paired: boolean
   qr: string | null
+  code: string | null
   me: string | null
+}
+
+export type PairingMethod = "qr" | "code"
+
+export type ConnectResponse = {
+  ok: boolean
 }
 
 export type LogoutResponse = {
   ok: boolean
 }
 
-const disconnectedFallback: QrResponse = { status: "disconnected", qr: null, me: null }
+const disconnectedFallback: ConnectionResponse = {
+  status: "disconnected",
+  paired: false,
+  qr: null,
+  code: null,
+  me: null,
+}
 
 const isStatus = (value: unknown): value is WhatsappConnectionStatus =>
   value === "disconnected" || value === "connecting" || value === "connected"
 
-export const parseQrResponse = (raw: unknown): QrResponse => {
+export const parseConnectionResponse = (raw: unknown): ConnectionResponse => {
   if (!raw || typeof raw !== "object") return disconnectedFallback
   const candidate = raw as Record<string, unknown>
   return {
     status: isStatus(candidate.status) ? candidate.status : "disconnected",
+    paired: candidate.paired === true,
     qr: typeof candidate.qr === "string" ? candidate.qr : null,
+    code: typeof candidate.code === "string" ? candidate.code : null,
     me: typeof candidate.me === "string" ? candidate.me : null,
   }
 }
 
 const controlUrl = (baseUrl: string, path: string) => `${baseUrl.replace(/\/$/, "")}${path}`
 
-export const fetchQr = async (): Promise<QrResponse> => {
+export const fetchConnection = async (): Promise<ConnectionResponse> => {
   const baseUrl = process.env.WHATSAPP_API_URL
   const apiKey = process.env.WHATSAPP_API_KEY
 
@@ -42,21 +58,57 @@ export const fetchQr = async (): Promise<QrResponse> => {
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
   try {
-    const response = await fetch(controlUrl(baseUrl, "/qr"), {
+    const response = await fetch(controlUrl(baseUrl, "/connection"), {
       headers: { "x-api-key": apiKey },
       cache: "no-store",
       signal: controller.signal,
     })
 
     if (!response.ok) {
-      console.error("[whatsapp-control] /qr falhou — status", response.status)
+      console.error("[whatsapp-control] /connection falhou — status", response.status)
       return disconnectedFallback
     }
 
-    return parseQrResponse(await response.json())
+    return parseConnectionResponse(await response.json())
   } catch (err) {
-    console.error("[whatsapp-control] erro ao buscar /qr:", err)
+    console.error("[whatsapp-control] erro ao buscar /connection:", err)
     return disconnectedFallback
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+export const startPairing = async (method: PairingMethod, phone?: string): Promise<ConnectResponse> => {
+  const baseUrl = process.env.WHATSAPP_API_URL
+  const apiKey = process.env.WHATSAPP_API_KEY
+
+  if (!baseUrl || !apiKey) {
+    console.error("[whatsapp-control] WHATSAPP_API_URL/KEY ausente — pareamento ignorado")
+    return { ok: false }
+  }
+
+  const body = method === "code" ? { method, phone } : { method }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(controlUrl(baseUrl, "/connect"), {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      console.error("[whatsapp-control] /connect falhou — status", response.status)
+      return { ok: false }
+    }
+
+    return { ok: true }
+  } catch (err) {
+    console.error("[whatsapp-control] erro ao chamar /connect:", err)
+    return { ok: false }
   } finally {
     clearTimeout(timeout)
   }
