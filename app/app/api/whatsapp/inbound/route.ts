@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { parseInboundPayload } from "@/lib/whatsapp/inbound"
 import { toBrazilE164, last8, matchClienteByPhone } from "@/lib/whatsapp/phone"
+import { isWhatsappFeatureEnabled } from "@/lib/whatsapp/features"
 
 export const dynamic = "force-dynamic"
 
@@ -14,6 +15,10 @@ export async function POST(request: Request) {
   const payload = parseInboundPayload(await request.json().catch(() => null))
   if (!payload) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
+  }
+
+  if (!(await isWhatsappFeatureEnabled("whatsapp_atendimento_ativo"))) {
+    return NextResponse.json({ ok: true, skipped: true })
   }
 
   const supabase = createServiceClient()

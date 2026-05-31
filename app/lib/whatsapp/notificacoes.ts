@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
+import { isWhatsappFeatureEnabled } from "./features"
 
 const formatEventDate = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("pt-BR")
 
@@ -18,6 +19,7 @@ const buildConfirmationMessage = (data: {
 }
 
 export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
+  if (!(await isWhatsappFeatureEnabled("whatsapp_confirmacao_ativo"))) return
   try {
     const supabase = createServiceClient()
 

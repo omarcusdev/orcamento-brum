@@ -10,6 +10,11 @@ import {
   type PairingMethod,
   type WhatsappConnectionStatus,
 } from "./control"
+import {
+  WHATSAPP_FEATURE_KEYS,
+  parseFlag,
+  type WhatsappFeatureKey,
+} from "./features"
 
 export type WhatsappConnection = {
   status: WhatsappConnectionStatus
@@ -74,5 +79,53 @@ export const setWhatsappAlertEmail = async (email: string): Promise<{ ok: boolea
 
   revalidatePath("/admin/whatsapp")
   revalidatePath("/admin/configuracoes")
+  return { ok: true }
+}
+
+export type WhatsappFeatures = {
+  confirmacao: boolean
+  atendimento: boolean
+  alerta: boolean
+}
+
+export const getWhatsappFeatures = async (): Promise<WhatsappFeatures> => {
+  const { supabase } = await requireAdmin()
+
+  const { data } = await supabase
+    .from("configuracoes")
+    .select("chave, valor")
+    .in("chave", [...WHATSAPP_FEATURE_KEYS])
+
+  const valorDe = (chave: WhatsappFeatureKey) =>
+    parseFlag(data?.find((row) => row.chave === chave)?.valor)
+
+  return {
+    confirmacao: valorDe("whatsapp_confirmacao_ativo"),
+    atendimento: valorDe("whatsapp_atendimento_ativo"),
+    alerta: valorDe("whatsapp_alerta_ativo"),
+  }
+}
+
+export const setWhatsappFeature = async (
+  chave: WhatsappFeatureKey,
+  ativo: boolean,
+): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  if (!WHATSAPP_FEATURE_KEYS.includes(chave)) return { ok: false }
+
+  // upsert + select (não update): um update sem linha correspondente não dá erro e
+  // retornaria ok:true falsamente; o upsert cria a linha se faltar e o select confirma a escrita.
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave, valor: String(ativo), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
   return { ok: true }
 }

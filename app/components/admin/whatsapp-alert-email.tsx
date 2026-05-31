@@ -6,11 +6,12 @@ import { Button, Input } from "@/components/ui"
 
 type WhatsappAlertEmailProps = {
   initialEmail: string
+  disabled?: boolean
 }
 
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
-const WhatsappAlertEmail = ({ initialEmail }: WhatsappAlertEmailProps) => {
+const WhatsappAlertEmail = ({ initialEmail, disabled = false }: WhatsappAlertEmailProps) => {
   const [email, setEmail] = useState(initialEmail)
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<"saved" | "erro" | null>(null)
@@ -40,8 +41,11 @@ const WhatsappAlertEmail = ({ initialEmail }: WhatsappAlertEmailProps) => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg">
+    <form onSubmit={handleSubmit} className={`max-w-lg ${disabled ? "opacity-50 pointer-events-none" : ""}`} aria-disabled={disabled}>
       <div className="bg-brand-surface rounded-xl border border-white/10 p-6 space-y-4">
+        {disabled && (
+          <p className="text-xs text-brand-warm-gray">Alerta desligado — ligue o recurso em Recursos para editar.</p>
+        )}
         <p className="text-sm text-brand-warm-gray">
           Email que recebe o aviso quando a conexão do WhatsApp cair, para reconectar pelo painel.
         </p>
@@ -49,6 +53,7 @@ const WhatsappAlertEmail = ({ initialEmail }: WhatsappAlertEmailProps) => {
           type="email"
           value={email}
           invalid={feedback === "erro"}
+          disabled={disabled}
           onChange={(e) => {
             setEmail(e.target.value)
             if (feedback) setFeedback(null)
@@ -56,7 +61,7 @@ const WhatsappAlertEmail = ({ initialEmail }: WhatsappAlertEmailProps) => {
           placeholder="financeiro@exemplo.com"
         />
         <div className="flex items-center gap-3">
-          <Button type="submit" loading={saving}>
+          <Button type="submit" loading={saving} disabled={disabled}>
             {saving ? "Salvando..." : "Salvar"}
           </Button>
           {feedback === "saved" && (
