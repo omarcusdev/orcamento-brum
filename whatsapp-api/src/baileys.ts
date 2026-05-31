@@ -246,6 +246,20 @@ const startPairing = async (method: "qr" | "code", phone?: string): Promise<void
     throw new Error("phone is required for code pairing")
   }
 
+  // Fresh pairing always starts from scratch: tear down any socket and drop stale/partial
+  // creds. Otherwise leftover auth_info makes Baileys try to RESUME the old session, which
+  // fails with "logged out" and never emits a QR / pairing code.
+  try {
+    socket?.end(undefined)
+  } catch {}
+  socket = null
+  try {
+    await rm(AUTH_DIR, { recursive: true, force: true })
+  } catch (err) {
+    console.error("Failed to clear stale auth before pairing:", err)
+  }
+  paired = false
+
   pairingMethod = method
   pairingPhone = method === "code" && phone ? normalizePhone(phone) : null
   codeRequested = false
