@@ -114,7 +114,7 @@ const createSocket = async (): Promise<WASocket> => {
 
   newSocket.ev.on("messages.upsert", ({ messages, type }) => {
     if (socket !== newSocket) return       // ignore superseded sockets (same guard as connection.update)
-    if (type !== "notify") return          // skip 'append' backfill
+    if (type !== "notify") return          // skip 'append' backfill (only live messages)
     for (const msg of messages) {
       const payload = extractInbound(msg)
       if (payload) {

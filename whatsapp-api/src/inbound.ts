@@ -20,14 +20,31 @@ const textOf = (m: any): string | null =>
   m?.documentMessage?.caption ??
   null
 
-// Pure: WAMessage -> normalized payload, or null to skip (group, protocol, empty).
+const digitsFromJid = (j?: string | null): string =>
+  j ? j.split("@")[0].split(":")[0].replace(/\D/g, "") : ""
+
+// Pure: WAMessage -> normalized payload, or null to skip (group, broadcast, protocol, empty).
 export const extractInbound = (msg: any): InboundPayload | null => {
   const jid: string | undefined = msg?.key?.remoteJid
-  if (!jid || !jid.endsWith("@s.whatsapp.net")) return null // só DM (ignora grupos @g.us e status)
+  if (!jid) return null
+  if (jid.endsWith("@g.us") || jid.endsWith("@broadcast")) return null // ignora grupos e status
+
   const waMessageId: string | undefined = msg?.key?.id
   if (!waMessageId) return null
 
-  const telefone = jid.split("@")[0].split(":")[0].replace(/\D/g, "")
+  // DMs vêm como @s.whatsapp.net OU @lid (identidade oculta nova). No caso @lid o número real
+  // chega num campo alternativo (remoteJidAlt/senderPn); usamos o primeiro que tiver dígitos.
+  const k = msg.key
+  const telefone =
+    [
+      jid.endsWith("@s.whatsapp.net") ? jid : null,
+      k?.remoteJidAlt,
+      k?.senderPn,
+      k?.participantAlt,
+      k?.participantPn,
+    ]
+      .map(digitsFromJid)
+      .find((d) => d.length >= 8) || digitsFromJid(jid) // fallback: dígitos do próprio jid (lid)
   if (!telefone) return null
 
   const direcao: Direcao = msg?.key?.fromMe ? "saida" : "entrada"
