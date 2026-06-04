@@ -1,6 +1,12 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
-import { isWhatsappFeatureEnabled } from "./features"
+import { isWhatsappFeatureEnabled, parseFlag } from "./features"
+import {
+  isNotifyStatus,
+  resolveStatusMessage,
+  statusFlagKey,
+  statusMsgKey,
+} from "./status-messages"
 
 const formatEventDate = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("pt-BR")
 
@@ -72,5 +78,72 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
     })
   } catch (err) {
     console.error("[whatsapp] erro inesperado na confirmação:", err)
+  }
+}
+
+// Mensagem automatica quando o pedido entra em em_rota/entregue/cancelado/recolhido.
+// Roda via after() nas server actions de status — nunca bloqueia a mudanca de status.
+export const sendCustomerWhatsAppStatusUpdate = async (pedidoId: string, novoStatus: string) => {
+  if (!isNotifyStatus(novoStatus)) return
+  if (!(await isWhatsappFeatureEnabled("whatsapp_status_entrega_ativo"))) return
+  try {
+    const supabase = createServiceClient()
+
+    const { data: cfgRows } = await supabase
+      .from("configuracoes")
+      .select("chave, valor")
+      .in("chave", [statusFlagKey(novoStatus), statusMsgKey(novoStatus)])
+
+    const statusOn = parseFlag(cfgRows?.find((r) => r.chave === statusFlagKey(novoStatus))?.valor)
+    const template = cfgRows?.find((r) => r.chave === statusMsgKey(novoStatus))?.valor ?? null
+
+    const { data: pedido, error: pedidoErr } = await supabase
+      .from("pedidos")
+      .select("clientes(nome, telefone)")
+      .eq("id", pedidoId)
+      .single()
+
+    if (pedidoErr || !pedido) {
+      console.error("[whatsapp] pedido não encontrado (status):", pedidoId, pedidoErr)
+      return
+    }
+
+    const cliente = Array.isArray(pedido.clientes) ? pedido.clientes[0] : pedido.clientes
+    const telefone = cliente?.telefone
+    if (!telefone) {
+      console.error("[whatsapp] cliente sem telefone (status):", pedidoId)
+      return
+    }
+
+    const decision = resolveStatusMessage(novoStatus, {
+      statusOn,
+      template,
+      nome: (cliente?.nome ?? "Cliente").split(" ")[0],
+      pedido: pedidoId.slice(0, 8),
+    })
+    if (decision.skip) return
+
+    const tipo = `status_${novoStatus}`
+
+    // Dedupe: nao reenvia o mesmo status pro mesmo pedido (ex.: admin volta e avanca de novo).
+    const { data: existing } = await supabase
+      .from("mensagens_whatsapp")
+      .select("id")
+      .eq("pedido_id", pedidoId)
+      .eq("tipo", tipo)
+      .eq("status", "enviada")
+      .limit(1)
+
+    if (existing && existing.length > 0) return
+
+    const result = await sendWhatsAppMessage(telefone, decision.mensagem)
+
+    await supabase.rpc("register_whatsapp_message", {
+      p_pedido_id: pedidoId,
+      p_tipo: tipo,
+      p_status: result.ok ? "enviada" : "falha",
+    })
+  } catch (err) {
+    console.error("[whatsapp] erro inesperado no status de entrega:", err)
   }
 }
