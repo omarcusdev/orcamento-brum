@@ -7,7 +7,7 @@ import { setWhatsappFeature, type WhatsappFeatures } from "@/lib/whatsapp/admin-
 import type { WhatsappFeatureKey } from "@/lib/whatsapp/features"
 
 const NAO_FAZ =
-  "Ele NÃO responde sozinho (sem robô), NÃO traz o histórico antigo e NÃO avisa status de entrega."
+  "Ele NÃO responde sozinho (sem robô) e NÃO traz o histórico antigo de conversas."
 
 const formatNumero = (me: string | null): string | null => {
   if (!me) return null

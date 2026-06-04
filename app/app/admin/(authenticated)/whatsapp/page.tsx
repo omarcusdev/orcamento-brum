@@ -1,16 +1,18 @@
-import { getWhatsappAlertEmail, getWhatsappConnection, getWhatsappFeatures } from "@/lib/whatsapp/admin-actions"
+import { getWhatsappAlertEmail, getWhatsappConnection, getWhatsappFeatures, getWhatsappStatusEntregaConfig } from "@/lib/whatsapp/admin-actions"
 import { getConversas } from "@/lib/whatsapp/chat-actions"
 import WhatsAppConnection from "@/components/admin/whatsapp-connection"
 import WhatsappAlertEmail from "@/components/admin/whatsapp-alert-email"
 import AtendimentoClient from "@/components/admin/atendimento/atendimento-client"
 import WhatsappFeaturesPanel from "@/components/admin/whatsapp-features-panel"
+import WhatsappStatusEntregaPanel from "@/components/admin/whatsapp-status-entrega-panel"
 
 export const dynamic = "force-dynamic"
 
 const WhatsappPage = async () => {
-  const [connection, features, alertEmail, conversas] = await Promise.all([
+  const [connection, features, statusEntrega, alertEmail, conversas] = await Promise.all([
     getWhatsappConnection(),
     getWhatsappFeatures(),
+    getWhatsappStatusEntregaConfig(),
     getWhatsappAlertEmail(),
     getConversas(),
   ])
@@ -23,6 +25,9 @@ const WhatsappPage = async () => {
         <section>
           <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">RECURSOS</h2>
           <WhatsappFeaturesPanel initial={features} me={connection.me} />
+          <div className="mt-4">
+            <WhatsappStatusEntregaPanel initial={statusEntrega} />
+          </div>
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
