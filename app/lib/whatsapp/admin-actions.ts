@@ -15,6 +15,14 @@ import {
   parseFlag,
   type WhatsappFeatureKey,
 } from "./features"
+import {
+  STATUS_NOTIFY_STATUSES,
+  DEFAULT_STATUS_MESSAGES,
+  isNotifyStatus,
+  statusFlagKey,
+  statusMsgKey,
+  type NotifyStatus,
+} from "./status-messages"
 
 export type WhatsappConnection = {
   status: WhatsappConnectionStatus
@@ -120,6 +128,89 @@ export const setWhatsappFeature = async (
     .from("configuracoes")
     .upsert(
       { chave, valor: String(ativo), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export type StatusEntregaItem = { ativo: boolean; mensagem: string }
+export type StatusEntregaConfig = {
+  master: boolean
+  porStatus: Record<NotifyStatus, StatusEntregaItem>
+}
+
+const STATUS_MASTER_KEY = "whatsapp_status_entrega_ativo"
+
+export const getWhatsappStatusEntregaConfig = async (): Promise<StatusEntregaConfig> => {
+  const { supabase } = await requireAdmin()
+
+  const chaves = [
+    STATUS_MASTER_KEY,
+    ...STATUS_NOTIFY_STATUSES.flatMap((s) => [statusFlagKey(s), statusMsgKey(s)]),
+  ]
+
+  const { data } = await supabase.from("configuracoes").select("chave, valor").in("chave", chaves)
+  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+
+  const porStatus = Object.fromEntries(
+    STATUS_NOTIFY_STATUSES.map((s) => {
+      const raw = valorDe(statusMsgKey(s))
+      return [
+        s,
+        {
+          ativo: parseFlag(valorDe(statusFlagKey(s))),
+          // texto vazio na DB = cair no padrao; o operador pode restaurar ao deixar o campo vazio
+          mensagem: raw && raw.trim() ? raw : DEFAULT_STATUS_MESSAGES[s],
+        },
+      ]
+    }),
+  ) as Record<NotifyStatus, StatusEntregaItem>
+
+  return { master: parseFlag(valorDe(STATUS_MASTER_KEY)), porStatus }
+}
+
+export const setWhatsappStatusFlag = async (
+  alvo: "master" | NotifyStatus,
+  ativo: boolean,
+): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  if (alvo !== "master" && !isNotifyStatus(alvo)) return { ok: false }
+  const chave = alvo === "master" ? STATUS_MASTER_KEY : statusFlagKey(alvo)
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave, valor: String(ativo), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export const setWhatsappStatusMessage = async (
+  status: NotifyStatus,
+  texto: string,
+): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  if (!isNotifyStatus(status)) return { ok: false }
+  // texto vazio = restaurar padrao; assim o operador pode resetar sem saber o texto original
+  const valor = texto.trim() ? texto : DEFAULT_STATUS_MESSAGES[status]
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: statusMsgKey(status), valor, updated_at: new Date().toISOString() },
       { onConflict: "chave" },
     )
     .select("chave")
