@@ -78,12 +78,20 @@ describe("statusFlagKey / statusMsgKey", () => {
 })
 
 describe("DEFAULT_STATUS_MESSAGES / STATUS_LABELS", () => {
-  it("tem os 4 status com tokens e label", () => {
+  it("tem os 4 status com label e ao menos um token", () => {
     for (const s of STATUS_NOTIFY_STATUSES) {
       expect(typeof STATUS_LABELS[s]).toBe("string")
-      expect(DEFAULT_STATUS_MESSAGES[s]).toContain("{pedido}")
+      expect(STATUS_LABELS[s].length).toBeGreaterThan(0)
+      const msg = DEFAULT_STATUS_MESSAGES[s]
+      expect(msg.length).toBeGreaterThan(0)
+      expect(msg.includes("{nome}") || msg.includes("{pedido}")).toBe(true)
     }
+  })
+  it("em_rota usa {nome} e {pedido}; recolhido nao referencia numero de pedido", () => {
     expect(DEFAULT_STATUS_MESSAGES.em_rota).toContain("{nome}")
+    expect(DEFAULT_STATUS_MESSAGES.em_rota).toContain("{pedido}")
+    expect(DEFAULT_STATUS_MESSAGES.recolhido).toContain("{nome}")
+    expect(DEFAULT_STATUS_MESSAGES.recolhido).not.toContain("{pedido}")
   })
 })
 
