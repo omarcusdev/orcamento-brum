@@ -16,10 +16,10 @@ Hoje o painel de Recursos declara explicitamente que o número *"NÃO avisa stat
 
 | Status | Momento | Default da mensagem |
 |---|---|---|
-| `em_rota` | saiu para entrega / a caminho | `Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚 — ALFA Chopp Delivery` |
-| `entregue` | pedido entregue | `Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento! — ALFA Chopp Delivery` |
-| `cancelado` | pedido cancelado | `Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante. — ALFA Chopp Delivery` |
-| `recolhido` | barril/equipamento recolhido | `Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir! — ALFA Chopp Delivery` |
+| `em_rota` | saiu para entrega / a caminho | `Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚` |
+| `entregue` | pedido entregue | `Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento!` |
+| `cancelado` | pedido cancelado | `Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante.` |
+| `recolhido` | barril/equipamento recolhido | `Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir!` |
 
 **Fora do escopo (não enviam):** `confirmado` (já coberto pela confirmação inicial — FRE-12), `enviar_para_entregador` e `pago` (transições internas, sem valor pro cliente).
 
@@ -62,10 +62,10 @@ export const STATUS_LABELS: Record<NotifyStatus, string> = {
 }
 
 export const DEFAULT_STATUS_MESSAGES: Record<NotifyStatus, string> = {
-  em_rota: "Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚 — ALFA Chopp Delivery",
-  entregue: "Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento! — ALFA Chopp Delivery",
-  cancelado: "Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante. — ALFA Chopp Delivery",
-  recolhido: "Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir! — ALFA Chopp Delivery",
+  em_rota: "Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚",
+  entregue: "Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento!",
+  cancelado: "Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante.",
+  recolhido: "Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir!",
 }
 
 export const isNotifyStatus = (s: string): s is NotifyStatus =>
