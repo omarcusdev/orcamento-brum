@@ -20,7 +20,7 @@ export const DEFAULT_STATUS_MESSAGES: Record<NotifyStatus, string> = {
   cancelado:
     "Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante. — ALFA Chopp Delivery",
   recolhido:
-    "Recolhemos tudo certinho do pedido #{pedido}! 🍺 Valeu demais pela parceria, {nome}. Bora repetir! — ALFA Chopp Delivery",
+    "Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir! — ALFA Chopp Delivery",
 }
 
 export const isNotifyStatus = (s: string): s is NotifyStatus =>
