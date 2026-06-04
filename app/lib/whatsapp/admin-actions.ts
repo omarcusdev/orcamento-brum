@@ -144,7 +144,9 @@ export type StatusEntregaConfig = {
   porStatus: Record<NotifyStatus, StatusEntregaItem>
 }
 
-const STATUS_MASTER_KEY = "whatsapp_status_entrega_ativo"
+// Tipado como WhatsappFeatureKey: garante (em compile-time) que esta chave continua
+// igual à lida pelo gate em notificacoes.ts — um rename em WHATSAPP_FEATURE_KEYS quebra aqui.
+const STATUS_MASTER_KEY: WhatsappFeatureKey = "whatsapp_status_entrega_ativo"
 
 export const getWhatsappStatusEntregaConfig = async (): Promise<StatusEntregaConfig> => {
   const { supabase } = await requireAdmin()
