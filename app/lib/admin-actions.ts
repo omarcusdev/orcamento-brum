@@ -7,6 +7,8 @@ import { productSchema, manualOrderInputSchema, updatePedidoSchema, updatePedido
 import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
 import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES } from "@/lib/admin-status"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
+import { after } from "next/server"
+import { sendCustomerWhatsAppStatusUpdate } from "@/lib/whatsapp/notificacoes"
 
 const statusOrder = STATUS_FLOW_ORDER
 
@@ -48,6 +50,8 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
   revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin/pedidos")
 
+  after(() => sendCustomerWhatsAppStatusUpdate(pedidoId, nextStatus))
+
   return { status: nextStatus }
 }
 
@@ -63,6 +67,8 @@ export const cancelOrder = async (pedidoId: string) => {
 
   revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin/pedidos")
+
+  after(() => sendCustomerWhatsAppStatusUpdate(pedidoId, "cancelado"))
 }
 
 export const archiveOrder = async (pedidoId: string) => {
