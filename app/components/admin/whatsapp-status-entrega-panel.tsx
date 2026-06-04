@@ -32,6 +32,7 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
 
   const toggleMaster = (next: boolean) => {
     setErro(null)
+    setSalvo(null)
     setMaster(next)
     startTransition(async () => {
       const { ok } = await setWhatsappStatusFlag("master", next)
@@ -44,6 +45,7 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
 
   const toggleStatus = (s: NotifyStatus, next: boolean) => {
     setErro(null)
+    setSalvo(null)
     setPorStatus((p) => ({ ...p, [s]: { ...p[s], ativo: next } }))
     startTransition(async () => {
       const { ok } = await setWhatsappStatusFlag(s, next)
