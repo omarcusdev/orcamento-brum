@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Truck } from "lucide-react"
+import { Truck, ChevronDown, ChevronRight } from "lucide-react"
 import { Switch, Textarea, Button } from "@/components/ui"
 import {
   setWhatsappStatusFlag,
@@ -28,6 +28,9 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
   )
   const [erro, setErro] = useState<string | null>(null)
   const [salvo, setSalvo] = useState<NotifyStatus | null>(null)
+  // Mensagens ficam num collapse fechado: a feature nasce ligada e é raramente editada,
+  // então o padrão é não empurrar o painel de Conversas (parte principal) pra baixo.
+  const [aberto, setAberto] = useState(false)
   const [, startTransition] = useTransition()
 
   const toggleMaster = (next: boolean) => {
@@ -107,61 +110,83 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
       </div>
 
       {master && (
-        <ul className="mt-5 space-y-5 border-t border-white/5 pt-5">
-          {STATUS_NOTIFY_STATUSES.map((s) => (
-            <li key={s} className="space-y-2">
-              <div className="flex items-center justify-between gap-4">
-                <span className={`text-sm font-medium ${porStatus[s].ativo ? "text-white" : "text-brand-warm-gray"}`}>
-                  {STATUS_LABELS[s]}
-                </span>
-                <Switch
-                  id={`whatsapp_status_${s}`}
-                  checked={porStatus[s].ativo}
-                  onChange={(next) => toggleStatus(s, next)}
-                  aria-label={STATUS_LABELS[s]}
-                />
-              </div>
-              <Textarea
-                rows={3}
-                value={rascunho[s]}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setRascunho((r) => ({ ...r, [s]: v }))
-                  setSalvo(null)
-                }}
-                disabled={!porStatus[s].ativo}
-                aria-label={`Mensagem ${STATUS_LABELS[s]}`}
-              />
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => salvarMsg(s)}
-                  disabled={!porStatus[s].ativo || rascunho[s] === porStatus[s].mensagem}
-                >
-                  Salvar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => restaurar(s)}
-                  disabled={!porStatus[s].ativo}
-                >
-                  Restaurar padrão
-                </Button>
-                {salvo === s && <span className="text-xs text-green-300">Salvo ✓</span>}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-5 border-t border-white/5 pt-4">
+          <button
+            type="button"
+            onClick={() => setAberto((v) => !v)}
+            aria-expanded={aberto}
+            className="flex w-full items-center gap-2 text-sm text-brand-warm-gray hover:text-white transition-colors"
+          >
+            {aberto ? (
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0" />
+            )}
+            <span className="font-medium">Mensagens por status</span>
+            <span className="text-xs text-brand-warm-gray/70">
+              ({STATUS_NOTIFY_STATUSES.filter((s) => porStatus[s].ativo).length} de {STATUS_NOTIFY_STATUSES.length} ligados)
+            </span>
+          </button>
+
+          {aberto && (
+            <>
+              <ul className="mt-4 space-y-5">
+                {STATUS_NOTIFY_STATUSES.map((s) => (
+                  <li key={s} className="space-y-2">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className={`text-sm font-medium ${porStatus[s].ativo ? "text-white" : "text-brand-warm-gray"}`}>
+                        {STATUS_LABELS[s]}
+                      </span>
+                      <Switch
+                        id={`whatsapp_status_${s}`}
+                        checked={porStatus[s].ativo}
+                        onChange={(next) => toggleStatus(s, next)}
+                        aria-label={STATUS_LABELS[s]}
+                      />
+                    </div>
+                    <Textarea
+                      rows={3}
+                      value={rascunho[s]}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setRascunho((r) => ({ ...r, [s]: v }))
+                        setSalvo(null)
+                      }}
+                      disabled={!porStatus[s].ativo}
+                      aria-label={`Mensagem ${STATUS_LABELS[s]}`}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => salvarMsg(s)}
+                        disabled={!porStatus[s].ativo || rascunho[s] === porStatus[s].mensagem}
+                      >
+                        Salvar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => restaurar(s)}
+                        disabled={!porStatus[s].ativo}
+                      >
+                        Restaurar padrão
+                      </Button>
+                      {salvo === s && <span className="text-xs text-green-300">Salvo ✓</span>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-brand-warm-gray mt-5 border-t border-white/5 pt-3">
+                Use <code className="text-brand-yellow">{"{nome}"}</code> (primeiro nome) e{" "}
+                <code className="text-brand-yellow">{"{pedido}"}</code> (nº do pedido) nas mensagens.
+              </p>
+            </>
+          )}
+        </div>
       )}
 
       {erro && <p className="text-xs text-red-300 mt-3">{erro}</p>}
-
-      <p className="text-xs text-brand-warm-gray mt-5 border-t border-white/5 pt-3">
-        Use <code className="text-brand-yellow">{"{nome}"}</code> (primeiro nome) e{" "}
-        <code className="text-brand-yellow">{"{pedido}"}</code> (nº do pedido) nas mensagens.
-      </p>
     </div>
   )
 }

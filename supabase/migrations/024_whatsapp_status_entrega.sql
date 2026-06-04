@@ -6,10 +6,10 @@ insert into configuracoes (chave, valor) values
   ('whatsapp_status_entregue_ativo', 'true'),
   ('whatsapp_status_cancelado_ativo', 'true'),
   ('whatsapp_status_recolhido_ativo', 'true'),
-  ('whatsapp_status_em_rota_msg', 'Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚 — ALFA Chopp Delivery'),
-  ('whatsapp_status_entregue_msg', 'Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento! — ALFA Chopp Delivery'),
-  ('whatsapp_status_cancelado_msg', 'Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante. — ALFA Chopp Delivery'),
-  ('whatsapp_status_recolhido_msg', 'Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir! — ALFA Chopp Delivery')
+  ('whatsapp_status_em_rota_msg', 'Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚'),
+  ('whatsapp_status_entregue_msg', 'Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento!'),
+  ('whatsapp_status_cancelado_msg', 'Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante.'),
+  ('whatsapp_status_recolhido_msg', 'Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir!')
 on conflict (chave) do nothing;
 
 -- Permitir os novos tipos de mensagem de status no log mensagens_whatsapp.

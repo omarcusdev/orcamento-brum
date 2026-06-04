@@ -14,13 +14,13 @@ export const STATUS_LABELS: Record<NotifyStatus, string> = {
 // Tokens suportados nas mensagens: {nome} (primeiro nome) e {pedido} (id curto).
 export const DEFAULT_STATUS_MESSAGES: Record<NotifyStatus, string> = {
   em_rota:
-    "Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚 — ALFA Chopp Delivery",
+    "Eba, {nome}! 🍻 Seu chopp tá a caminho! O pedido #{pedido} saiu pra entrega e logo chega aí. 🚚",
   entregue:
-    "Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento! — ALFA Chopp Delivery",
+    "Seu chopp chegou! 🎉 Pedido #{pedido} entregue. Caprichem na espuma e curtam o evento!",
   cancelado:
-    "Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante. — ALFA Chopp Delivery",
+    "Olá {nome}, seu pedido #{pedido} foi cancelado. Se precisar, a gente refaz num instante.",
   recolhido:
-    "Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir! — ALFA Chopp Delivery",
+    "Recolhemos tudo certinho! 🍺 Valeu demais pela parceria, {nome}. Bora repetir!",
 }
 
 export const isNotifyStatus = (s: string): s is NotifyStatus =>
