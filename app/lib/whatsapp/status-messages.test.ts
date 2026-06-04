@@ -77,8 +77,8 @@ describe("resolveStatusMessage", () => {
   })
   it("usa o default quando o template e vazio/espaco", () => {
     const r = resolveStatusMessage("entregue", { statusOn: true, template: "   ", ...vars })
-    if (!r.skip) expect(r.mensagem).toContain("entregue")
-    else throw new Error("nao deveria pular")
+    expect(r.skip).toBe(false)
+    if (!r.skip) expect(r.mensagem).toBe(renderStatusTemplate(DEFAULT_STATUS_MESSAGES.entregue, vars))
   })
   it("usa o template custom e renderiza tokens", () => {
     const r = resolveStatusMessage("cancelado", { statusOn: true, template: "Ei {nome}! #{pedido}", ...vars })
