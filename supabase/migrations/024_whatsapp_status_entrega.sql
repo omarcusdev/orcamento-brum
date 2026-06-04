@@ -13,6 +13,6 @@ insert into configuracoes (chave, valor) values
 on conflict (chave) do nothing;
 
 -- Permitir os novos tipos de mensagem de status no log mensagens_whatsapp.
-alter table mensagens_whatsapp drop constraint mensagens_whatsapp_tipo_check;
+alter table mensagens_whatsapp drop constraint if exists mensagens_whatsapp_tipo_check;
 alter table mensagens_whatsapp add constraint mensagens_whatsapp_tipo_check
   check (tipo in ('confirmacao', 'lembrete', 'status_em_rota', 'status_entregue', 'status_cancelado', 'status_recolhido'));
