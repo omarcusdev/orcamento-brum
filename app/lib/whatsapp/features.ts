@@ -7,6 +7,7 @@ export const WHATSAPP_FEATURE_KEYS = [
   "whatsapp_atendimento_ativo",
   "whatsapp_alerta_ativo",
   "whatsapp_status_entrega_ativo",
+  "whatsapp_lembrete_vespera_ativo",
 ] as const
 
 export type WhatsappFeatureKey = (typeof WHATSAPP_FEATURE_KEYS)[number]
