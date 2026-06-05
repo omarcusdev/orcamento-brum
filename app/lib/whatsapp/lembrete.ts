@@ -36,10 +36,11 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
   try {
     const supabase = createServiceClient()
 
-    const { data: cfg } = await supabase
+    const { data: cfg, error: cfgErr } = await supabase
       .from("configuracoes")
       .select("chave, valor")
       .in("chave", [LEMBRETE_HORA_KEY, LEMBRETE_MSG_KEY])
+    if (cfgErr) console.error("[whatsapp] erro lendo config do lembrete:", cfgErr)
 
     const valorDe = (chave: string) => cfg?.find((row) => row.chave === chave)?.valor
     const hora = parseHora(valorDe(LEMBRETE_HORA_KEY))
@@ -51,7 +52,8 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
       return { skipped: true, reason: "fora_da_hora" }
     }
 
-    const { data: rows } = await supabase.rpc("get_orders_needing_reminder")
+    const { data: rows, error: rpcErr } = await supabase.rpc("get_orders_needing_reminder")
+    if (rpcErr) console.error("[whatsapp] erro buscando pedidos do lembrete:", rpcErr)
     const pedidos = (rows ?? []) as PedidoLembrete[]
 
     let enviados = 0
@@ -73,11 +75,12 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
 
       const result = await sendWhatsAppMessage(pedido.telefone, mensagem)
 
-      await supabase.rpc("register_whatsapp_message", {
+      const { error: regErr } = await supabase.rpc("register_whatsapp_message", {
         p_pedido_id: pedido.pedido_id,
         p_tipo: "lembrete",
         p_status: result.ok ? "enviada" : "falha",
       })
+      if (regErr) console.error("[whatsapp] erro registrando lembrete:", pedido.pedido_id, regErr)
 
       if (result.ok) enviados += 1
       else falhas += 1
