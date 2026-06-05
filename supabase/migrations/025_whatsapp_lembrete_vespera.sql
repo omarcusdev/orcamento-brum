@@ -11,7 +11,11 @@ create extension if not exists pg_net;
 drop function if exists get_orders_needing_reminder();
 
 create or replace function get_orders_needing_reminder()
-returns table(pedido_id uuid, nome text, telefone text, data_evento date, horario_evento time) as $$
+returns table(pedido_id uuid, nome text, telefone text, data_evento date, horario_evento time)
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
 begin
   return query
   select p.id, c.nome, c.telefone, p.data_evento, p.horario_evento
@@ -24,7 +28,7 @@ begin
       where mw.pedido_id = p.id and mw.tipo = 'lembrete' and mw.status = 'enviada'
     );
 end;
-$$ language plpgsql security definer;
+$$;
 
 -- drop+create reseta os grants; re-revoga (a migracao 004 ja revogava esta funcao).
 revoke execute on function get_orders_needing_reminder() from anon, authenticated;
@@ -42,7 +46,7 @@ on conflict (chave) do nothing;
 select cron.unschedule('lembrete-vespera-d1')
 where exists (select 1 from cron.job where jobname = 'lembrete-vespera-d1');
 
-select cron.schedule('lembrete-vespera-d1', '0 * * * *', $$
+select cron.schedule('lembrete-vespera-d1', '0 * * * *', $job$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'lembrete_route_url'),
     headers := jsonb_build_object(
@@ -51,4 +55,4 @@ select cron.schedule('lembrete-vespera-d1', '0 * * * *', $$
     ),
     body := '{}'::jsonb
   );
-$$);
+$job$);
