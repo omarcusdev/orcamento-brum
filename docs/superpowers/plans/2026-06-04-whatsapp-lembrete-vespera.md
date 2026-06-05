@@ -225,8 +225,10 @@ export const horaEmSaoPaulo = (now: Date): number =>
 export const deveEnviarAgora = (horaConfigurada: number, now: Date): boolean =>
   horaEmSaoPaulo(now) >= horaConfigurada
 
-// normaliza a hora lida da config (string) para 0-23 inteiro; default 9 se invalida
+// normaliza a hora lida da config (string) para 0-23 inteiro; default 9 se invalida/ausente.
+// Guard antes do Number(): Number(null) e Number("") dao 0, que passaria no range check.
 export const parseHora = (valor: string | null | undefined): number => {
+  if (!valor || valor.trim() === "") return DEFAULT_LEMBRETE_HORA
   const n = Number(valor)
   return Number.isInteger(n) && n >= 0 && n <= 23 ? n : DEFAULT_LEMBRETE_HORA
 }
