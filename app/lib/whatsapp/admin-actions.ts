@@ -23,6 +23,13 @@ import {
   statusMsgKey,
   type NotifyStatus,
 } from "./status-messages"
+import {
+  LEMBRETE_FLAG_KEY,
+  LEMBRETE_HORA_KEY,
+  LEMBRETE_MSG_KEY,
+  DEFAULT_LEMBRETE_MSG,
+  parseHora,
+} from "./lembrete-message"
 
 export type WhatsappConnection = {
   status: WhatsappConnectionStatus
@@ -213,6 +220,83 @@ export const setWhatsappStatusMessage = async (
     .from("configuracoes")
     .upsert(
       { chave: statusMsgKey(status), valor, updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export type LembreteConfig = { ativo: boolean; hora: number; mensagem: string }
+
+export const getWhatsappLembreteConfig = async (): Promise<LembreteConfig> => {
+  const { supabase } = await requireAdmin()
+
+  const { data } = await supabase
+    .from("configuracoes")
+    .select("chave, valor")
+    .in("chave", [LEMBRETE_FLAG_KEY, LEMBRETE_HORA_KEY, LEMBRETE_MSG_KEY])
+
+  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+  const rawMsg = valorDe(LEMBRETE_MSG_KEY)
+
+  return {
+    ativo: parseFlag(valorDe(LEMBRETE_FLAG_KEY)),
+    hora: parseHora(valorDe(LEMBRETE_HORA_KEY)),
+    // texto vazio na DB = cair no padrao; o operador pode restaurar deixando o campo vazio
+    mensagem: rawMsg && rawMsg.trim() ? rawMsg : DEFAULT_LEMBRETE_MSG,
+  }
+}
+
+export const setWhatsappLembreteFlag = async (ativo: boolean): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: LEMBRETE_FLAG_KEY, valor: String(ativo), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export const setWhatsappLembreteHora = async (hora: number): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  if (!Number.isInteger(hora) || hora < 0 || hora > 23) return { ok: false }
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: LEMBRETE_HORA_KEY, valor: String(hora), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export const setWhatsappLembreteMessage = async (texto: string): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  // texto vazio = restaurar padrao; assim o operador reseta sem saber o texto original
+  const valor = texto.trim() ? texto : DEFAULT_LEMBRETE_MSG
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: LEMBRETE_MSG_KEY, valor, updated_at: new Date().toISOString() },
       { onConflict: "chave" },
     )
     .select("chave")
