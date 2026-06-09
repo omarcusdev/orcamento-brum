@@ -73,7 +73,7 @@ export const formatTotalBR = (total: number) => total.toLocaleString("pt-BR", { 
 export const termoBuscaValido = (termo: string) => termo.trim().length >= 2
 ```
 
-Os rótulos/cores do badge de status reaproveitam o helper já existente em `lib/admin-status.ts` (mesmo usado na lista de pedidos) — **não** duplicar mapa de status.
+Os rótulos/cores do badge de status reaproveitam o componente `OrderStatusBadge` (`components/order-status-badge.tsx`, default export `{ status: PedidoStatus }`) — **não** duplicar mapa de status. (Nota pós-spec: `get­ConversaIdDoCliente` foi simplificada para um lookup inline na página do pedido — a página já é server component com `supabase` direto; o plano reflete isso com 3 actions em `chat-actions.ts`.)
 
 ### Faixa de contexto na thread — `app/components/admin/atendimento/atendimento-client.tsx`
 
@@ -154,5 +154,5 @@ Página do pedido (/admin/pedidos/[id])
 2. Layout: faixa fixa no topo da thread. ✅
 3. Grão conversa → cliente → lista de pedidos; sem coluna `pedido_id` nova. ✅
 4. 5 pedidos na faixa (+ "mais pedidos" se houver 6º); picker **inline** (não modal); link reverso via `?conversa=<id>`. ✅
-5. Sem migration; badge de status reaproveita `lib/admin-status.ts`. ✅
+5. Sem migration; badge reaproveita `OrderStatusBadge` (`components/order-status-badge.tsx`). ✅
 </content>
