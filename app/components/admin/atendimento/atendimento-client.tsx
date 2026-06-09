@@ -11,6 +11,7 @@ import {
   type ConversaResumo,
   type MensagemChat,
 } from "@/lib/whatsapp/chat-actions"
+import ThreadContexto from "@/components/admin/atendimento/thread-contexto"
 
 const formatContato = (c: ConversaResumo) => c.nome ?? `+${c.telefone}`
 const formatHora = (iso: string | null) =>
@@ -23,6 +24,8 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
   const [texto, setTexto] = useState("")
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState(false)
+
+  const sel = conversas.find((c) => c.id === selId) ?? null
 
   // A seleção atual lida dentro do handler do Realtime sem recriar a subscription.
   const selIdRef = useRef(selId)
@@ -115,6 +118,7 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
       <div className="flex-1 flex flex-col bg-brand-surface rounded-xl border border-white/10 p-4">
         {selId ? (
           <>
+            {sel && <ThreadContexto conversa={sel} onVinculo={refetchConversas} />}
             <div ref={threadRef} className="flex-1 overflow-y-auto flex flex-col gap-2 mb-3">
               {mensagens.map((m) => (
                 <div
