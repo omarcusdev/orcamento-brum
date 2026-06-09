@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button, Textarea } from "@/components/ui"
 import {
@@ -18,8 +19,13 @@ const formatHora = (iso: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""
 
 const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
+  const searchParams = useSearchParams()
   const [conversas, setConversas] = useState(initial)
-  const [selId, setSelId] = useState<string | null>(initial[0]?.id ?? null)
+  const [selId, setSelId] = useState<string | null>(() => {
+    const alvo = searchParams.get("conversa")
+    if (alvo && initial.some((c) => c.id === alvo)) return alvo
+    return initial[0]?.id ?? null
+  })
   const [mensagens, setMensagens] = useState<MensagemChat[]>([])
   const [texto, setTexto] = useState("")
   const [enviando, setEnviando] = useState(false)

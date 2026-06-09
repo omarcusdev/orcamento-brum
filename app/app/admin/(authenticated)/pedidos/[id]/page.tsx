@@ -91,6 +91,14 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
 
   const whatsappLink = `https://wa.me/${pedido.clientes.telefone.replace(/\D/g, "")}`
 
+  const { data: conversaCliente } = await supabase
+    .from("conversas_whatsapp")
+    .select("id")
+    .eq("cliente_id", pedido.clientes.id)
+    .order("ultima_mensagem_em", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+
   const itemsForTotals = (items ?? []).map((i: any) => ({
     subtotal: Number(i.subtotal),
     is_consignado: !!i.is_consignado,
@@ -166,6 +174,16 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                     {pedido.clientes.telefone}
                   </a>
                 </div>
+                {conversaCliente && (
+                  <div className="flex justify-end">
+                    <Link
+                      href={`/admin/whatsapp?conversa=${conversaCliente.id}`}
+                      className="text-sm text-brand-yellow hover:underline"
+                    >
+                      Abrir conversa no WhatsApp →
+                    </Link>
+                  </div>
+                )}
                 {pedido.clientes.cpf && (
                   <div className="flex justify-between">
                     <span className="text-brand-warm-gray">CPF</span>
