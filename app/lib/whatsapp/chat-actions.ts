@@ -2,6 +2,7 @@
 
 import { requireAdmin } from "@/lib/auth"
 import { sendWhatsAppMessage } from "@/lib/whatsapp"
+import { sanitizeTermoBusca } from "@/lib/whatsapp/pedido-contexto"
 
 export type ConversaResumo = {
   id: string
@@ -76,4 +77,63 @@ export const excluirConversa = async (conversaId: string): Promise<void> => {
   const { supabase } = await requireAdmin()
   // Exclusão por titular (LGPD). Cascade apaga as mensagens.
   await supabase.from("conversas_whatsapp").delete().eq("id", conversaId)
+}
+
+export type PedidoResumoCliente = {
+  id: string
+  status: string
+  dataEvento: string
+  total: number
+}
+
+// Últimos pedidos do cliente (mais recentes primeiro). Limite 6: a UI mostra 5 e
+// sinaliza "+ mais" se vier um 6º.
+export const getPedidosDoCliente = async (clienteId: string): Promise<PedidoResumoCliente[]> => {
+  const { supabase } = await requireAdmin()
+  const { data } = await supabase
+    .from("pedidos")
+    .select("id, status, data_evento, total")
+    .eq("cliente_id", clienteId)
+    .order("created_at", { ascending: false })
+    .limit(6)
+
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    status: r.status,
+    dataEvento: r.data_evento,
+    total: Number(r.total),
+  }))
+}
+
+export type ClienteBusca = { id: string; nome: string; telefone: string | null }
+
+// Busca para o picker do vincular: nome OU telefone. Termo é sanitizado (anti-injeção
+// no `.or()`) e exige >= 2 chars úteis, senão retorna [] sem ir ao banco.
+export const buscarClientes = async (termo: string): Promise<ClienteBusca[]> => {
+  const safe = sanitizeTermoBusca(termo)
+  if (safe.length < 2) return []
+
+  const { supabase } = await requireAdmin()
+  const { data } = await supabase
+    .from("clientes")
+    .select("id, nome, telefone")
+    .or(`nome.ilike.%${safe}%,telefone.ilike.%${safe}%`)
+    .limit(8)
+
+  return (data ?? []).map((r) => ({ id: r.id, nome: r.nome, telefone: r.telefone }))
+}
+
+// Vincula (ou troca) o cliente de uma conversa. Reusa a policy de UPDATE admin
+// que o markConversaRead já usa — sem migration.
+export const vincularConversaCliente = async (
+  conversaId: string,
+  clienteId: string,
+): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase
+    .from("conversas_whatsapp")
+    .update({ cliente_id: clienteId })
+    .eq("id", conversaId)
+
+  return { ok: !error }
 }
