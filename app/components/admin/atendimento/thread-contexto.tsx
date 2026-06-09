@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import type { PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
@@ -30,6 +30,7 @@ const ThreadContexto = ({ conversa, onVinculo }: Props) => {
   const [termo, setTermo] = useState("")
   const [resultados, setResultados] = useState<ClienteBusca[]>([])
   const [, startTransition] = useTransition()
+  const buscaSeq = useRef(0)
 
   const clienteId = conversa.clienteId
 
@@ -61,7 +62,12 @@ const ThreadContexto = ({ conversa, onVinculo }: Props) => {
       setResultados([])
       return
     }
-    startTransition(async () => setResultados(await buscarClientes(v)))
+    const seq = ++buscaSeq.current
+    startTransition(async () => {
+      const achados = await buscarClientes(v)
+      // ignora respostas fora de ordem: só aplica se for a busca mais recente
+      if (seq === buscaSeq.current) setResultados(achados)
+    })
   }
 
   const vincular = (id: string) => {
