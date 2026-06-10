@@ -7,7 +7,7 @@ import { setWhatsappFeature, type WhatsappFeatures } from "@/lib/whatsapp/admin-
 import type { WhatsappFeatureKey } from "@/lib/whatsapp/features"
 
 const NAO_FAZ =
-  "Ele NÃO responde sozinho (sem robô) e NÃO traz o histórico antigo de conversas."
+  "Ele só responde sozinho com a saudação automática (painel abaixo), se você ligar — e NÃO traz o histórico antigo de conversas."
 
 const formatNumero = (me: string | null): string | null => {
   if (!me) return null

@@ -1,4 +1,4 @@
-import { getWhatsappAlertEmail, getWhatsappConnection, getWhatsappFeatures, getWhatsappLembreteConfig, getWhatsappStatusEntregaConfig } from "@/lib/whatsapp/admin-actions"
+import { getWhatsappAlertEmail, getWhatsappBotSaudacaoConfig, getWhatsappConnection, getWhatsappFeatures, getWhatsappLembreteConfig, getWhatsappStatusEntregaConfig } from "@/lib/whatsapp/admin-actions"
 import { getConversas } from "@/lib/whatsapp/chat-actions"
 import WhatsAppConnection from "@/components/admin/whatsapp-connection"
 import WhatsappAlertEmail from "@/components/admin/whatsapp-alert-email"
@@ -6,15 +6,17 @@ import AtendimentoClient from "@/components/admin/atendimento/atendimento-client
 import WhatsappFeaturesPanel from "@/components/admin/whatsapp-features-panel"
 import WhatsappStatusEntregaPanel from "@/components/admin/whatsapp-status-entrega-panel"
 import WhatsappLembretePanel from "@/components/admin/whatsapp-lembrete-panel"
+import WhatsappBotPanel from "@/components/admin/whatsapp-bot-panel"
 
 export const dynamic = "force-dynamic"
 
 const WhatsappPage = async () => {
-  const [connection, features, statusEntrega, lembrete, alertEmail, conversas] = await Promise.all([
+  const [connection, features, statusEntrega, lembrete, botSaudacao, alertEmail, conversas] = await Promise.all([
     getWhatsappConnection(),
     getWhatsappFeatures(),
     getWhatsappStatusEntregaConfig(),
     getWhatsappLembreteConfig(),
+    getWhatsappBotSaudacaoConfig(),
     getWhatsappAlertEmail(),
     getConversas(),
   ])
@@ -32,6 +34,9 @@ const WhatsappPage = async () => {
           </div>
           <div className="mt-4">
             <WhatsappLembretePanel initial={lembrete} />
+          </div>
+          <div className="mt-4">
+            <WhatsappBotPanel initial={botSaudacao} />
           </div>
         </section>
 
