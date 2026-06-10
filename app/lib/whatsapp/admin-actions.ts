@@ -30,6 +30,14 @@ import {
   DEFAULT_LEMBRETE_MSG,
   parseHora,
 } from "./lembrete-message"
+import {
+  BOT_SAUDACAO_FLAG_KEY,
+  BOT_SAUDACAO_MSG_KEY,
+  BOT_SAUDACAO_JANELA_KEY,
+  DEFAULT_BOT_SAUDACAO_MSG,
+  botSaudacaoAtivo,
+  parseJanelaHoras,
+} from "./bot-saudacao-message"
 
 export type WhatsappConnection = {
   status: WhatsappConnectionStatus
@@ -297,6 +305,83 @@ export const setWhatsappLembreteMessage = async (texto: string): Promise<{ ok: b
     .from("configuracoes")
     .upsert(
       { chave: LEMBRETE_MSG_KEY, valor, updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export type BotSaudacaoConfig = { ativo: boolean; janelaHoras: number; mensagem: string }
+
+export const getWhatsappBotSaudacaoConfig = async (): Promise<BotSaudacaoConfig> => {
+  const { supabase } = await requireAdmin()
+
+  const { data } = await supabase
+    .from("configuracoes")
+    .select("chave, valor")
+    .in("chave", [BOT_SAUDACAO_FLAG_KEY, BOT_SAUDACAO_JANELA_KEY, BOT_SAUDACAO_MSG_KEY])
+
+  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+  const rawMsg = valorDe(BOT_SAUDACAO_MSG_KEY)
+
+  return {
+    // fail-closed (igual ao gate do orquestrador): o painel reflete o que o bot faz de verdade
+    ativo: botSaudacaoAtivo(valorDe(BOT_SAUDACAO_FLAG_KEY)),
+    janelaHoras: parseJanelaHoras(valorDe(BOT_SAUDACAO_JANELA_KEY)),
+    mensagem: rawMsg && rawMsg.trim() ? rawMsg : DEFAULT_BOT_SAUDACAO_MSG,
+  }
+}
+
+export const setWhatsappBotSaudacaoFlag = async (ativo: boolean): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: BOT_SAUDACAO_FLAG_KEY, valor: String(ativo), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export const setWhatsappBotSaudacaoJanela = async (horas: number): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  if (!Number.isInteger(horas) || horas < 1 || horas > 168) return { ok: false }
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: BOT_SAUDACAO_JANELA_KEY, valor: String(horas), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export const setWhatsappBotSaudacaoMessage = async (texto: string): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  // texto vazio = restaurar padrão (operador reseta sem saber o texto original)
+  const valor = texto.trim() ? texto : DEFAULT_BOT_SAUDACAO_MSG
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: BOT_SAUDACAO_MSG_KEY, valor, updated_at: new Date().toISOString() },
       { onConflict: "chave" },
     )
     .select("chave")
