@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { parseInboundPayload } from "@/lib/whatsapp/inbound"
 import { toBrazilE164, last8, matchClienteByPhone } from "@/lib/whatsapp/phone"
 import { isWhatsappFeatureEnabled } from "@/lib/whatsapp/features"
+import { maybeSendBotSaudacao } from "@/lib/whatsapp/bot-saudacao"
 
 export const dynamic = "force-dynamic"
 
@@ -45,6 +46,12 @@ export async function POST(request: Request) {
   if (error) {
     console.error("[whatsapp/inbound] RPC falhou:", error)
     return NextResponse.json({ error: "persist failed" }, { status: 500 })
+  }
+
+  // Bot: só responde a mensagens de ENTRADA (nossos próprios envios voltam como "saida" e são
+  // ignorados — anti-loop). Roda pós-resposta via after(); a flag/janela são checadas lá dentro.
+  if (payload.direcao === "entrada") {
+    after(() => maybeSendBotSaudacao(telefoneE164, payload.waMessageId))
   }
 
   return NextResponse.json({ ok: true })
