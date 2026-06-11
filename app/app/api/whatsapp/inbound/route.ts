@@ -4,6 +4,7 @@ import { parseInboundPayload } from "@/lib/whatsapp/inbound"
 import { toBrazilE164, last8, matchClienteByPhone } from "@/lib/whatsapp/phone"
 import { isWhatsappFeatureEnabled } from "@/lib/whatsapp/features"
 import { maybeSendBotSaudacao } from "@/lib/whatsapp/bot-saudacao"
+import { maybeReplyWithAgent } from "@/lib/whatsapp/bot-agente"
 
 export const dynamic = "force-dynamic"
 
@@ -48,10 +49,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "persist failed" }, { status: 500 })
   }
 
-  // Bot: só responde a mensagens de ENTRADA (nossos próprios envios voltam como "saida" e são
-  // ignorados — anti-loop). Roda pós-resposta via after(); a flag/janela são checadas lá dentro.
+  // Auto-resposta: só para ENTRADA (nossos envios voltam como "saida" e são ignorados — anti-loop).
+  // Coordenador agente-primeiro: se o agente IA está ligado, ele assume (e suprime a saudação);
+  // senão, cai na saudação rule-based. Tudo via after(), pós-resposta; flags checadas lá dentro.
   if (payload.direcao === "entrada") {
-    after(() => maybeSendBotSaudacao(telefoneE164, payload.waMessageId))
+    after(async () => {
+      const { handled } = await maybeReplyWithAgent(telefoneE164, payload.waMessageId, payload.corpo)
+      if (!handled) await maybeSendBotSaudacao(telefoneE164, payload.waMessageId)
+    })
   }
 
   return NextResponse.json({ ok: true })
