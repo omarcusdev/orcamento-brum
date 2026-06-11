@@ -38,6 +38,12 @@ import {
   botSaudacaoAtivo,
   parseJanelaHoras,
 } from "./bot-saudacao-message"
+import {
+  AGENTE_FLAG_KEY,
+  AGENTE_FAQ_KEY,
+  DEFAULT_AGENTE_FAQ,
+  agenteAtivo,
+} from "./bot-agente-kb"
 
 export type WhatsappConnection = {
   status: WhatsappConnectionStatus
@@ -382,6 +388,63 @@ export const setWhatsappBotSaudacaoMessage = async (texto: string): Promise<{ ok
     .from("configuracoes")
     .upsert(
       { chave: BOT_SAUDACAO_MSG_KEY, valor, updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export type AgenteConfig = { ativo: boolean; faq: string }
+
+export const getWhatsappAgenteConfig = async (): Promise<AgenteConfig> => {
+  const { supabase } = await requireAdmin()
+
+  const { data } = await supabase
+    .from("configuracoes")
+    .select("chave, valor")
+    .in("chave", [AGENTE_FLAG_KEY, AGENTE_FAQ_KEY])
+
+  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+  const rawFaq = valorDe(AGENTE_FAQ_KEY)
+
+  return {
+    // fail-closed (igual ao gate do orquestrador): o painel reflete o que o agente faz de verdade
+    ativo: agenteAtivo(valorDe(AGENTE_FLAG_KEY)),
+    faq: rawFaq && rawFaq.trim() ? rawFaq : DEFAULT_AGENTE_FAQ,
+  }
+}
+
+export const setWhatsappAgenteFlag = async (ativo: boolean): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: AGENTE_FLAG_KEY, valor: String(ativo), updated_at: new Date().toISOString() },
+      { onConflict: "chave" },
+    )
+    .select("chave")
+
+  if (error || !data?.length) return { ok: false }
+
+  revalidatePath("/admin/whatsapp")
+  return { ok: true }
+}
+
+export const setWhatsappAgenteFaq = async (texto: string): Promise<{ ok: boolean }> => {
+  const { supabase } = await requireAdmin()
+
+  // texto vazio = restaurar padrão (operador reseta sem saber o texto original)
+  const valor = texto.trim() ? texto : DEFAULT_AGENTE_FAQ
+
+  const { data, error } = await supabase
+    .from("configuracoes")
+    .upsert(
+      { chave: AGENTE_FAQ_KEY, valor, updated_at: new Date().toISOString() },
       { onConflict: "chave" },
     )
     .select("chave")
