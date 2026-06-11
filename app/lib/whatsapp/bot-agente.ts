@@ -9,9 +9,17 @@ import {
   formatCardapio,
   formatHistorico,
   buildSystemPrompt,
-  type CardapioItem,
   type ThreadMsg,
 } from "./bot-agente-kb"
+
+// A coluna do nome do produto é "marca" (schema migração 001); CardapioItem usa "nome".
+type ProdutoRow = {
+  marca: string
+  volume_litros: number
+  descricao: string | null
+  preco_avista: number
+  preco_segundo_barril: number | null
+}
 
 // Atendente IA. Chamado via after() na rota inbound, só para ENTRADA. Nunca lança; fail-closed.
 // Retorna { handled: true } sempre que a flag do agente está ligada (tenha enviado ou não) —
@@ -58,13 +66,22 @@ export const maybeReplyWithAgent = async (
       .map((m) => ({ direcao: m.direcao, corpo: m.corpo }))
       .reverse() // cronológico
 
-    const { data: produtos } = await supabase
+    const { data: produtos, error: prodErr } = await supabase
       .from("produtos")
-      .select("nome, volume_litros, descricao, preco_avista, preco_segundo_barril")
+      .select("marca, volume_litros, descricao, preco_avista, preco_segundo_barril")
       .eq("ativo", true)
-      .order("nome")
+      .order("marca")
+    if (prodErr) console.error("[whatsapp] erro lendo cardápio do agente:", prodErr)
 
-    const cardapio = formatCardapio((produtos ?? []) as CardapioItem[])
+    const cardapio = formatCardapio(
+      ((produtos ?? []) as ProdutoRow[]).map((p) => ({
+        nome: p.marca,
+        volume_litros: p.volume_litros,
+        descricao: p.descricao,
+        preco_avista: p.preco_avista,
+        preco_segundo_barril: p.preco_segundo_barril,
+      })),
+    )
     const system = buildSystemPrompt({ cardapio, faq, nomeCliente: conversa.nome_exibicao })
 
     const historico = formatHistorico(thread)

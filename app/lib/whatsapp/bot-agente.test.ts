@@ -75,7 +75,7 @@ describe("maybeReplyWithAgent", () => {
       cfgRows: [ON, { chave: "whatsapp_bot_agente_faq", valor: "Horário: 10h-22h." }],
       conversa: { id: "conv-1", nome_exibicao: "Marcus" },
       thread: [{ direcao: "entrada", corpo: "qual o horário?" }],
-      produtos: [{ nome: "Chopp Pilsen", volume_litros: 30, descricao: null, preco_avista: 380, preco_segundo_barril: null }],
+      produtos: [{ marca: "Chopp Pilsen", volume_litros: 30, descricao: null, preco_avista: 380, preco_segundo_barril: null }],
     })
     clientMock.mockReturnValue(client as never)
     askMock.mockResolvedValue("Funcionamos das 10h às 22h! 🍻")
