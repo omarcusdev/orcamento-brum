@@ -13,12 +13,13 @@ import {
 } from "./bot-agente-kb"
 
 // A coluna do nome do produto é "marca" (schema migração 001); CardapioItem usa "nome".
+// preco_* são numeric no Postgres -> o PostgREST devolve como STRING ("380.00") -> coage abaixo.
 type ProdutoRow = {
   marca: string
   volume_litros: number
   descricao: string | null
-  preco_avista: number
-  preco_segundo_barril: number | null
+  preco_avista: number | string
+  preco_segundo_barril: number | string | null
 }
 
 // Atendente IA. Chamado via after() na rota inbound, só para ENTRADA. Nunca lança; fail-closed.
@@ -78,8 +79,8 @@ export const maybeReplyWithAgent = async (
         nome: p.marca,
         volume_litros: p.volume_litros,
         descricao: p.descricao,
-        preco_avista: p.preco_avista,
-        preco_segundo_barril: p.preco_segundo_barril,
+        preco_avista: Number(p.preco_avista),
+        preco_segundo_barril: p.preco_segundo_barril != null ? Number(p.preco_segundo_barril) : null,
       })),
     )
     const system = buildSystemPrompt({ cardapio, faq, nomeCliente: conversa.nome_exibicao })
