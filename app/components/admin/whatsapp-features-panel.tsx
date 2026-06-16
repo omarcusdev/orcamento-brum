@@ -7,7 +7,7 @@ import { setWhatsappFeature, type WhatsappFeatures } from "@/lib/whatsapp/admin-
 import type { WhatsappFeatureKey } from "@/lib/whatsapp/features"
 
 const NAO_FAZ =
-  "Ele só responde sozinho com a saudação automática (painel abaixo), se você ligar — e NÃO traz o histórico antigo de conversas."
+  "As respostas automáticas vêm da saudação e do Atendente IA (ajustáveis abaixo). O histórico antigo de conversas NÃO é importado — só aparecem as mensagens a partir de quando o Atendimento foi ligado."
 
 const formatNumero = (me: string | null): string | null => {
   if (!me) return null

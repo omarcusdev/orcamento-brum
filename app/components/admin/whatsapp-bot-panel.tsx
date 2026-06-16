@@ -94,7 +94,7 @@ const WhatsappBotPanel = ({ initial, expanded, onToggleExpand }: Props) => {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white">Saudação automática (bot)</p>
           <p className="text-xs text-brand-warm-gray mt-0.5">
-            Responde sozinho quando o cliente escreve depois de um tempo parado. Requer o Atendimento ligado.
+            Responde com uma saudação automática quando o cliente escreve após um tempo sem falar com a gente (intervalo configurável). É uma mensagem fixa de boas-vindas. Requer o Atendimento ligado.
           </p>
         </div>
         <Switch
