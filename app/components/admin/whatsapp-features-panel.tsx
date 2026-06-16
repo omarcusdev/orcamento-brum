@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { MessageSquare, BellRing, Send } from "lucide-react"
+import { useState, useTransition, useEffect } from "react"
+import { MessageSquare, BellRing, Send, ChevronDown, ChevronRight } from "lucide-react"
 import { Switch } from "@/components/ui"
 import { setWhatsappFeature, type WhatsappFeatures } from "@/lib/whatsapp/admin-actions"
 import type { WhatsappFeatureKey } from "@/lib/whatsapp/features"
+import Collapsible from "@/components/admin/whatsapp/collapsible"
 
 const NAO_FAZ =
   "Ele só responde sozinho com a saudação automática (painel abaixo), se você ligar — e NÃO traz o histórico antigo de conversas."
@@ -56,13 +57,23 @@ const ROWS: Row[] = [
 type Props = {
   initial: WhatsappFeatures
   me: string | null
+  expanded?: boolean
+  onToggleExpand?: () => void
+  onFeaturesChange?: (features: WhatsappFeatures) => void
 }
 
-const WhatsappFeaturesPanel = ({ initial, me }: Props) => {
+const WhatsappFeaturesPanel = ({ initial, me, expanded, onToggleExpand, onFeaturesChange }: Props) => {
   const [features, setFeatures] = useState(initial)
   const [erro, setErro] = useState<keyof WhatsappFeatures | null>(null)
   const [, startTransition] = useTransition()
+  const [abertoLocal, setAbertoLocal] = useState(false)
+  const aberto = expanded ?? abertoLocal
+  const toggleAberto = onToggleExpand ?? (() => setAbertoLocal((v) => !v))
   const numero = formatNumero(me)
+
+  useEffect(() => {
+    onFeaturesChange?.(features)
+  }, [features, onFeaturesChange])
 
   const toggle = (row: Row, next: boolean) => {
     setErro(null)
@@ -77,35 +88,49 @@ const WhatsappFeaturesPanel = ({ initial, me }: Props) => {
   }
 
   return (
-    <div className="bg-brand-surface rounded-xl border border-white/10 p-6">
-      <ul className="divide-y divide-white/5">
-        {ROWS.map((row) => {
-          const Icon = row.icon
-          const on = features[row.field]
-          return (
-            <li key={row.key} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
-              <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${on ? "text-brand-yellow" : "text-brand-warm-gray"}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{row.titulo}</p>
-                <p className="text-xs text-brand-warm-gray mt-0.5">{row.descricao}</p>
-                {erro === row.field && (
-                  <p className="text-xs text-red-300 mt-1">Não consegui salvar. Tente de novo.</p>
-                )}
-              </div>
-              <Switch
-                id={row.key}
-                checked={on}
-                onChange={(next) => toggle(row, next)}
-                aria-label={row.titulo}
-              />
-            </li>
-          )
-        })}
-      </ul>
-      <p className="text-xs text-brand-warm-gray mt-5 border-t border-white/5 pt-3">
-        {NAO_FAZ}
-        {numero ? ` Pra testar o atendimento, peça pra alguém mandar um "oi" pro ${numero}.` : ""}
-      </p>
+    <div className="bg-brand-surface rounded-xl border border-white/10">
+      <button
+        type="button"
+        onClick={toggleAberto}
+        aria-expanded={aberto}
+        className="flex w-full items-center gap-3 px-6 py-4 text-left"
+      >
+        <MessageSquare className="h-5 w-5 shrink-0 text-brand-yellow" />
+        <span className="flex-1 font-medium text-white">Recursos</span>
+        {aberto ? <ChevronDown className="h-4 w-4 text-brand-warm-gray" /> : <ChevronRight className="h-4 w-4 text-brand-warm-gray" />}
+      </button>
+      <Collapsible open={aberto}>
+        <div className="px-6 pb-6">
+          <ul className="divide-y divide-white/5">
+            {ROWS.map((row) => {
+              const Icon = row.icon
+              const on = features[row.field]
+              return (
+                <li key={row.key} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+                  <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${on ? "text-brand-yellow" : "text-brand-warm-gray"}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white">{row.titulo}</p>
+                    <p className="text-xs text-brand-warm-gray mt-0.5">{row.descricao}</p>
+                    {erro === row.field && (
+                      <p className="text-xs text-red-300 mt-1">Não consegui salvar. Tente de novo.</p>
+                    )}
+                  </div>
+                  <Switch
+                    id={row.key}
+                    checked={on}
+                    onChange={(next) => toggle(row, next)}
+                    aria-label={row.titulo}
+                  />
+                </li>
+              )
+            })}
+          </ul>
+          <p className="text-xs text-brand-warm-gray mt-5 border-t border-white/5 pt-3">
+            {NAO_FAZ}
+            {numero ? ` Pra testar o atendimento, peça pra alguém mandar um "oi" pro ${numero}.` : ""}
+          </p>
+        </div>
+      </Collapsible>
     </div>
   )
 }
