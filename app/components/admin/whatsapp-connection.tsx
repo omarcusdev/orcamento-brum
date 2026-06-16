@@ -1,7 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 import { Button, Input, Segmented, fieldLabelClass } from "@/components/ui"
+import Collapsible from "@/components/admin/whatsapp/collapsible"
+import { formatPairedNumber } from "@/lib/whatsapp/connection-status"
 import {
   connectWhatsapp,
   disconnectWhatsapp,
@@ -10,17 +13,6 @@ import {
 } from "@/lib/whatsapp/admin-actions"
 
 const POLL_INTERVAL_MS = 3_000
-
-const formatPairedNumber = (me: string) => {
-  const digits = me.replace(/\D/g, "")
-  if (digits.length >= 12) {
-    const ddd = digits.slice(2, 4)
-    const rest = digits.slice(4)
-    const meio = rest.length === 9 ? `${rest.slice(0, 5)}-${rest.slice(5)}` : `${rest.slice(0, 4)}-${rest.slice(4)}`
-    return `+55 (${ddd}) ${meio}`
-  }
-  return `+${digits}`
-}
 
 const isPairing = (connection: WhatsappConnection) =>
   !connection.paired && (connection.qrDataUrl !== null || connection.code !== null)
@@ -32,24 +24,41 @@ type PairingMethod = "qr" | "code"
 
 type WhatsAppConnectionProps = {
   initial: WhatsappConnection
+  connection?: WhatsappConnection
+  refresh?: () => Promise<void> | void
+  expanded?: boolean
+  onToggleExpand?: () => void
 }
 
-const WhatsAppConnection = ({ initial }: WhatsAppConnectionProps) => {
-  const [connection, setConnection] = useState(initial)
+const WhatsAppConnection = ({
+  initial,
+  connection: controlled,
+  refresh: refreshProp,
+  expanded,
+  onToggleExpand,
+}: WhatsAppConnectionProps) => {
+  const [local, setLocal] = useState(initial)
+  const connection = controlled ?? local
+
   const [busy, setBusy] = useState(false)
   const [method, setMethod] = useState<PairingMethod>("qr")
   const [phone, setPhone] = useState("")
   const [phoneError, setPhoneError] = useState(false)
 
+  const [abertoLocal, setAbertoLocal] = useState(true)
+  const aberto = expanded ?? abertoLocal
+  const toggleAberto = onToggleExpand ?? (() => setAbertoLocal((v) => !v))
+
   const refresh = useCallback(async () => {
-    const next = await getWhatsappConnection()
-    setConnection(next)
-  }, [])
+    if (refreshProp) return void refreshProp()
+    setLocal(await getWhatsappConnection())
+  }, [refreshProp])
 
   useEffect(() => {
+    if (controlled) return
     const interval = setInterval(refresh, POLL_INTERVAL_MS)
     return () => clearInterval(interval)
-  }, [refresh])
+  }, [controlled, refresh])
 
   const handleConnect = async (chosenMethod: PairingMethod) => {
     if (chosenMethod === "code" && !phone.trim()) {
@@ -70,10 +79,10 @@ const WhatsAppConnection = ({ initial }: WhatsAppConnectionProps) => {
     setBusy(false)
   }
 
-  if (connection.status === "connected" && connection.paired) {
-    return (
-      <div className="max-w-lg">
-        <div className="bg-brand-surface rounded-xl border border-white/10 p-6 space-y-5">
+  const renderCorpo = () => {
+    if (connection.status === "connected" && connection.paired) {
+      return (
+        <div className="space-y-5">
           <div className="flex items-center gap-3">
             <span className="relative flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400/60" />
@@ -92,14 +101,12 @@ const WhatsAppConnection = ({ initial }: WhatsAppConnectionProps) => {
             {busy ? "Desconectando..." : "Desconectar / trocar número"}
           </Button>
         </div>
-      </div>
-    )
-  }
+      )
+    }
 
-  if (connection.paired) {
-    return (
-      <div className="max-w-lg">
-        <div className="bg-brand-surface rounded-xl border border-white/10 p-6 space-y-3">
+    if (connection.paired) {
+      return (
+        <div className="space-y-3">
           <div className="flex items-center gap-3">
             <span className="relative flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-yellow/50" />
@@ -111,14 +118,12 @@ const WhatsAppConnection = ({ initial }: WhatsAppConnectionProps) => {
             A sessão caiu e está tentando voltar sozinha. {connection.me ? formatPairedNumber(connection.me) : ""}
           </p>
         </div>
-      </div>
-    )
-  }
+      )
+    }
 
-  if (isPairing(connection)) {
-    return (
-      <div className="max-w-lg">
-        <div className="bg-brand-surface rounded-xl border border-white/10 p-6 space-y-5">
+    if (isPairing(connection)) {
+      return (
+        <div className="space-y-5">
           <div className="flex items-center gap-3">
             <span className="relative inline-flex h-3 w-3 rounded-full bg-brand-warm-gray" />
             <span className="text-brand-gray-light font-medium">Aguardando pareamento…</span>
@@ -168,14 +173,12 @@ const WhatsAppConnection = ({ initial }: WhatsAppConnectionProps) => {
             {busy ? "Cancelando..." : "Cancelar"}
           </Button>
         </div>
-      </div>
-    )
-  }
+      )
+    }
 
-  if (connection.status === "connecting") {
-    return (
-      <div className="max-w-lg">
-        <div className="bg-brand-surface rounded-xl border border-white/10 p-6 space-y-4">
+    if (connection.status === "connecting") {
+      return (
+        <div className="space-y-4">
           <div className="flex items-center gap-3">
             <span className="relative flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-warm-gray/50" />
@@ -188,14 +191,12 @@ const WhatsAppConnection = ({ initial }: WhatsAppConnectionProps) => {
             {busy ? "Cancelando..." : "Cancelar"}
           </Button>
         </div>
-      </div>
-    )
-  }
+      )
+    }
 
-  // IDLE — não pareado, sem tentativa em andamento
-  return (
-    <div className="max-w-lg">
-      <div className="bg-brand-surface rounded-xl border border-white/10 p-6 space-y-5">
+    // IDLE — não pareado, sem tentativa em andamento
+    return (
+      <div className="space-y-5">
         <div className="flex items-center gap-3">
           <span className="relative inline-flex h-3 w-3 rounded-full bg-brand-warm-gray" />
           <span className="text-brand-gray-light font-medium">Desconectado</span>
@@ -248,6 +249,27 @@ const WhatsAppConnection = ({ initial }: WhatsAppConnectionProps) => {
           </div>
         )}
       </div>
+    )
+  }
+
+  return (
+    <div className="bg-brand-surface rounded-xl border border-white/10">
+      <button
+        type="button"
+        onClick={toggleAberto}
+        aria-expanded={aberto}
+        className="flex w-full items-center gap-3 px-6 py-4 text-left"
+      >
+        <span className="flex-1 font-medium text-white">Conexão</span>
+        {aberto ? (
+          <ChevronDown className="h-4 w-4 text-brand-warm-gray" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-brand-warm-gray" />
+        )}
+      </button>
+      <Collapsible open={aberto}>
+        <div className="px-6 pb-6">{renderCorpo()}</div>
+      </Collapsible>
     </div>
   )
 }
