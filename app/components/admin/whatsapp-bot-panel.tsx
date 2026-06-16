@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Bot, ChevronDown, ChevronRight } from "lucide-react"
 import { Switch, Textarea, Select, Button } from "@/components/ui"
+import Collapsible from "@/components/admin/whatsapp/collapsible"
 import {
   setWhatsappBotSaudacaoFlag,
   setWhatsappBotSaudacaoJanela,
@@ -11,19 +12,21 @@ import {
 } from "@/lib/whatsapp/admin-actions"
 import { DEFAULT_BOT_SAUDACAO_MSG } from "@/lib/whatsapp/bot-saudacao-message"
 
-type Props = { initial: BotSaudacaoConfig }
+type Props = { initial: BotSaudacaoConfig; expanded?: boolean; onToggleExpand?: () => void }
 
 const JANELAS = [6, 12, 24, 48]
 const labelJanela = (h: number) => (h >= 24 && h % 24 === 0 ? `${h / 24} dia${h > 24 ? "s" : ""}` : `${h}h`)
 
-const WhatsappBotPanel = ({ initial }: Props) => {
+const WhatsappBotPanel = ({ initial, expanded, onToggleExpand }: Props) => {
   const [ativo, setAtivo] = useState(initial.ativo)
   const [janela, setJanela] = useState(initial.janelaHoras)
   const [mensagem, setMensagem] = useState(initial.mensagem)
   const [rascunho, setRascunho] = useState(initial.mensagem)
   const [erro, setErro] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
-  const [aberto, setAberto] = useState(false)
+  const [abertoLocal, setAbertoLocal] = useState(false)
+  const aberto = expanded ?? abertoLocal
+  const toggleAberto = onToggleExpand ?? (() => setAbertoLocal((v) => !v))
   const [, startTransition] = useTransition()
 
   const toggleMaster = (next: boolean) => {
@@ -106,7 +109,7 @@ const WhatsappBotPanel = ({ initial }: Props) => {
         <div className="mt-5 border-t border-white/5 pt-4">
           <button
             type="button"
-            onClick={() => setAberto((v) => !v)}
+            onClick={toggleAberto}
             aria-expanded={aberto}
             className="flex w-full items-center gap-2 text-sm text-brand-warm-gray hover:text-white transition-colors"
           >
@@ -119,7 +122,7 @@ const WhatsappBotPanel = ({ initial }: Props) => {
             <span className="text-xs text-brand-warm-gray/70">(após {labelJanela(janela)} parado)</span>
           </button>
 
-          {aberto && (
+          <Collapsible open={aberto}>
             <div className="mt-4 space-y-4">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-white shrink-0">Saudar após</span>
@@ -163,7 +166,7 @@ const WhatsappBotPanel = ({ initial }: Props) => {
                 link do site para o cliente fazer o pedido.
               </p>
             </div>
-          )}
+          </Collapsible>
         </div>
       )}
 

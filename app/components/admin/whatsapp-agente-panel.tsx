@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Sparkles, ChevronDown, ChevronRight } from "lucide-react"
 import { Switch, Textarea, Button } from "@/components/ui"
+import Collapsible from "@/components/admin/whatsapp/collapsible"
 import {
   setWhatsappAgenteFlag,
   setWhatsappAgenteFaq,
@@ -10,15 +11,17 @@ import {
 } from "@/lib/whatsapp/admin-actions"
 import { DEFAULT_AGENTE_FAQ } from "@/lib/whatsapp/bot-agente-kb"
 
-type Props = { initial: AgenteConfig }
+type Props = { initial: AgenteConfig; expanded?: boolean; onToggleExpand?: () => void }
 
-const WhatsappAgentePanel = ({ initial }: Props) => {
+const WhatsappAgentePanel = ({ initial, expanded, onToggleExpand }: Props) => {
   const [ativo, setAtivo] = useState(initial.ativo)
   const [faq, setFaq] = useState(initial.faq)
   const [rascunho, setRascunho] = useState(initial.faq)
   const [erro, setErro] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
-  const [aberto, setAberto] = useState(false)
+  const [abertoLocal, setAbertoLocal] = useState(false)
+  const aberto = expanded ?? abertoLocal
+  const toggleAberto = onToggleExpand ?? (() => setAbertoLocal((v) => !v))
   const [, startTransition] = useTransition()
 
   const toggleMaster = (next: boolean) => {
@@ -88,7 +91,7 @@ const WhatsappAgentePanel = ({ initial }: Props) => {
         <div className="mt-5 border-t border-white/5 pt-4">
           <button
             type="button"
-            onClick={() => setAberto((v) => !v)}
+            onClick={toggleAberto}
             aria-expanded={aberto}
             className="flex w-full items-center gap-2 text-sm text-brand-warm-gray hover:text-white transition-colors"
           >
@@ -100,7 +103,7 @@ const WhatsappAgentePanel = ({ initial }: Props) => {
             <span className="font-medium">Informações que o atendente pode usar</span>
           </button>
 
-          {aberto && (
+          <Collapsible open={aberto}>
             <div className="mt-4 space-y-4">
               <p className="text-xs text-brand-warm-gray">
                 Horário, formas de pagamento, cobertura, como pedir. O cardápio e os preços vêm do
@@ -129,7 +132,7 @@ const WhatsappAgentePanel = ({ initial }: Props) => {
                 equipe. Suas respostas aparecem nas Conversas abaixo.
               </p>
             </div>
-          )}
+          </Collapsible>
         </div>
       )}
 

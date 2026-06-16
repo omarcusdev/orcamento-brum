@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Truck, ChevronDown, ChevronRight } from "lucide-react"
 import { Switch, Textarea, Button } from "@/components/ui"
+import Collapsible from "@/components/admin/whatsapp/collapsible"
 import {
   setWhatsappStatusFlag,
   setWhatsappStatusMessage,
@@ -15,9 +16,9 @@ import {
   type NotifyStatus,
 } from "@/lib/whatsapp/status-messages"
 
-type Props = { initial: StatusEntregaConfig }
+type Props = { initial: StatusEntregaConfig; expanded?: boolean; onToggleExpand?: () => void }
 
-const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
+const WhatsappStatusEntregaPanel = ({ initial, expanded, onToggleExpand }: Props) => {
   const [master, setMaster] = useState(initial.master)
   const [porStatus, setPorStatus] = useState(initial.porStatus)
   const [rascunho, setRascunho] = useState<Record<NotifyStatus, string>>(
@@ -30,7 +31,9 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
   const [salvo, setSalvo] = useState<NotifyStatus | null>(null)
   // Mensagens ficam num collapse fechado: a feature nasce ligada e é raramente editada,
   // então o padrão é não empurrar o painel de Conversas (parte principal) pra baixo.
-  const [aberto, setAberto] = useState(false)
+  const [abertoLocal, setAbertoLocal] = useState(false)
+  const aberto = expanded ?? abertoLocal
+  const toggleAberto = onToggleExpand ?? (() => setAbertoLocal((v) => !v))
   const [, startTransition] = useTransition()
 
   const toggleMaster = (next: boolean) => {
@@ -113,7 +116,7 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
         <div className="mt-5 border-t border-white/5 pt-4">
           <button
             type="button"
-            onClick={() => setAberto((v) => !v)}
+            onClick={toggleAberto}
             aria-expanded={aberto}
             className="flex w-full items-center gap-2 text-sm text-brand-warm-gray hover:text-white transition-colors"
           >
@@ -128,7 +131,7 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
             </span>
           </button>
 
-          {aberto && (
+          <Collapsible open={aberto}>
             <>
               <ul className="mt-4 space-y-5">
                 {STATUS_NOTIFY_STATUSES.map((s) => (
@@ -182,7 +185,7 @@ const WhatsappStatusEntregaPanel = ({ initial }: Props) => {
                 <code className="text-brand-yellow">{"{pedido}"}</code> (nº do pedido) nas mensagens.
               </p>
             </>
-          )}
+          </Collapsible>
         </div>
       )}
 

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { BellRing, ChevronDown, ChevronRight } from "lucide-react"
 import { Switch, Textarea, Select, Button } from "@/components/ui"
+import Collapsible from "@/components/admin/whatsapp/collapsible"
 import {
   setWhatsappLembreteFlag,
   setWhatsappLembreteHora,
@@ -11,12 +12,12 @@ import {
 } from "@/lib/whatsapp/admin-actions"
 import { DEFAULT_LEMBRETE_MSG } from "@/lib/whatsapp/lembrete-message"
 
-type Props = { initial: LembreteConfig }
+type Props = { initial: LembreteConfig; expanded?: boolean; onToggleExpand?: () => void }
 
 const HORAS = Array.from({ length: 24 }, (_, h) => h)
 const labelHora = (h: number) => `${String(h).padStart(2, "0")}:00`
 
-const WhatsappLembretePanel = ({ initial }: Props) => {
+const WhatsappLembretePanel = ({ initial, expanded, onToggleExpand }: Props) => {
   const [ativo, setAtivo] = useState(initial.ativo)
   const [hora, setHora] = useState(initial.hora)
   const [mensagem, setMensagem] = useState(initial.mensagem)
@@ -25,7 +26,9 @@ const WhatsappLembretePanel = ({ initial }: Props) => {
   const [salvo, setSalvo] = useState(false)
   // Collapse fechado por default: a feature nasce ligada e e raramente editada, entao nao
   // empurramos o painel de Conversas (parte principal da tela) pra baixo.
-  const [aberto, setAberto] = useState(false)
+  const [abertoLocal, setAbertoLocal] = useState(false)
+  const aberto = expanded ?? abertoLocal
+  const toggleAberto = onToggleExpand ?? (() => setAbertoLocal((v) => !v))
   const [, startTransition] = useTransition()
 
   const toggleMaster = (next: boolean) => {
@@ -109,7 +112,7 @@ const WhatsappLembretePanel = ({ initial }: Props) => {
         <div className="mt-5 border-t border-white/5 pt-4">
           <button
             type="button"
-            onClick={() => setAberto((v) => !v)}
+            onClick={toggleAberto}
             aria-expanded={aberto}
             className="flex w-full items-center gap-2 text-sm text-brand-warm-gray hover:text-white transition-colors"
           >
@@ -122,7 +125,7 @@ const WhatsappLembretePanel = ({ initial }: Props) => {
             <span className="text-xs text-brand-warm-gray/70">(envia às {labelHora(hora)})</span>
           </button>
 
-          {aberto && (
+          <Collapsible open={aberto}>
             <div className="mt-4 space-y-4">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-white shrink-0">Enviar às</span>
@@ -168,7 +171,7 @@ const WhatsappLembretePanel = ({ initial }: Props) => {
                 <code className="text-brand-yellow">{"{horario}"}</code> (HH:MM).
               </p>
             </div>
-          )}
+          </Collapsible>
         </div>
       )}
 
