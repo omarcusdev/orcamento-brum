@@ -39,12 +39,12 @@ const ConnectionCard = ({ initial, connection, refresh, alertEmail, alertaDisabl
   const acao = aberto ? "Fechar" : s.acionavel ? "Conectar" : "Detalhes"
 
   return (
-    <div className="bg-brand-surface rounded-xl border border-white/10 mb-6">
+    <div className="bg-brand-surface rounded-xl border border-white/10 mb-6 overflow-hidden">
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
-        className="flex w-full items-center gap-3 px-5 py-3 text-left rounded-xl hover:bg-white/[0.02] transition-colors"
+        className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-white/5 transition-colors"
       >
         <span className="relative flex h-2.5 w-2.5 shrink-0">
           {s.pulsar && (

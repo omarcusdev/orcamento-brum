@@ -88,12 +88,12 @@ const WhatsappFeaturesPanel = ({ initial, me, expanded, onToggleExpand, onFeatur
   }
 
   return (
-    <div className="bg-brand-surface rounded-xl border border-white/10">
+    <div className="bg-brand-surface rounded-xl border border-white/10 overflow-hidden">
       <button
         type="button"
         onClick={toggleAberto}
         aria-expanded={aberto}
-        className="flex w-full items-center gap-3 px-6 py-4 text-left"
+        className="flex w-full items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors"
       >
         <MessageSquare className="h-5 w-5 shrink-0 text-brand-yellow" />
         <span className="flex-1 font-medium text-white">Recursos</span>

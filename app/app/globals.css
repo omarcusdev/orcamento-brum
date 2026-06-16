@@ -82,3 +82,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover,
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+
+/* Tailwind v4 não aplica cursor:pointer em <button> por padrão; restaura nos botões interativos. */
+button:not(:disabled) {
+  cursor: pointer;
+}
