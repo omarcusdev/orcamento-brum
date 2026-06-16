@@ -2,7 +2,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Settings } from "lucide-react"
+import { Settings, AlertTriangle } from "lucide-react"
 import {
   getWhatsappConnection,
   type WhatsappConnection,
@@ -14,6 +14,7 @@ import {
 } from "@/lib/whatsapp/admin-actions"
 import type { getConversas } from "@/lib/whatsapp/chat-actions"
 import type { SectionId } from "@/lib/whatsapp/accordion"
+import { connectionStatus } from "@/lib/whatsapp/connection-status"
 import { Button } from "@/components/ui"
 import AtendimentoClient from "@/components/admin/atendimento/atendimento-client"
 import ConnectionChip from "./connection-chip"
@@ -37,6 +38,10 @@ const WhatsappAdminShell = (props: Props) => {
   const [openSection, setOpenSection] = useState<SectionId | null>(null)
   const [connection, setConnection] = useState(props.initialConnection)
   const [features, setFeatures] = useState(props.features)
+
+  // O chat fica visível enquanto o Atendimento está ligado, independente da conexão.
+  // Quando o número não está conectado, os envios falham — então avisamos no topo do inbox.
+  const conexaoOk = connectionStatus(connection).estado === "conectado"
 
   const refresh = useCallback(async () => {
     setConnection(await getWhatsappConnection())
@@ -65,6 +70,21 @@ const WhatsappAdminShell = (props: Props) => {
       <section>
         {features.atendimento ? (
           <>
+            {!conexaoOk && (
+              <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-brand-yellow/30 bg-brand-yellow/10 px-4 py-3 text-sm text-brand-yellow">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span className="flex-1 min-w-0">
+                  WhatsApp não está conectado — as mensagens não serão enviadas até reconectar.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => abrirConfig("conexao")}
+                  className="font-medium underline underline-offset-2 hover:text-brand-yellow/80"
+                >
+                  Abrir conexão
+                </button>
+              </div>
+            )}
             <p className="text-sm text-brand-warm-gray mb-4">
               As conversas aparecem a partir de quando o atendimento foi ligado — o histórico anterior continua no celular.
             </p>
