@@ -1,13 +1,14 @@
-import { getWhatsappAlertEmail, getWhatsappAgenteConfig, getWhatsappBotSaudacaoConfig, getWhatsappConnection, getWhatsappFeatures, getWhatsappLembreteConfig, getWhatsappStatusEntregaConfig } from "@/lib/whatsapp/admin-actions"
+import {
+  getWhatsappAlertEmail,
+  getWhatsappAgenteConfig,
+  getWhatsappBotSaudacaoConfig,
+  getWhatsappConnection,
+  getWhatsappFeatures,
+  getWhatsappLembreteConfig,
+  getWhatsappStatusEntregaConfig,
+} from "@/lib/whatsapp/admin-actions"
 import { getConversas } from "@/lib/whatsapp/chat-actions"
-import WhatsAppConnection from "@/components/admin/whatsapp-connection"
-import WhatsappAlertEmail from "@/components/admin/whatsapp-alert-email"
-import AtendimentoClient from "@/components/admin/atendimento/atendimento-client"
-import WhatsappFeaturesPanel from "@/components/admin/whatsapp-features-panel"
-import WhatsappStatusEntregaPanel from "@/components/admin/whatsapp-status-entrega-panel"
-import WhatsappLembretePanel from "@/components/admin/whatsapp-lembrete-panel"
-import WhatsappBotPanel from "@/components/admin/whatsapp-bot-panel"
-import WhatsappAgentePanel from "@/components/admin/whatsapp-agente-panel"
+import WhatsappAdminShell from "@/components/admin/whatsapp/whatsapp-admin-shell"
 
 export const dynamic = "force-dynamic"
 
@@ -24,56 +25,16 @@ const WhatsappPage = async () => {
   ])
 
   return (
-    <div>
-      <h1 className="font-display text-2xl font-bold text-white mb-6">WhatsApp</h1>
-
-      <div className="space-y-10">
-        <section>
-          <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">RECURSOS</h2>
-          <WhatsappFeaturesPanel initial={features} me={connection.me} />
-          <div className="mt-4">
-            <WhatsappStatusEntregaPanel initial={statusEntrega} />
-          </div>
-          <div className="mt-4">
-            <WhatsappLembretePanel initial={lembrete} />
-          </div>
-          <div className="mt-4">
-            <WhatsappBotPanel initial={botSaudacao} />
-          </div>
-          <div className="mt-4">
-            <WhatsappAgentePanel initial={agente} />
-          </div>
-        </section>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
-          <section>
-            <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">CONEXAO</h2>
-            <WhatsAppConnection initial={connection} />
-          </section>
-
-          <section>
-            <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">ALERTA POR EMAIL</h2>
-            <WhatsappAlertEmail initialEmail={alertEmail} disabled={!features.alerta} />
-          </section>
-        </div>
-
-        <section>
-          <h2 className="font-display text-lg font-bold text-white tracking-wide mb-1">CONVERSAS</h2>
-          {features.atendimento ? (
-            <>
-              <p className="text-sm text-brand-warm-gray mb-4">
-                As conversas aparecem a partir de quando o atendimento foi ligado — o histórico anterior continua no celular.
-              </p>
-              <AtendimentoClient initial={conversas} />
-            </>
-          ) : (
-            <div className="bg-brand-surface rounded-xl border border-white/10 p-6 text-sm text-brand-warm-gray">
-              Atendimento desligado — ligue o recurso <strong className="text-white">Atendimento</strong> acima para receber e ver mensagens.
-            </div>
-          )}
-        </section>
-      </div>
-    </div>
+    <WhatsappAdminShell
+      initialConnection={connection}
+      features={features}
+      statusEntrega={statusEntrega}
+      lembrete={lembrete}
+      botSaudacao={botSaudacao}
+      agente={agente}
+      alertEmail={alertEmail}
+      conversas={conversas}
+    />
   )
 }
 
