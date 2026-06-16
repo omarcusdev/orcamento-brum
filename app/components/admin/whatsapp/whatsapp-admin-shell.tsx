@@ -19,6 +19,7 @@ import { Button } from "@/components/ui"
 import AtendimentoClient from "@/components/admin/atendimento/atendimento-client"
 import ConnectionChip from "./connection-chip"
 import ConfigDrawer from "./config-drawer"
+import ConnectionModal from "./connection-modal"
 
 const POLL_INTERVAL_MS = 3_000
 
@@ -35,6 +36,7 @@ type Props = {
 
 const WhatsappAdminShell = (props: Props) => {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [connectionOpen, setConnectionOpen] = useState(false)
   const [openSection, setOpenSection] = useState<SectionId | null>(null)
   const [connection, setConnection] = useState(props.initialConnection)
   const [features, setFeatures] = useState(props.features)
@@ -61,7 +63,7 @@ const WhatsappAdminShell = (props: Props) => {
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <h1 className="font-display text-2xl font-bold text-white mr-auto">WhatsApp</h1>
-        <ConnectionChip connection={connection} onClick={() => abrirConfig("conexao")} />
+        <ConnectionChip connection={connection} onClick={() => setConnectionOpen(true)} />
         <Button variant="secondary" onClick={() => abrirConfig(null)}>
           <Settings className="h-4 w-4" /> Configurar
         </Button>
@@ -78,7 +80,7 @@ const WhatsappAdminShell = (props: Props) => {
                 </span>
                 <button
                   type="button"
-                  onClick={() => abrirConfig("conexao")}
+                  onClick={() => setConnectionOpen(true)}
                   className="font-medium underline underline-offset-2 hover:text-brand-yellow/80"
                 >
                   Abrir conexão
@@ -108,15 +110,22 @@ const WhatsappAdminShell = (props: Props) => {
         openSection={openSection}
         onOpenSection={setOpenSection}
         connection={connection}
-        initialConnection={props.initialConnection}
-        refresh={refresh}
         features={features}
         onFeaturesChange={setFeatures}
         statusEntrega={props.statusEntrega}
         lembrete={props.lembrete}
         botSaudacao={props.botSaudacao}
         agente={props.agente}
+      />
+
+      <ConnectionModal
+        open={connectionOpen}
+        onClose={() => setConnectionOpen(false)}
+        initial={props.initialConnection}
+        connection={connection}
+        refresh={refresh}
         alertEmail={props.alertEmail}
+        alertaDisabled={!features.alerta}
       />
     </div>
   )

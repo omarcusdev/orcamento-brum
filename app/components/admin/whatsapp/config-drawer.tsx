@@ -14,12 +14,10 @@ import type {
   AgenteConfig,
 } from "@/lib/whatsapp/admin-actions"
 import WhatsappFeaturesPanel from "@/components/admin/whatsapp-features-panel"
-import WhatsAppConnection from "@/components/admin/whatsapp-connection"
 import WhatsappStatusEntregaPanel from "@/components/admin/whatsapp-status-entrega-panel"
 import WhatsappLembretePanel from "@/components/admin/whatsapp-lembrete-panel"
 import WhatsappBotPanel from "@/components/admin/whatsapp-bot-panel"
 import WhatsappAgentePanel from "@/components/admin/whatsapp-agente-panel"
-import WhatsappAlertEmail from "@/components/admin/whatsapp-alert-email"
 
 type Props = {
   open: boolean
@@ -27,21 +25,18 @@ type Props = {
   openSection: SectionId | null
   onOpenSection: (next: SectionId | null) => void
   connection: WhatsappConnection
-  initialConnection: WhatsappConnection
-  refresh: () => Promise<void> | void
   features: WhatsappFeatures
   onFeaturesChange: (f: WhatsappFeatures) => void
   statusEntrega: StatusEntregaConfig
   lembrete: LembreteConfig
   botSaudacao: BotSaudacaoConfig
   agente: AgenteConfig
-  alertEmail: string
 }
 
 const ConfigDrawer = ({
   open, onClose, openSection, onOpenSection,
-  connection, initialConnection, refresh,
-  features, onFeaturesChange, statusEntrega, lembrete, botSaudacao, agente, alertEmail,
+  connection,
+  features, onFeaturesChange, statusEntrega, lembrete, botSaudacao, agente,
 }: Props) => {
   useEffect(() => {
     if (!open) return
@@ -88,10 +83,6 @@ const ConfigDrawer = ({
                 expanded={openSection === "recursos"} onToggleExpand={() => toggle("recursos")}
                 onFeaturesChange={onFeaturesChange}
               />
-              <WhatsAppConnection
-                initial={initialConnection} connection={connection} refresh={refresh}
-                expanded={openSection === "conexao"} onToggleExpand={() => toggle("conexao")}
-              />
               <WhatsappStatusEntregaPanel
                 initial={statusEntrega}
                 expanded={openSection === "status"} onToggleExpand={() => toggle("status")}
@@ -107,10 +98,6 @@ const ConfigDrawer = ({
               <WhatsappAgentePanel
                 initial={agente}
                 expanded={openSection === "agente"} onToggleExpand={() => toggle("agente")}
-              />
-              <WhatsappAlertEmail
-                initialEmail={alertEmail} disabled={!features.alerta}
-                expanded={openSection === "alerta"} onToggleExpand={() => toggle("alerta")}
               />
             </div>
           </motion.aside>

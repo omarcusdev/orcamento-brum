@@ -1,9 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { ChevronDown, ChevronRight } from "lucide-react"
 import { Button, Input, Segmented, fieldLabelClass } from "@/components/ui"
-import Collapsible from "@/components/admin/whatsapp/collapsible"
 import { formatPairedNumber } from "@/lib/whatsapp/connection-status"
 import {
   connectWhatsapp,
@@ -26,16 +24,12 @@ type WhatsAppConnectionProps = {
   initial: WhatsappConnection
   connection?: WhatsappConnection
   refresh?: () => Promise<void> | void
-  expanded?: boolean
-  onToggleExpand?: () => void
 }
 
 const WhatsAppConnection = ({
   initial,
   connection: controlled,
   refresh: refreshProp,
-  expanded,
-  onToggleExpand,
 }: WhatsAppConnectionProps) => {
   const [local, setLocal] = useState(initial)
   const connection = controlled ?? local
@@ -44,10 +38,6 @@ const WhatsAppConnection = ({
   const [method, setMethod] = useState<PairingMethod>("qr")
   const [phone, setPhone] = useState("")
   const [phoneError, setPhoneError] = useState(false)
-
-  const [abertoLocal, setAbertoLocal] = useState(true)
-  const aberto = expanded ?? abertoLocal
-  const toggleAberto = onToggleExpand ?? (() => setAbertoLocal((v) => !v))
 
   const refresh = useCallback(async () => {
     if (refreshProp) return void refreshProp()
@@ -252,26 +242,7 @@ const WhatsAppConnection = ({
     )
   }
 
-  return (
-    <div className="bg-brand-surface rounded-xl border border-white/10">
-      <button
-        type="button"
-        onClick={toggleAberto}
-        aria-expanded={aberto}
-        className="flex w-full items-center gap-3 px-6 py-4 text-left"
-      >
-        <span className="flex-1 font-medium text-white">Conexão</span>
-        {aberto ? (
-          <ChevronDown className="h-4 w-4 text-brand-warm-gray" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-brand-warm-gray" />
-        )}
-      </button>
-      <Collapsible open={aberto}>
-        <div className="px-6 pb-6">{renderCorpo()}</div>
-      </Collapsible>
-    </div>
-  )
+  return renderCorpo()
 }
 
 export default WhatsAppConnection
