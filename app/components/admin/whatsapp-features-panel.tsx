@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useTransition, useEffect } from "react"
-import { MessageSquare, BellRing, Send } from "lucide-react"
+import { MessageSquare, Send } from "lucide-react"
 import { Switch } from "@/components/ui"
-import { setWhatsappFeature, type WhatsappFeatures } from "@/lib/whatsapp/admin-actions"
+import type { WhatsappFeatures } from "@/lib/whatsapp/admin-actions"
 import type { WhatsappFeatureKey } from "@/lib/whatsapp/features"
 
 const NAO_FAZ =
@@ -44,42 +43,17 @@ const ROWS: Row[] = [
     titulo: "Atendimento (receber e exibir mensagens)",
     descricao: "Captura as mensagens dos clientes e mostra o painel Conversas abaixo.",
   },
-  {
-    key: "whatsapp_alerta_ativo",
-    field: "alerta",
-    icon: BellRing,
-    titulo: "Alerta por e-mail se a conexão cair",
-    descricao: "Avisa por e-mail o endereço configurado quando o número desconectar.",
-  },
 ]
 
 type Props = {
-  initial: WhatsappFeatures
+  features: WhatsappFeatures
   me: string | null
-  onFeaturesChange?: (features: WhatsappFeatures) => void
+  erro: keyof WhatsappFeatures | null
+  onToggle: (key: WhatsappFeatureKey, field: keyof WhatsappFeatures, next: boolean) => void
 }
 
-const WhatsappFeaturesPanel = ({ initial, me, onFeaturesChange }: Props) => {
-  const [features, setFeatures] = useState(initial)
-  const [erro, setErro] = useState<keyof WhatsappFeatures | null>(null)
-  const [, startTransition] = useTransition()
+const WhatsappFeaturesPanel = ({ features, me, erro, onToggle }: Props) => {
   const numero = formatNumero(me)
-
-  useEffect(() => {
-    onFeaturesChange?.(features)
-  }, [features, onFeaturesChange])
-
-  const toggle = (row: Row, next: boolean) => {
-    setErro(null)
-    setFeatures((f) => ({ ...f, [row.field]: next })) // otimista
-    startTransition(async () => {
-      const { ok } = await setWhatsappFeature(row.key, next)
-      if (!ok) {
-        setFeatures((f) => ({ ...f, [row.field]: !next })) // rollback
-        setErro(row.field)
-      }
-    })
-  }
 
   return (
     <div className="bg-brand-surface rounded-xl border border-white/10 p-6">
@@ -104,7 +78,7 @@ const WhatsappFeaturesPanel = ({ initial, me, onFeaturesChange }: Props) => {
               <Switch
                 id={row.key}
                 checked={on}
-                onChange={(next) => toggle(row, next)}
+                onChange={(next) => onToggle(row.key, row.field, next)}
                 aria-label={row.titulo}
               />
             </li>

@@ -13,6 +13,7 @@ import type {
   BotSaudacaoConfig,
   AgenteConfig,
 } from "@/lib/whatsapp/admin-actions"
+import type { WhatsappFeatureKey } from "@/lib/whatsapp/features"
 import WhatsappFeaturesPanel from "@/components/admin/whatsapp-features-panel"
 import WhatsappStatusEntregaPanel from "@/components/admin/whatsapp-status-entrega-panel"
 import WhatsappLembretePanel from "@/components/admin/whatsapp-lembrete-panel"
@@ -26,7 +27,8 @@ type Props = {
   onOpenSection: (next: SectionId | null) => void
   connection: WhatsappConnection
   features: WhatsappFeatures
-  onFeaturesChange: (f: WhatsappFeatures) => void
+  featErro: keyof WhatsappFeatures | null
+  onToggleFeature: (key: WhatsappFeatureKey, field: keyof WhatsappFeatures, next: boolean) => void
   statusEntrega: StatusEntregaConfig
   lembrete: LembreteConfig
   botSaudacao: BotSaudacaoConfig
@@ -36,7 +38,7 @@ type Props = {
 const ConfigDrawer = ({
   open, onClose, openSection, onOpenSection,
   connection,
-  features, onFeaturesChange, statusEntrega, lembrete, botSaudacao, agente,
+  features, featErro, onToggleFeature, statusEntrega, lembrete, botSaudacao, agente,
 }: Props) => {
   useEffect(() => {
     if (!open) return
@@ -79,8 +81,10 @@ const ConfigDrawer = ({
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
               <WhatsappFeaturesPanel
-                initial={features} me={connection.me}
-                onFeaturesChange={onFeaturesChange}
+                features={features}
+                me={connection.me}
+                erro={featErro}
+                onToggle={onToggleFeature}
               />
               <WhatsappStatusEntregaPanel
                 initial={statusEntrega}

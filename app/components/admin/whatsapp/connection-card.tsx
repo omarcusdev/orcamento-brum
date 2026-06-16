@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import type { WhatsappConnection } from "@/lib/whatsapp/admin-actions"
 import { connectionStatus, formatPairedNumber, type ChipTom } from "@/lib/whatsapp/connection-status"
+import { Switch } from "@/components/ui"
 import Collapsible from "./collapsible"
 import WhatsAppConnection from "@/components/admin/whatsapp-connection"
 import WhatsappAlertEmail from "@/components/admin/whatsapp-alert-email"
@@ -13,7 +14,9 @@ type Props = {
   connection: WhatsappConnection
   refresh: () => Promise<void> | void
   alertEmail: string
-  alertaDisabled: boolean
+  alertaAtivo: boolean
+  alertaErro: boolean
+  onToggleAlerta: (next: boolean) => void
 }
 
 const DOT: Record<ChipTom, string> = {
@@ -31,8 +34,8 @@ const TEXTO: Record<ChipTom, string> = {
 }
 
 // Conexão mora na própria tela (topo), como card colapsável: fechado mostra só o status;
-// abre pra parear/trocar + configurar o alerta por e-mail (ambos são "saúde da conexão").
-const ConnectionCard = ({ initial, connection, refresh, alertEmail, alertaDisabled }: Props) => {
+// abre pra parear/trocar + o alerta de "saúde da conexão" (liga/desliga + e-mail).
+const ConnectionCard = ({ initial, connection, refresh, alertEmail, alertaAtivo, alertaErro, onToggleAlerta }: Props) => {
   const [aberto, setAberto] = useState(false)
   const s = connectionStatus(connection)
   const numero = s.estado === "conectado" && connection.me ? formatPairedNumber(connection.me) : null
@@ -70,8 +73,24 @@ const ConnectionCard = ({ initial, connection, refresh, alertEmail, alertaDisabl
         <div className="px-5 pb-5 space-y-6">
           <WhatsAppConnection initial={initial} connection={connection} refresh={refresh} />
           <div className="border-t border-white/10 pt-5">
-            <p className="text-sm font-medium text-white mb-3">Alerta por e-mail</p>
-            <WhatsappAlertEmail initialEmail={alertEmail} disabled={alertaDisabled} />
+            <div className="flex items-start gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white">Alerta por e-mail</p>
+                <p className="text-xs text-brand-warm-gray mt-0.5">
+                  Avisa por e-mail se o número desconectar, pra você reconectar pelo painel.
+                </p>
+                {alertaErro && <p className="text-xs text-red-300 mt-1">Não consegui salvar. Tente de novo.</p>}
+              </div>
+              <Switch
+                id="whatsapp_alerta_ativo"
+                checked={alertaAtivo}
+                onChange={onToggleAlerta}
+                aria-label="Alerta por e-mail se a conexão cair"
+              />
+            </div>
+            <div className="mt-3">
+              <WhatsappAlertEmail initialEmail={alertEmail} disabled={!alertaAtivo} />
+            </div>
           </div>
         </div>
       </Collapsible>

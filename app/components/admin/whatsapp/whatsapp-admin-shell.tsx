@@ -1,10 +1,11 @@
 // app/components/admin/whatsapp/whatsapp-admin-shell.tsx
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useTransition } from "react"
 import { Settings } from "lucide-react"
 import {
   getWhatsappConnection,
+  setWhatsappFeature,
   type WhatsappConnection,
   type WhatsappFeatures,
   type StatusEntregaConfig,
@@ -12,6 +13,7 @@ import {
   type BotSaudacaoConfig,
   type AgenteConfig,
 } from "@/lib/whatsapp/admin-actions"
+import type { WhatsappFeatureKey } from "@/lib/whatsapp/features"
 import type { getConversas } from "@/lib/whatsapp/chat-actions"
 import type { SectionId } from "@/lib/whatsapp/accordion"
 import { Button } from "@/components/ui"
@@ -37,6 +39,20 @@ const WhatsappAdminShell = (props: Props) => {
   const [openSection, setOpenSection] = useState<SectionId | null>(null)
   const [connection, setConnection] = useState(props.initialConnection)
   const [features, setFeatures] = useState(props.features)
+  const [featErro, setFeatErro] = useState<keyof WhatsappFeatures | null>(null)
+  const [, startFeat] = useTransition()
+
+  const toggleFeature = (key: WhatsappFeatureKey, field: keyof WhatsappFeatures, next: boolean) => {
+    setFeatErro(null)
+    setFeatures((f) => ({ ...f, [field]: next })) // otimista
+    startFeat(async () => {
+      const { ok } = await setWhatsappFeature(key, next)
+      if (!ok) {
+        setFeatures((f) => ({ ...f, [field]: !next })) // rollback
+        setFeatErro(field)
+      }
+    })
+  }
 
   const refresh = useCallback(async () => {
     setConnection(await getWhatsappConnection())
@@ -66,7 +82,9 @@ const WhatsappAdminShell = (props: Props) => {
         connection={connection}
         refresh={refresh}
         alertEmail={props.alertEmail}
-        alertaDisabled={!features.alerta}
+        alertaAtivo={features.alerta}
+        alertaErro={featErro === "alerta"}
+        onToggleAlerta={(next) => toggleFeature("whatsapp_alerta_ativo", "alerta", next)}
       />
 
       <section>
@@ -96,7 +114,8 @@ const WhatsappAdminShell = (props: Props) => {
         onOpenSection={setOpenSection}
         connection={connection}
         features={features}
-        onFeaturesChange={setFeatures}
+        featErro={featErro}
+        onToggleFeature={toggleFeature}
         statusEntrega={props.statusEntrega}
         lembrete={props.lembrete}
         botSaudacao={props.botSaudacao}
