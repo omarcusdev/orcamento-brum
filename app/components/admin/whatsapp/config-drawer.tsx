@@ -80,7 +80,6 @@ const ConfigDrawer = ({
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
               <WhatsappFeaturesPanel
                 initial={features} me={connection.me}
-                expanded={openSection === "recursos"} onToggleExpand={() => toggle("recursos")}
                 onFeaturesChange={onFeaturesChange}
               />
               <WhatsappStatusEntregaPanel
