@@ -46,14 +46,20 @@ const ConnectionCard = ({ initial, connection, refresh, alertEmail, alertaDisabl
         aria-expanded={aberto}
         className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-white/5 transition-colors"
       >
-        <span className="relative flex h-2.5 w-2.5 shrink-0">
-          {s.pulsar && (
-            <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${DOT[s.tom]} opacity-60`} />
-          )}
-          <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${DOT[s.tom]}`} />
-        </span>
-        <span className={`font-medium ${TEXTO[s.tom]}`}>{s.label}</span>
-        {numero && <span className="text-sm text-brand-warm-gray hidden sm:inline">· {numero}</span>}
+        {aberto ? (
+          <span className="font-medium text-white">Conexão</span>
+        ) : (
+          <>
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              {s.pulsar && (
+                <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${DOT[s.tom]} opacity-60`} />
+              )}
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${DOT[s.tom]}`} />
+            </span>
+            <span className={`font-medium ${TEXTO[s.tom]}`}>{s.label}</span>
+            {numero && <span className="text-sm text-brand-warm-gray hidden sm:inline">· {numero}</span>}
+          </>
+        )}
         <span className="ml-auto flex items-center gap-1 text-xs text-brand-warm-gray">
           {acao}
           {aberto ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
