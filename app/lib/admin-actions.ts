@@ -5,7 +5,7 @@ import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
 import { productSchema, manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
 import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
-import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES } from "@/lib/admin-status"
+import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES, isAutoArchiveStatus } from "@/lib/admin-status"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
 import { after } from "next/server"
 import { sendCustomerWhatsAppStatusUpdate } from "@/lib/whatsapp/notificacoes"
@@ -38,9 +38,14 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
     throw new Error("Use despacho para entregador para avancar pedidos confirmados")
   }
 
+  // Ao chegar em "recolhido" (status final), arquiva junto pra sair da esteira na hora.
+  const statusUpdate = isAutoArchiveStatus(nextStatus)
+    ? { status: nextStatus, arquivado_em: new Date().toISOString() }
+    : { status: nextStatus }
+
   const { error, count } = await supabase
     .from("pedidos")
-    .update({ status: nextStatus })
+    .update(statusUpdate)
     .eq("id", pedidoId)
     .eq("status", currentStatus)
 
@@ -100,22 +105,20 @@ export const unarchiveOrder = async (pedidoId: string) => {
   revalidatePath("/admin/pedidos")
 }
 
-const STALE_THRESHOLD_DAYS = 30
-
-export const archiveStaleOrders = async () => {
+// Rede de seguranca: arquiva qualquer pedido "recolhido" que ainda esteja na esteira
+// (ex.: pedidos antigos, anteriores ao arquivamento automatico em advanceOrderStatus).
+// Roda a cada carga de /admin/pedidos; idempotente (so toca linhas nao-arquivadas).
+export const archiveRecolhidoOrders = async () => {
   const { supabase } = await requireAdmin()
-
-  const cutoff = new Date(Date.now() - STALE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
   const { error } = await supabase
     .from("pedidos")
     .update({ arquivado_em: new Date().toISOString() })
     .is("arquivado_em", null)
     .eq("status", "recolhido")
-    .lt("updated_at", cutoff)
 
   if (error) {
-    console.error("archiveStaleOrders failed", error)
+    console.error("archiveRecolhidoOrders failed", error)
   }
 }
 
@@ -543,9 +546,15 @@ export const revertOrderStatus = async (pedidoId: string, newStatus: string) => 
     throw new Error(`Nao pode voltar de ${pedido.status} para ${newStatus}`)
   }
 
+  // Voltar status a partir de "recolhido" traz o pedido de volta pra esteira
+  // (desfaz o arquivamento automatico); senao ficaria escondido nos Arquivados.
+  const revertUpdate = isAutoArchiveStatus(pedido.status)
+    ? { status: newStatus, updated_at: new Date().toISOString(), arquivado_em: null }
+    : { status: newStatus, updated_at: new Date().toISOString() }
+
   const { error: updateError } = await supabase
     .from("pedidos")
-    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .update(revertUpdate)
     .eq("id", pedidoId)
 
   if (updateError) throw updateError

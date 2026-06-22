@@ -18,3 +18,9 @@ export const canRevertToStatus = (current: string, target: string): boolean => {
 }
 
 export const LOCKED_EDIT_STATUSES = ["entregue", "pago", "recolhido", "cancelado"] as const
+
+// "recolhido" e o status final: ao chegar nele o pedido sai da esteira
+// (arquiva automaticamente) e vai pra aba "Arquivados", de onde pode ser restaurado.
+export const AUTO_ARCHIVE_STATUS = "recolhido"
+
+export const isAutoArchiveStatus = (status: string): boolean => status === AUTO_ARCHIVE_STATUS

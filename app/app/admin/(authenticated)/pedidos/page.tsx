@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import FadeIn from "@/components/admin/fade-in"
 import OrdersList from "@/components/admin/orders-list"
 import NewOrderTrigger from "@/components/admin/new-order-trigger"
-import { archiveStaleOrders } from "@/lib/admin-actions"
+import { archiveRecolhidoOrders } from "@/lib/admin-actions"
 import type { Produto } from "@/lib/types"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,7 +25,7 @@ const normalizeOrders = (raw: any[]) =>
   }[]
 
 const PedidosPage = async () => {
-  await archiveStaleOrders()
+  await archiveRecolhidoOrders()
   const supabase = await createClient()
 
   const [{ data: rawOrders }, { data: produtos }] = await Promise.all([

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { canRevertToStatus, STATUS_FLOW_ORDER } from "./admin-status"
+import { canRevertToStatus, STATUS_FLOW_ORDER, isAutoArchiveStatus } from "./admin-status"
 
 describe("canRevertToStatus", () => {
   it("permite cancelado a partir de qualquer status nao terminal", () => {
@@ -47,5 +47,20 @@ describe("canRevertToStatus", () => {
       "pago",
       "recolhido",
     ])
+  })
+})
+
+describe("isAutoArchiveStatus", () => {
+  it("recolhido arquiva automaticamente (sai da esteira)", () => {
+    expect(isAutoArchiveStatus("recolhido")).toBe(true)
+  })
+
+  it("demais status permanecem na esteira", () => {
+    expect(isAutoArchiveStatus("confirmado")).toBe(false)
+    expect(isAutoArchiveStatus("enviar_para_entregador")).toBe(false)
+    expect(isAutoArchiveStatus("em_rota")).toBe(false)
+    expect(isAutoArchiveStatus("entregue")).toBe(false)
+    expect(isAutoArchiveStatus("pago")).toBe(false)
+    expect(isAutoArchiveStatus("cancelado")).toBe(false)
   })
 })
