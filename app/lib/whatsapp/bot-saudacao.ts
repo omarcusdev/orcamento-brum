@@ -66,8 +66,12 @@ export const maybeSendBotSaudacao = async (
     if (!isSessaoNova(anterior?.ocorrida_em ?? null, new Date(), janelaHoras)) return
 
     const result = await sendWhatsAppMessage(telefone, mensagem)
+    console.info(
+      "[whatsapp] saudacao:decisao",
+      JSON.stringify({ tel4: telefone.slice(-4), waMessageId, decisao: result.ok ? "enviada" : "falha-envio" }),
+    )
     if (!result.ok) {
-      console.error("[whatsapp] falha ao enviar saudação do bot:", telefone, result.error)
+      console.error("[whatsapp] falha ao enviar saudação do bot:", telefone.slice(-4), result.error)
     }
   } catch (err) {
     console.error("[whatsapp] erro inesperado na saudação do bot:", err)

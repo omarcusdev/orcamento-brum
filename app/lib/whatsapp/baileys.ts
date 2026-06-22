@@ -14,6 +14,7 @@ export const sendViaBaileys = async (telefone: string, mensagem: string): Promis
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  const t0 = Date.now()
 
   try {
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/send-message`, {
@@ -28,6 +29,10 @@ export const sendViaBaileys = async (telefone: string, mensagem: string): Promis
       return { ok: false, error: `http ${response.status}` }
     }
 
+    console.info(
+      "[whatsapp] envio:baileys",
+      JSON.stringify({ tel4: toBrazilE164(telefone).slice(-4), ok: true, httpStatus: response.status, sendMs: Date.now() - t0, mensagemLen: mensagem.length }),
+    )
     return { ok: true }
   } catch (err) {
     console.error("[whatsapp] erro no envio:", err)
