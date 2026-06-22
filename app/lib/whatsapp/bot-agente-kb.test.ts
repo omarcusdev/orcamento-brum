@@ -4,6 +4,8 @@ import {
   formatCardapio,
   formatHistorico,
   buildSystemPrompt,
+  threadToMessages,
+  MEDIA_PLACEHOLDER,
   DEFAULT_AGENTE_FAQ,
   type CardapioItem,
   type ThreadMsg,
@@ -73,5 +75,72 @@ describe("buildSystemPrompt", () => {
       const sys = buildSystemPrompt({ cardapio: "c", faq: "f", nomeCliente: nome })
       expect(sys).not.toContain("se chama")
     }
+  })
+})
+
+describe("threadToMessages (turnos reais p/ o Bedrock)", () => {
+  it("mapeia entrada->user e saida->assistant em ordem", () => {
+    expect(
+      threadToMessages([
+        { direcao: "entrada", corpo: "oi" },
+        { direcao: "saida", corpo: "olá!" },
+        { direcao: "entrada", corpo: "qual o horário?" },
+      ]),
+    ).toEqual([
+      { role: "user", content: "oi" },
+      { role: "assistant", content: "olá!" },
+      { role: "user", content: "qual o horário?" },
+    ])
+  })
+
+  it("descarta turnos 'assistant' iniciais (o primeiro tem que ser user)", () => {
+    expect(
+      threadToMessages([
+        { direcao: "saida", corpo: "olá, seja bem-vindo!" },
+        { direcao: "entrada", corpo: "quero chopp" },
+      ]),
+    ).toEqual([{ role: "user", content: "quero chopp" }])
+  })
+
+  it("funde turnos consecutivos do mesmo papel (junta com \\n)", () => {
+    expect(
+      threadToMessages([
+        { direcao: "entrada", corpo: "oi" },
+        { direcao: "entrada", corpo: "tudo bem?" },
+        { direcao: "saida", corpo: "tudo!" },
+        { direcao: "saida", corpo: "como ajudo?" },
+        { direcao: "entrada", corpo: "preço do pilsen" },
+      ]),
+    ).toEqual([
+      { role: "user", content: "oi\ntudo bem?" },
+      { role: "assistant", content: "tudo!\ncomo ajudo?" },
+      { role: "user", content: "preço do pilsen" },
+    ])
+  })
+
+  it("thread só com saida -> [] (não deixa assistant solto)", () => {
+    expect(threadToMessages([{ direcao: "saida", corpo: "oi" }])).toEqual([])
+  })
+
+  it("thread vazia -> []", () => {
+    expect(threadToMessages([])).toEqual([])
+  })
+
+  it("garante primeiro=user e alternância após fundir+descartar", () => {
+    const msgs = threadToMessages([
+      { direcao: "saida", corpo: "bem-vindo" },
+      { direcao: "entrada", corpo: "a" },
+      { direcao: "entrada", corpo: "b" },
+      { direcao: "saida", corpo: "c" },
+      { direcao: "entrada", corpo: "d" },
+    ])
+    expect(msgs.map((m) => m.role)).toEqual(["user", "assistant", "user"])
+    expect(msgs[0].content).toBe("a\nb")
+  })
+})
+
+describe("MEDIA_PLACEHOLDER", () => {
+  it("é o literal exato que o EC2 grava para mídia (sincronizado com whatsapp-api/src/inbound.ts)", () => {
+    expect(MEDIA_PLACEHOLDER).toBe("[mídia recebida — ver no celular]")
   })
 })

@@ -11,6 +11,7 @@ export type ChatMsg = { role: "user" | "assistant"; content: string }
 // (o orquestrador trata null como "ficar em silêncio"). Credenciais AWS vêm dos envs
 // (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION) via a cadeia padrão do SDK.
 export const askClaude = async (system: string, messages: ChatMsg[]): Promise<string | null> => {
+  const t0 = Date.now()
   try {
     const client = new AnthropicBedrock({ awsRegion: process.env.AWS_REGION ?? "us-east-1" })
     const res = await client.messages.create({ model: MODEL_ID, max_tokens: 400, system, messages })
@@ -19,9 +20,26 @@ export const askClaude = async (system: string, messages: ChatMsg[]): Promise<st
       .map((b) => b.text)
       .join("")
       .trim()
+    // Latência + stop_reason + vazio na origem: distingue timeout/throttle/resposta-vazia, que
+    // lá em cima viram só "silêncio" e podem parecer "o bot não entendeu".
+    console.debug(
+      "[whatsapp] bedrock:invoke",
+      JSON.stringify({
+        modelId: MODEL_ID,
+        msgCount: messages.length,
+        systemLen: system.length,
+        bedrockMs: Date.now() - t0,
+        stopReason: res.stop_reason ?? null,
+        replyLen: text.length,
+        vazio: !text,
+      }),
+    )
     return text || null
   } catch (err) {
-    console.error("[whatsapp] erro no Bedrock:", err)
+    console.error(
+      "[whatsapp] bedrock:falhou",
+      JSON.stringify({ modelId: MODEL_ID, erroNome: (err as Error)?.name, erroMsg: (err as Error)?.message, bedrockMs: Date.now() - t0 }),
+    )
     return null
   }
 }

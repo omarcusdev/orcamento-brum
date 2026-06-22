@@ -5,6 +5,7 @@ import { toBrazilE164, last8, matchClienteByPhone } from "@/lib/whatsapp/phone"
 import { isWhatsappFeatureEnabled } from "@/lib/whatsapp/features"
 import { maybeSendBotSaudacao } from "@/lib/whatsapp/bot-saudacao"
 import { maybeReplyWithAgent } from "@/lib/whatsapp/bot-agente"
+import { MEDIA_PLACEHOLDER } from "@/lib/whatsapp/bot-agente-kb"
 
 export const dynamic = "force-dynamic"
 
@@ -20,6 +21,10 @@ export async function POST(request: Request) {
   }
 
   if (!(await isWhatsappFeatureEnabled("whatsapp_atendimento_ativo"))) {
+    console.info(
+      "[whatsapp] inbound:suprimido-flag",
+      JSON.stringify({ tel4: payload.telefone.slice(-4), waMessageId: payload.waMessageId, flag: "whatsapp_atendimento_ativo" }),
+    )
     return NextResponse.json({ ok: true, skipped: true })
   }
 
@@ -33,6 +38,18 @@ export async function POST(request: Request) {
     .like("telefone_digits", `%${last8(payload.telefone)}%`)
 
   const match = matchClienteByPhone(payload.telefone, candidatos ?? [])
+
+  console.info(
+    "[whatsapp] inbound:recebido",
+    JSON.stringify({
+      tel4: telefoneE164.slice(-4),
+      waMessageId: payload.waMessageId,
+      direcao: payload.direcao,
+      corpoLen: payload.corpo.length,
+      ehPlaceholderMidia: payload.corpo === MEDIA_PLACEHOLDER,
+      clienteMatch: Boolean(match),
+    }),
+  )
 
   const { error } = await supabase.rpc("register_inbound_whatsapp", {
     p_telefone: telefoneE164,
@@ -55,6 +72,10 @@ export async function POST(request: Request) {
   if (payload.direcao === "entrada") {
     after(async () => {
       const { handled } = await maybeReplyWithAgent(telefoneE164, payload.waMessageId, payload.corpo)
+      console.info(
+        "[whatsapp] inbound:coordenador",
+        JSON.stringify({ tel4: telefoneE164.slice(-4), waMessageId: payload.waMessageId, agenteHandled: handled, fallbackSaudacao: !handled }),
+      )
       if (!handled) await maybeSendBotSaudacao(telefoneE164, payload.waMessageId)
     })
   }

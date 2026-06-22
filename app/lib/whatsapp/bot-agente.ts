@@ -5,12 +5,46 @@ import {
   AGENTE_FLAG_KEY,
   AGENTE_FAQ_KEY,
   DEFAULT_AGENTE_FAQ,
+  MEDIA_PLACEHOLDER,
+  MIDIA_NAO_SUPORTADA_MSG,
   agenteAtivo,
   formatCardapio,
-  formatHistorico,
+  threadToMessages,
   buildSystemPrompt,
   type ThreadMsg,
 } from "./bot-agente-kb"
+
+// Telefone mascarado nos logs (só os últimos 4 dígitos) — privacidade/LGPD.
+const last4 = (t: string) => t.slice(-4)
+
+// Envia uma resposta e, se enviou, grava como "saida" (insert direto; este EC2 não devolve eco).
+// Usado tanto pela resposta do agente quanto pela resposta enlatada de mídia.
+const replyAndStore = async (
+  supabase: ReturnType<typeof createServiceClient>,
+  conversaId: string,
+  telefone: string,
+  waMessageId: string,
+  texto: string,
+  origem: "agente" | "midia",
+): Promise<void> => {
+  const result = await sendWhatsAppMessage(telefone, texto)
+  console.info(
+    "[whatsapp] agente:envio",
+    JSON.stringify({ tel4: last4(telefone), waMessageId, origem, sendOk: result.ok, replyLen: texto.length }),
+  )
+  if (!result.ok) {
+    console.error("[whatsapp] falha ao enviar resposta do agente:", last4(telefone), result.error)
+    return
+  }
+  const { error: insErr } = await supabase.from("mensagens_conversa_whatsapp").insert({
+    conversa_id: conversaId,
+    wa_message_id: `agente-${crypto.randomUUID()}`,
+    direcao: "saida",
+    corpo: texto,
+    ocorrida_em: new Date().toISOString(),
+  })
+  if (insErr) console.error("[whatsapp] erro gravando resposta do agente:", insErr)
+}
 
 // A coluna do nome do produto é "marca" (schema migração 001); CardapioItem usa "nome".
 // preco_* são numeric no Postgres -> o PostgREST devolve como STRING ("380.00") -> coage abaixo.
@@ -47,6 +81,12 @@ export const maybeReplyWithAgent = async (
     if (!agenteAtivo(valorDe(AGENTE_FLAG_KEY))) return { handled: false }
 
     // Daqui pra baixo o agente "é dono" do turno (handled:true), mesmo que fique em silêncio.
+    const ehMidia = corpo === MEDIA_PLACEHOLDER
+    console.info(
+      "[whatsapp] agente:ativacao",
+      JSON.stringify({ tel4: last4(telefone), waMessageId, ehMidia, corpoLen: corpo.length }),
+    )
+
     const rawFaq = valorDe(AGENTE_FAQ_KEY)
     const faq = rawFaq && rawFaq.trim() ? rawFaq : DEFAULT_AGENTE_FAQ
 
@@ -55,7 +95,17 @@ export const maybeReplyWithAgent = async (
       .select("id, nome_exibicao")
       .eq("telefone", telefone)
       .maybeSingle()
-    if (!conversa) return { handled: true }
+    if (!conversa) {
+      console.info("[whatsapp] agente:sem-conversa", JSON.stringify({ tel4: last4(telefone), waMessageId }))
+      return { handled: true }
+    }
+
+    // Mídia (áudio/imagem/...): o bot não baixa nem transcreve a mídia — em vez de improvisar
+    // em cima do placeholder de texto, responde pedindo texto. (Wave 2: diferenciar por tipo.)
+    if (ehMidia) {
+      await replyAndStore(supabase, conversa.id, telefone, waMessageId, MIDIA_NAO_SUPORTADA_MSG, "midia")
+      return { handled: true }
+    }
 
     const { data: threadDesc } = await supabase
       .from("mensagens_conversa_whatsapp")
@@ -85,31 +135,24 @@ export const maybeReplyWithAgent = async (
     )
     const system = buildSystemPrompt({ cardapio, faq, nomeCliente: conversa.nome_exibicao })
 
-    const historico = formatHistorico(thread)
-    const userContent = historico
-      ? `Conversa recente:\n${historico}\n\nResponda à última mensagem do cliente, seguindo as regras.`
-      : corpo
+    // Turnos reais user/assistant (não um bloco de texto achatado) -> o modelo lembra o que já
+    // respondeu, reduzindo repetição/re-saudação. Fallback p/ a msg atual se o histórico vier vazio.
+    const messages = threadToMessages(thread)
+    const finalMessages = messages.length > 0 ? messages : [{ role: "user" as const, content: corpo }]
+    console.info(
+      "[whatsapp] agente:prompt",
+      JSON.stringify({ tel4: last4(telefone), waMessageId, threadMsgs: thread.length, turnos: finalMessages.length, systemLen: system.length }),
+    )
 
-    const reply = await askClaude(system, [{ role: "user", content: userContent }])
+    const t0 = Date.now()
+    const reply = await askClaude(system, finalMessages)
+    console.info(
+      "[whatsapp] agente:resultado",
+      JSON.stringify({ tel4: last4(telefone), waMessageId, decisao: reply ? "respondeu" : "silencio", replyLen: reply?.length ?? 0, bedrockMs: Date.now() - t0 }),
+    )
     if (!reply) return { handled: true } // erro/timeout/vazio -> silêncio
 
-    const result = await sendWhatsAppMessage(telefone, reply)
-    if (!result.ok) {
-      console.error("[whatsapp] falha ao enviar resposta do agente:", telefone, result.error)
-      return { handled: true }
-    }
-
-    // grava a resposta como saida (insert direto: NÃO usa o RPC de inbound, então não toca no
-    // cliente_id da conversa; este EC2 não devolve eco, por isso gravamos nós mesmos).
-    const { error: insErr } = await supabase.from("mensagens_conversa_whatsapp").insert({
-      conversa_id: conversa.id,
-      wa_message_id: `agente-${crypto.randomUUID()}`,
-      direcao: "saida",
-      corpo: reply,
-      ocorrida_em: new Date().toISOString(),
-    })
-    if (insErr) console.error("[whatsapp] erro gravando resposta do agente:", insErr)
-
+    await replyAndStore(supabase, conversa.id, telefone, waMessageId, reply, "agente")
     return { handled: true }
   } catch (err) {
     console.error("[whatsapp] erro inesperado no agente:", err)

@@ -1,5 +1,17 @@
+import type { ChatMsg } from "./bedrock"
+
 export const AGENTE_FLAG_KEY = "whatsapp_bot_agente_ativo" as const
 export const AGENTE_FAQ_KEY = "whatsapp_bot_agente_faq" as const
+
+// Texto que o servidor (whatsapp-api/src/inbound.ts) grava no lugar de mídia (áudio/imagem/etc.),
+// já que o bot não baixa nem transcreve mídia. Mantido em sincronia com o EC2 e coberto por teste.
+// O em-dash é U+2014 — não redigite à mão, mantenha o literal idêntico ao do EC2.
+export const MEDIA_PLACEHOLDER = "[mídia recebida — ver no celular]" as const
+
+// Resposta quando o cliente manda áudio/mídia: o bot não "ouve" nem "vê", então pede texto
+// em vez de improvisar uma resposta confusa em cima do placeholder.
+export const MIDIA_NAO_SUPORTADA_MSG =
+  "Ainda não consigo ouvir áudios por aqui 🙏 Pode me mandar por escrito? Assim te respondo certinho." as const
 
 // Fail-closed (igual ao bot da etapa 1): só o literal "true" liga.
 export const agenteAtivo = (valor: string | null | undefined): boolean =>
@@ -37,6 +49,22 @@ export type ThreadMsg = { direcao: "entrada" | "saida"; corpo: string }
 // Histórico recente -> texto "Cliente:/Atendente:" em ordem cronológica (thread vazia -> "").
 export const formatHistorico = (thread: ThreadMsg[]): string =>
   thread.map((m) => `${m.direcao === "entrada" ? "Cliente" : "Atendente"}: ${m.corpo}`).join("\n")
+
+// Histórico cru -> turnos reais user/assistant pro Bedrock, em vez de um único bloco de texto.
+// Mandar turnos reais dá ao modelo memória do que ele mesmo já respondeu, o que reduz repetição
+// e re-saudações. Sanitiza para as exigências da API Anthropic/Bedrock: o primeiro turno tem que
+// ser 'user' (descarta 'assistant' iniciais) e turnos consecutivos do mesmo papel são fundidos
+// (a API espera alternância). Imutável.
+export const threadToMessages = (thread: ThreadMsg[]): ChatMsg[] =>
+  thread.reduce<ChatMsg[]>((acc, m) => {
+    const role: ChatMsg["role"] = m.direcao === "entrada" ? "user" : "assistant"
+    if (acc.length === 0 && role === "assistant") return acc // sem 'assistant' solto no começo
+    const last = acc[acc.length - 1]
+    if (last && last.role === role) {
+      return [...acc.slice(0, -1), { role, content: `${last.content}\n${m.corpo}` }]
+    }
+    return [...acc, { role, content: m.corpo }]
+  }, [])
 
 // System prompt: papel + guardrails + cardápio + FAQ. nomeCliente opcional (a coluna
 // conversas_whatsapp.nome_exibicao pode vir null) p/ personalizar pelo primeiro nome.

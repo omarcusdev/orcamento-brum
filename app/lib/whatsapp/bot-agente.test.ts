@@ -8,6 +8,7 @@ import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { askClaude } from "./bedrock"
 import { maybeReplyWithAgent } from "./bot-agente"
+import { MEDIA_PLACEHOLDER, MIDIA_NAO_SUPORTADA_MSG } from "./bot-agente-kb"
 
 const clientMock = vi.mocked(createServiceClient)
 const sendMock = vi.mocked(sendWhatsAppMessage)
@@ -146,5 +147,48 @@ describe("maybeReplyWithAgent", () => {
 
     expect(r).toEqual({ handled: true })
     expect(insertSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it("mídia/áudio (placeholder) -> responde enlatado SEM chamar o Bedrock e grava a saida", async () => {
+    const { client, insertSpy } = fakeClient({
+      cfgRows: [ON],
+      conversa: { id: "conv-1", nome_exibicao: "Marcus" },
+      thread: [{ direcao: "entrada", corpo: MEDIA_PLACEHOLDER }],
+    })
+    clientMock.mockReturnValue(client as never)
+
+    const r = await maybeReplyWithAgent("5521999990000", "wamid-1", MEDIA_PLACEHOLDER)
+
+    expect(r).toEqual({ handled: true })
+    expect(askMock).not.toHaveBeenCalled() // não improvisa em cima do placeholder
+    expect(sendMock).toHaveBeenCalledWith("5521999990000", MIDIA_NAO_SUPORTADA_MSG)
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ conversa_id: "conv-1", direcao: "saida", corpo: MIDIA_NAO_SUPORTADA_MSG }),
+    )
+  })
+
+  it("envia o histórico como TURNOS REAIS user/assistant (não um bloco só)", async () => {
+    const { client } = fakeClient({
+      cfgRows: [ON],
+      conversa: { id: "conv-1", nome_exibicao: null },
+      // o select usa order(ascending:false) e o código dá .reverse() -> mock devolve newest-first
+      thread: [
+        { direcao: "entrada", corpo: "qual o horário?" },
+        { direcao: "saida", corpo: "Olá! 🍻" },
+        { direcao: "entrada", corpo: "oi" },
+      ],
+      produtos: [],
+    })
+    clientMock.mockReturnValue(client as never)
+    askMock.mockResolvedValue("Funcionamos das 10h às 22h!")
+
+    await maybeReplyWithAgent("5521999990000", "wamid-1", "qual o horário?")
+
+    const [, messagesArg] = askMock.mock.calls[0]
+    expect(messagesArg).toEqual([
+      { role: "user", content: "oi" },
+      { role: "assistant", content: "Olá! 🍻" },
+      { role: "user", content: "qual o horário?" },
+    ])
   })
 })
