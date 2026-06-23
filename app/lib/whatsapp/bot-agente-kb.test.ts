@@ -65,6 +65,10 @@ describe("buildSystemPrompt", () => {
     expect(sys).toContain("CARDAPIO_AQUI")
     expect(sys).toContain("FAQ_AQUI")
   })
+  it("instrui a NÃO repetir o link a cada mensagem", () => {
+    const sys = buildSystemPrompt({ cardapio: "c", faq: "f" })
+    expect(sys.toLowerCase()).toMatch(/n[ãa]o repita|sem repetir|j[áa] enviou/)
+  })
   it("usa o primeiro nome do cliente quando passado", () => {
     const sys = buildSystemPrompt({ cardapio: "c", faq: "f", nomeCliente: "Marcus Gonçalves" })
     expect(sys).toContain("Marcus")

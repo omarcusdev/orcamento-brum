@@ -19,7 +19,7 @@ const fakeClient = (opts: {
   cfgRows?: { chave: string; valor: string }[]
   cfgErr?: unknown
   conversa?: { id: string; nome_exibicao: string | null } | null
-  thread?: { direcao: "entrada" | "saida"; corpo: string }[]
+  thread?: { direcao: "entrada" | "saida"; corpo: string; wa_message_id?: string }[]
   produtos?: unknown[]
   insertErr?: unknown
 }) => {
@@ -165,6 +165,44 @@ describe("maybeReplyWithAgent", () => {
     expect(insertSpy).toHaveBeenCalledWith(
       expect.objectContaining({ conversa_id: "conv-1", direcao: "saida", corpo: MIDIA_NAO_SUPORTADA_MSG }),
     )
+  })
+
+  it("humano assumiu (saida sem prefixo agente-) -> agente cala, não chama Bedrock nem envia", async () => {
+    const { client, insertSpy } = fakeClient({
+      cfgRows: [ON],
+      conversa: { id: "conv-1", nome_exibicao: null },
+      thread: [
+        { direcao: "entrada", corpo: "quero 2 barris", wa_message_id: "wamid-cli" },
+        { direcao: "saida", corpo: "Pedido montado já joana", wa_message_id: "BAE5OPERADOR" }, // humano
+      ],
+    })
+    clientMock.mockReturnValue(client as never)
+
+    const r = await maybeReplyWithAgent("5521999990000", "wamid-2", "e o frete?")
+
+    expect(r).toEqual({ handled: true })
+    expect(askMock).not.toHaveBeenCalled()
+    expect(sendMock).not.toHaveBeenCalled()
+    expect(insertSpy).not.toHaveBeenCalled()
+  })
+
+  it("saida do PRÓPRIO agente (agente-) NÃO conta como humano -> agente responde normal", async () => {
+    const { client } = fakeClient({
+      cfgRows: [ON],
+      conversa: { id: "conv-1", nome_exibicao: null },
+      thread: [
+        { direcao: "entrada", corpo: "oi", wa_message_id: "wamid-cli" },
+        { direcao: "saida", corpo: "Olá! 🍻", wa_message_id: "agente-abc" }, // resposta do próprio bot
+      ],
+      produtos: [],
+    })
+    clientMock.mockReturnValue(client as never)
+    askMock.mockResolvedValue("Como posso ajudar?")
+
+    const r = await maybeReplyWithAgent("5521999990000", "wamid-2", "qual o horário?")
+
+    expect(r).toEqual({ handled: true })
+    expect(askMock).toHaveBeenCalledTimes(1)
   })
 
   it("envia o histórico como TURNOS REAIS user/assistant (não um bloco só)", async () => {
