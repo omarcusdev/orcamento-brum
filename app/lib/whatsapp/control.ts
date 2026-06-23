@@ -1,3 +1,5 @@
+import { logWaError, errInfo } from "./wa-log"
+
 const REQUEST_TIMEOUT_MS = 10_000
 
 export type WhatsappConnectionStatus = "disconnected" | "connecting" | "connected"
@@ -50,7 +52,7 @@ export const fetchConnection = async (): Promise<ConnectionResponse> => {
   const apiKey = process.env.WHATSAPP_API_KEY
 
   if (!baseUrl || !apiKey) {
-    console.error("[whatsapp-control] WHATSAPP_API_URL/KEY ausente — status indisponível")
+    logWaError("control:config-ausente", { op: "connection" })
     return disconnectedFallback
   }
 
@@ -65,13 +67,13 @@ export const fetchConnection = async (): Promise<ConnectionResponse> => {
     })
 
     if (!response.ok) {
-      console.error("[whatsapp-control] /connection falhou — status", response.status)
+      logWaError("control:connection-falhou", { httpStatus: response.status })
       return disconnectedFallback
     }
 
     return parseConnectionResponse(await response.json())
   } catch (err) {
-    console.error("[whatsapp-control] erro ao buscar /connection:", err)
+    logWaError("control:connection-erro", errInfo(err))
     return disconnectedFallback
   } finally {
     clearTimeout(timeout)
@@ -83,7 +85,7 @@ export const startPairing = async (method: PairingMethod, phone?: string): Promi
   const apiKey = process.env.WHATSAPP_API_KEY
 
   if (!baseUrl || !apiKey) {
-    console.error("[whatsapp-control] WHATSAPP_API_URL/KEY ausente — pareamento ignorado")
+    logWaError("control:config-ausente", { op: "connect" })
     return { ok: false }
   }
 
@@ -101,13 +103,13 @@ export const startPairing = async (method: PairingMethod, phone?: string): Promi
     })
 
     if (!response.ok) {
-      console.error("[whatsapp-control] /connect falhou — status", response.status)
+      logWaError("control:connect-falhou", { httpStatus: response.status })
       return { ok: false }
     }
 
     return { ok: true }
   } catch (err) {
-    console.error("[whatsapp-control] erro ao chamar /connect:", err)
+    logWaError("control:connect-erro", errInfo(err))
     return { ok: false }
   } finally {
     clearTimeout(timeout)
@@ -119,7 +121,7 @@ export const postLogout = async (): Promise<LogoutResponse> => {
   const apiKey = process.env.WHATSAPP_API_KEY
 
   if (!baseUrl || !apiKey) {
-    console.error("[whatsapp-control] WHATSAPP_API_URL/KEY ausente — logout ignorado")
+    logWaError("control:config-ausente", { op: "logout" })
     return { ok: false }
   }
 
@@ -134,13 +136,13 @@ export const postLogout = async (): Promise<LogoutResponse> => {
     })
 
     if (!response.ok) {
-      console.error("[whatsapp-control] /logout falhou — status", response.status)
+      logWaError("control:logout-falhou", { httpStatus: response.status })
       return { ok: false }
     }
 
     return { ok: true }
   } catch (err) {
-    console.error("[whatsapp-control] erro ao chamar /logout:", err)
+    logWaError("control:logout-erro", errInfo(err))
     return { ok: false }
   } finally {
     clearTimeout(timeout)

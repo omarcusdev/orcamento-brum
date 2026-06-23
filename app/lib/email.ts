@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import { createServiceClient } from "@/lib/supabase/service"
+import { logWaError, errInfo } from "@/lib/whatsapp/wa-log"
 
 const ADMIN_BASE_URL = "https://app-liart-one-77.vercel.app"
 const CUSTOMER_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.alfachopp.com.br"
@@ -527,7 +528,7 @@ const reasonLabels: Record<"logged_out" | "offline", string> = {
 
 export const sendWhatsAppDownAlert = async (reason: "logged_out" | "offline") => {
   if (!process.env.RESEND_API_KEY) {
-    console.error("[whatsapp-alert] RESEND_API_KEY ausente — pulando envio")
+    logWaError("alerta:resend-key-ausente", {})
     return
   }
 
@@ -542,7 +543,7 @@ export const sendWhatsAppDownAlert = async (reason: "logged_out" | "offline") =>
 
     const destinatario = configRow?.valor?.trim()
     if (!destinatario) {
-      console.error("[whatsapp-alert] destinatário não configurado")
+      logWaError("alerta:sem-destinatario", {})
       return
     }
 
@@ -564,10 +565,10 @@ export const sendWhatsAppDownAlert = async (reason: "logged_out" | "offline") =>
     })
 
     if (result.error) {
-      console.error("[whatsapp-alert] erro Resend:", result.error)
+      logWaError("alerta:resend-erro", errInfo(result.error))
     }
   } catch (err) {
-    console.error("[whatsapp-alert] erro inesperado:", err)
+    logWaError("alerta:erro-inesperado", errInfo(err))
   }
 }
 

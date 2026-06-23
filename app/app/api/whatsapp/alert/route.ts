@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { sendWhatsAppDownAlert } from "@/lib/email"
 import { isWhatsappFeatureEnabled } from "@/lib/whatsapp/features"
+import { logWaError, errInfo } from "@/lib/whatsapp/wa-log"
 
 const isReason = (value: unknown): value is "logged_out" | "offline" =>
   value === "logged_out" || value === "offline"
@@ -23,10 +24,10 @@ export const POST = async (request: Request) => {
     if (isReason(reason)) {
       await sendWhatsAppDownAlert(reason)
     } else {
-      console.error("[whatsapp-alert-route] reason inválido:", reason)
+      logWaError("alerta:reason-invalido", { reason: String(reason) })
     }
   } catch (err) {
-    console.error("[whatsapp-alert-route] erro inesperado:", err)
+    logWaError("alerta:rota-erro", errInfo(err))
   }
 
   return NextResponse.json({ ok: true })
