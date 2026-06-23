@@ -100,6 +100,24 @@ export const maybeReplyWithAgent = async (
       return { handled: true }
     }
 
+    const { data: threadDesc } = await supabase
+      .from("mensagens_conversa_whatsapp")
+      .select("direcao, corpo, ocorrida_em, wa_message_id")
+      .eq("conversa_id", conversa.id)
+      .order("ocorrida_em", { ascending: false })
+      .limit(8)
+
+    // HANDOFF: se um operador HUMANO já respondeu nesta conversa (saida cujo wa_message_id NÃO
+    // começa com "agente-"), o agente se cala e deixa o humano conduzir. Evita o bot atropelar
+    // o atendimento humano e mandar link repetido por cima (queixa do cliente).
+    const humanoAtivo = ((threadDesc ?? []) as { direcao: string; wa_message_id: string | null }[]).some(
+      (m) => m.direcao === "saida" && m.wa_message_id != null && !m.wa_message_id.startsWith("agente-"),
+    )
+    if (humanoAtivo) {
+      console.info("[whatsapp] agente:handoff-humano", JSON.stringify({ tel4: last4(telefone), waMessageId }))
+      return { handled: true }
+    }
+
     // Mídia (áudio/imagem/...): o bot não baixa nem transcreve a mídia — em vez de improvisar
     // em cima do placeholder de texto, responde pedindo texto. (Wave 2: diferenciar por tipo.)
     if (ehMidia) {
@@ -107,12 +125,6 @@ export const maybeReplyWithAgent = async (
       return { handled: true }
     }
 
-    const { data: threadDesc } = await supabase
-      .from("mensagens_conversa_whatsapp")
-      .select("direcao, corpo, ocorrida_em")
-      .eq("conversa_id", conversa.id)
-      .order("ocorrida_em", { ascending: false })
-      .limit(8)
     const thread: ThreadMsg[] = ((threadDesc ?? []) as { direcao: "entrada" | "saida"; corpo: string }[])
       .map((m) => ({ direcao: m.direcao, corpo: m.corpo }))
       .reverse() // cronológico
