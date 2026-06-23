@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X } from "lucide-react"
+import { X, RefreshCcw } from "lucide-react"
 import { createManualOrder, searchClientes } from "@/lib/admin-actions"
+import AddressAutocomplete, { type AddressData } from "@/components/address-autocomplete"
 import type { Produto } from "@/lib/types"
 import type { ManualOrderInput } from "@/lib/schemas"
 import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
@@ -61,6 +62,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   const [newCliente, setNewCliente] = useState({ nome: "", telefone: "", cpf: "", email: "" })
 
   const [enderecoText, setEnderecoText] = useState("")
+  const [enderecoCompleto, setEnderecoCompleto] = useState<ManualOrderInput["endereco_completo"]>(null)
+  const [showAddressAutocomplete, setShowAddressAutocomplete] = useState(false)
   const [dataEvento, setDataEvento] = useState("")
   const [horarioEvento, setHorarioEvento] = useState("")
   const [tipoChopeira, setTipoChopeira] = useState<"gelo" | "eletrica">("gelo")
@@ -104,6 +107,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     setSelectedCliente(null)
     setNewCliente({ nome: "", telefone: "", cpf: "", email: "" })
     setEnderecoText("")
+    setEnderecoCompleto(null)
+    setShowAddressAutocomplete(false)
     setDataEvento("")
     setHorarioEvento("")
     setTipoChopeira("gelo")
@@ -120,6 +125,23 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     if (submitting) return
     resetForm()
     onClose()
+  }
+
+  // Preenche o endereço (texto + lat/lng) a partir da seleção do Google, igual ao editar pedido.
+  const handleAddressSelect = (addr: AddressData) => {
+    setEnderecoText(addr.formatted)
+    setEnderecoCompleto({
+      rua: addr.rua,
+      numero: addr.numero,
+      bairro: addr.bairro,
+      cidade: addr.cidade,
+      estado: addr.estado,
+      cep: addr.cep,
+      complemento: enderecoCompleto?.complemento ?? "",
+      lat: addr.lat,
+      lng: addr.lng,
+    })
+    setShowAddressAutocomplete(false)
   }
 
   const addItem = () => {
@@ -185,7 +207,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
       const input: ManualOrderInput = {
         cliente,
         endereco: enderecoText,
-        endereco_completo: null,
+        endereco_completo: enderecoCompleto,
         data_evento: dataEvento,
         horario_evento: horarioEvento,
         tipo_chopeira: tipoChopeira,
@@ -303,12 +325,31 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
 
               <section>
                 <h3 className={sectionHeaderClass}>Endereço</h3>
-                <Textarea
-                  value={enderecoText}
-                  onChange={(e) => setEnderecoText(e.target.value)}
-                  placeholder="Rua, número, bairro, cidade, UF, CEP"
-                  className="h-20"
-                />
+                <div className="space-y-2">
+                  <Textarea
+                    value={enderecoText}
+                    onChange={(e) => setEnderecoText(e.target.value)}
+                    placeholder="Rua, número, bairro, cidade, UF, CEP"
+                    className="h-20"
+                  />
+                  {showAddressAutocomplete ? (
+                    <div className="space-y-2 bg-brand-dark/50 border border-brand-yellow/20 rounded-lg p-2">
+                      <AddressAutocomplete onAddressSelect={handleAddressSelect} inputClassName="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 text-sm text-white placeholder-brand-warm-gray/70 focus:border-brand-yellow/40 focus:ring-1 focus:ring-brand-yellow/30 outline-none" />
+                      <Button variant="ghost" size="sm" onClick={() => setShowAddressAutocomplete(false)}>
+                        Cancelar busca
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressAutocomplete(true)}
+                      className="text-[11px] text-brand-yellow/90 hover:text-brand-yellow uppercase tracking-wider cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <RefreshCcw className="h-3 w-3" />
+                      Buscar via Google
+                    </button>
+                  )}
+                </div>
               </section>
 
               <section>
