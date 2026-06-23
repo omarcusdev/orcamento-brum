@@ -172,7 +172,7 @@ describe("maybeReplyWithAgent", () => {
       cfgRows: [ON],
       conversa: { id: "conv-1", nome_exibicao: null },
       thread: [
-        { direcao: "entrada", corpo: "quero 2 barris", wa_message_id: "wamid-cli" },
+        { direcao: "entrada", corpo: "e o frete?", wa_message_id: "wamid-2" }, // msg atual = última entrada (passa o debounce)
         { direcao: "saida", corpo: "Pedido montado já joana", wa_message_id: "BAE5OPERADOR" }, // humano
       ],
     })
@@ -191,7 +191,7 @@ describe("maybeReplyWithAgent", () => {
       cfgRows: [ON],
       conversa: { id: "conv-1", nome_exibicao: null },
       thread: [
-        { direcao: "entrada", corpo: "oi", wa_message_id: "wamid-cli" },
+        { direcao: "entrada", corpo: "qual o horário?", wa_message_id: "wamid-2" }, // msg atual = última entrada
         { direcao: "saida", corpo: "Olá! 🍻", wa_message_id: "agente-abc" }, // resposta do próprio bot
       ],
       produtos: [],
@@ -203,6 +203,26 @@ describe("maybeReplyWithAgent", () => {
 
     expect(r).toEqual({ handled: true })
     expect(askMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("debounce: chegou mensagem mais nova do cliente -> esta invocação cala (anti double-reply)", async () => {
+    const { client } = fakeClient({
+      cfgRows: [ON],
+      conversa: { id: "conv-1", nome_exibicao: null },
+      thread: [
+        { direcao: "entrada", corpo: "Obrigado", wa_message_id: "wamid-2" }, // chegou depois
+        { direcao: "entrada", corpo: "Ja to indo", wa_message_id: "wamid-1" },
+      ],
+      produtos: [],
+    })
+    clientMock.mockReturnValue(client as never)
+
+    // invocação da PRIMEIRA msg, mas a "wamid-2" já chegou na conversa
+    const r = await maybeReplyWithAgent("5521999990000", "wamid-1", "Ja to indo")
+
+    expect(r).toEqual({ handled: true })
+    expect(askMock).not.toHaveBeenCalled()
+    expect(sendMock).not.toHaveBeenCalled()
   })
 
   it("envia o histórico como TURNOS REAIS user/assistant (não um bloco só)", async () => {

@@ -17,6 +17,13 @@ import {
 // Telefone mascarado nos logs (só os últimos 4 dígitos) — privacidade/LGPD.
 const last4 = (t: string) => t.slice(-4)
 
+// Debounce anti double-reply: quando o cliente manda várias mensagens seguidas, cada uma dispara
+// uma invocação. Esperamos uma janela curta e só respondemos se ESTA ainda for a última mensagem
+// do cliente na conversa (as invocações anteriores se calam; a última responde com o contexto todo).
+// 0 em teste (vitest) p/ não atrasar os testes.
+const DEBOUNCE_MS = process.env.VITEST ? 0 : 6_000
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
 // Envia uma resposta e, se enviou, grava como "saida" (insert direto; este EC2 não devolve eco).
 // Usado tanto pela resposta do agente quanto pela resposta enlatada de mídia.
 const replyAndStore = async (
@@ -100,12 +107,25 @@ export const maybeReplyWithAgent = async (
       return { handled: true }
     }
 
+    // Janela de debounce: deixa rajadas de mensagens do cliente assentarem antes de decidir.
+    await sleep(DEBOUNCE_MS)
+
     const { data: threadDesc } = await supabase
       .from("mensagens_conversa_whatsapp")
       .select("direcao, corpo, ocorrida_em, wa_message_id")
       .eq("conversa_id", conversa.id)
       .order("ocorrida_em", { ascending: false })
       .limit(8)
+
+    // DEBOUNCE: se já chegou uma mensagem do cliente MAIS NOVA que esta, esta invocação se cala —
+    // a invocação da mensagem mais recente responde (com o contexto completo da rajada). Evita o
+    // bot mandar várias respostas seguidas quando o cliente escreve em sequência.
+    const ultimaEntradaId = ((threadDesc ?? []) as { direcao: string; wa_message_id: string | null }[])
+      .find((m) => m.direcao === "entrada")?.wa_message_id
+    if (ultimaEntradaId && ultimaEntradaId !== waMessageId) {
+      console.info("[whatsapp] agente:debounce-superada", JSON.stringify({ tel4: last4(telefone), waMessageId }))
+      return { handled: true }
+    }
 
     // HANDOFF: se um operador HUMANO já respondeu nesta conversa (saida cujo wa_message_id NÃO
     // começa com "agente-"), o agente se cala e deixa o humano conduzir. Evita o bot atropelar
