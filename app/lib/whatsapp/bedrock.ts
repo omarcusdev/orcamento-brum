@@ -1,4 +1,5 @@
 import AnthropicBedrock from "@anthropic-ai/bedrock-sdk"
+import { logWa, logWaError, errInfo } from "./wa-log"
 
 // Inference profile do Bedrock p/ Claude Haiku 4.5.
 // NOTE: confirmar o ID exato contra a conta/região no teste manual do Bedrock — os testes
@@ -22,24 +23,18 @@ export const askClaude = async (system: string, messages: ChatMsg[]): Promise<st
       .trim()
     // Latência + stop_reason + vazio na origem: distingue timeout/throttle/resposta-vazia, que
     // lá em cima viram só "silêncio" e podem parecer "o bot não entendeu".
-    console.debug(
-      "[whatsapp] bedrock:invoke",
-      JSON.stringify({
-        modelId: MODEL_ID,
-        msgCount: messages.length,
-        systemLen: system.length,
-        bedrockMs: Date.now() - t0,
-        stopReason: res.stop_reason ?? null,
-        replyLen: text.length,
-        vazio: !text,
-      }),
-    )
+    logWa("bedrock:invoke", {
+      modelId: MODEL_ID,
+      msgCount: messages.length,
+      systemLen: system.length,
+      bedrockMs: Date.now() - t0,
+      stopReason: res.stop_reason ?? null,
+      replyLen: text.length,
+      vazio: !text,
+    })
     return text || null
   } catch (err) {
-    console.error(
-      "[whatsapp] bedrock:falhou",
-      JSON.stringify({ modelId: MODEL_ID, erroNome: (err as Error)?.name, erroMsg: (err as Error)?.message, bedrockMs: Date.now() - t0 }),
-    )
+    logWaError("bedrock:falhou", { modelId: MODEL_ID, ...errInfo(err), bedrockMs: Date.now() - t0 })
     return null
   }
 }

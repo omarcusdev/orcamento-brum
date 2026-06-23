@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { isWhatsappFeatureEnabled } from "./features"
+import { logWaError, errInfo } from "./wa-log"
 import {
   LEMBRETE_FLAG_KEY,
   LEMBRETE_HORA_KEY,
@@ -40,7 +41,7 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
       .from("configuracoes")
       .select("chave, valor")
       .in("chave", [LEMBRETE_HORA_KEY, LEMBRETE_MSG_KEY])
-    if (cfgErr) console.error("[whatsapp] erro lendo config do lembrete:", cfgErr)
+    if (cfgErr) logWaError("lembrete:erro-config", errInfo(cfgErr))
 
     const valorDe = (chave: string) => cfg?.find((row) => row.chave === chave)?.valor
     const hora = parseHora(valorDe(LEMBRETE_HORA_KEY))
@@ -53,7 +54,7 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
     }
 
     const { data: rows, error: rpcErr } = await supabase.rpc("get_orders_needing_reminder")
-    if (rpcErr) console.error("[whatsapp] erro buscando pedidos do lembrete:", rpcErr)
+    if (rpcErr) logWaError("lembrete:erro-pedidos", errInfo(rpcErr))
     const pedidos = (rows ?? []) as PedidoLembrete[]
 
     let enviados = 0
@@ -61,7 +62,7 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
 
     for (const pedido of pedidos) {
       if (!pedido.telefone) {
-        console.error("[whatsapp] pedido sem telefone (lembrete):", pedido.pedido_id)
+        logWaError("lembrete:pedido-sem-telefone", { pedidoId: pedido.pedido_id })
         falhas += 1
         continue
       }
@@ -80,7 +81,7 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
         p_tipo: "lembrete",
         p_status: result.ok ? "enviada" : "falha",
       })
-      if (regErr) console.error("[whatsapp] erro registrando lembrete:", pedido.pedido_id, regErr)
+      if (regErr) logWaError("lembrete:erro-registro", { pedidoId: pedido.pedido_id, ...errInfo(regErr) })
 
       if (result.ok) enviados += 1
       else falhas += 1
@@ -88,7 +89,7 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
 
     return { skipped: false, total: pedidos.length, enviados, falhas }
   } catch (err) {
-    console.error("[whatsapp] erro inesperado no lembrete de vespera:", err)
+    logWaError("lembrete:erro-inesperado", errInfo(err))
     return { skipped: true, reason: "erro" }
   }
 }

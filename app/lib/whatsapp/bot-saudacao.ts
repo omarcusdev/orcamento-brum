@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
+import { logWa, logWaError, errInfo } from "./wa-log"
 import {
   BOT_SAUDACAO_FLAG_KEY,
   BOT_SAUDACAO_MSG_KEY,
@@ -24,7 +25,7 @@ export const maybeSendBotSaudacao = async (
       .select("chave, valor")
       .in("chave", [BOT_SAUDACAO_FLAG_KEY, BOT_SAUDACAO_MSG_KEY, BOT_SAUDACAO_JANELA_KEY])
     if (cfgErr) {
-      console.error("[whatsapp] erro lendo config do bot:", cfgErr)
+      logWaError("saudacao:erro-config", errInfo(cfgErr))
       return // fail-closed: sem config confiável, não saúda
     }
 
@@ -42,7 +43,7 @@ export const maybeSendBotSaudacao = async (
       .eq("telefone", telefone)
       .maybeSingle()
     if (convErr) {
-      console.error("[whatsapp] erro buscando conversa do bot:", convErr)
+      logWaError("saudacao:erro-conversa", errInfo(convErr))
       return // fail-closed
     }
     if (!conversa) return
@@ -59,21 +60,18 @@ export const maybeSendBotSaudacao = async (
       .limit(1)
       .maybeSingle()
     if (antErr) {
-      console.error("[whatsapp] erro buscando última mensagem do bot:", antErr)
+      logWaError("saudacao:erro-ultima-msg", errInfo(antErr))
       return // fail-closed: sem leitura confiável da sessão, não saúda
     }
 
     if (!isSessaoNova(anterior?.ocorrida_em ?? null, new Date(), janelaHoras)) return
 
     const result = await sendWhatsAppMessage(telefone, mensagem)
-    console.info(
-      "[whatsapp] saudacao:decisao",
-      JSON.stringify({ tel4: telefone.slice(-4), waMessageId, decisao: result.ok ? "enviada" : "falha-envio" }),
-    )
+    logWa("saudacao:decisao", { tel4: telefone.slice(-4), waMessageId, decisao: result.ok ? "enviada" : "falha-envio" })
     if (!result.ok) {
-      console.error("[whatsapp] falha ao enviar saudação do bot:", telefone.slice(-4), result.error)
+      logWaError("saudacao:envio-falhou", { tel4: telefone.slice(-4), waMessageId, erro: result.error })
     }
   } catch (err) {
-    console.error("[whatsapp] erro inesperado na saudação do bot:", err)
+    logWaError("saudacao:erro-inesperado", errInfo(err))
   }
 }

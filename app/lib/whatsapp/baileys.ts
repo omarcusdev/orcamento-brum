@@ -1,5 +1,6 @@
 import type { WhatsAppResult } from "."
 import { toBrazilE164 } from "./phone"
+import { logWa, logWaError, errInfo } from "./wa-log"
 
 const REQUEST_TIMEOUT_MS = 10_000
 
@@ -8,7 +9,7 @@ export const sendViaBaileys = async (telefone: string, mensagem: string): Promis
   const apiKey = process.env.WHATSAPP_API_KEY
 
   if (!baseUrl || !apiKey) {
-    console.error("[whatsapp] WHATSAPP_API_URL/KEY ausente — envio ignorado")
+    logWaError("envio:config-ausente", {})
     return { ok: false, error: "not configured" }
   }
 
@@ -25,17 +26,20 @@ export const sendViaBaileys = async (telefone: string, mensagem: string): Promis
     })
 
     if (!response.ok) {
-      console.error("[whatsapp] envio falhou — status", response.status)
+      logWaError("envio:falhou", { tel4: toBrazilE164(telefone).slice(-4), httpStatus: response.status, sendMs: Date.now() - t0 })
       return { ok: false, error: `http ${response.status}` }
     }
 
-    console.info(
-      "[whatsapp] envio:baileys",
-      JSON.stringify({ tel4: toBrazilE164(telefone).slice(-4), ok: true, httpStatus: response.status, sendMs: Date.now() - t0, mensagemLen: mensagem.length }),
-    )
+    logWa("envio:baileys", {
+      tel4: toBrazilE164(telefone).slice(-4),
+      ok: true,
+      httpStatus: response.status,
+      sendMs: Date.now() - t0,
+      mensagemLen: mensagem.length,
+    })
     return { ok: true }
   } catch (err) {
-    console.error("[whatsapp] erro no envio:", err)
+    logWaError("envio:erro", { tel4: toBrazilE164(telefone).slice(-4), ...errInfo(err) })
     return { ok: false, error: err instanceof Error ? err.message : "unknown" }
   } finally {
     clearTimeout(timeout)
