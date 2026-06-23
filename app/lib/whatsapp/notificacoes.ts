@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { isWhatsappFeatureEnabled, parseFlag } from "./features"
+import { logWaError, errInfo } from "./wa-log"
 import {
   isNotifyStatus,
   resolveStatusMessage,
@@ -36,14 +37,14 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
       .single()
 
     if (pedidoErr || !pedido) {
-      console.error("[whatsapp] pedido não encontrado:", pedidoId, pedidoErr)
+      logWaError("confirmacao:pedido-nao-encontrado", { pedidoId, ...errInfo(pedidoErr) })
       return
     }
 
     const cliente = Array.isArray(pedido.clientes) ? pedido.clientes[0] : pedido.clientes
     const telefone = cliente?.telefone
     if (!telefone) {
-      console.error("[whatsapp] cliente sem telefone:", pedidoId)
+      logWaError("confirmacao:cliente-sem-telefone", { pedidoId })
       return
     }
 
@@ -77,7 +78,7 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
       p_status: result.ok ? "enviada" : "falha",
     })
   } catch (err) {
-    console.error("[whatsapp] erro inesperado na confirmação:", err)
+    logWaError("confirmacao:erro-inesperado", errInfo(err))
   }
 }
 
@@ -104,14 +105,14 @@ export const sendCustomerWhatsAppStatusUpdate = async (pedidoId: string, novoSta
       .single()
 
     if (pedidoErr || !pedido) {
-      console.error("[whatsapp] pedido não encontrado (status):", pedidoId, pedidoErr)
+      logWaError("status:pedido-nao-encontrado", { pedidoId, ...errInfo(pedidoErr) })
       return
     }
 
     const cliente = Array.isArray(pedido.clientes) ? pedido.clientes[0] : pedido.clientes
     const telefone = cliente?.telefone
     if (!telefone) {
-      console.error("[whatsapp] cliente sem telefone (status):", pedidoId)
+      logWaError("status:cliente-sem-telefone", { pedidoId })
       return
     }
 
@@ -144,6 +145,6 @@ export const sendCustomerWhatsAppStatusUpdate = async (pedidoId: string, novoSta
       p_status: result.ok ? "enviada" : "falha",
     })
   } catch (err) {
-    console.error("[whatsapp] erro inesperado no status de entrega:", err)
+    logWaError("status:erro-inesperado", errInfo(err))
   }
 }

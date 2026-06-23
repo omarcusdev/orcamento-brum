@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { askClaude } from "./bedrock"
+import { logWa, logWaError, errInfo } from "./wa-log"
 import {
   AGENTE_FLAG_KEY,
   AGENTE_FAQ_KEY,
@@ -35,12 +36,9 @@ const replyAndStore = async (
   origem: "agente" | "midia",
 ): Promise<void> => {
   const result = await sendWhatsAppMessage(telefone, texto)
-  console.info(
-    "[whatsapp] agente:envio",
-    JSON.stringify({ tel4: last4(telefone), waMessageId, origem, sendOk: result.ok, replyLen: texto.length }),
-  )
+  logWa("agente:envio", { tel4: last4(telefone), waMessageId, origem, sendOk: result.ok, replyLen: texto.length })
   if (!result.ok) {
-    console.error("[whatsapp] falha ao enviar resposta do agente:", last4(telefone), result.error)
+    logWaError("agente:envio-falhou", { tel4: last4(telefone), waMessageId, erro: result.error })
     return
   }
   const { error: insErr } = await supabase.from("mensagens_conversa_whatsapp").insert({
@@ -50,7 +48,7 @@ const replyAndStore = async (
     corpo: texto,
     ocorrida_em: new Date().toISOString(),
   })
-  if (insErr) console.error("[whatsapp] erro gravando resposta do agente:", insErr)
+  if (insErr) logWaError("agente:erro-gravando-saida", errInfo(insErr))
 }
 
 // A coluna do nome do produto é "marca" (schema migração 001); CardapioItem usa "nome".
@@ -80,7 +78,7 @@ export const maybeReplyWithAgent = async (
       .select("chave, valor")
       .in("chave", [AGENTE_FLAG_KEY, AGENTE_FAQ_KEY])
     if (cfgErr) {
-      console.error("[whatsapp] erro lendo config do agente:", cfgErr)
+      logWaError("agente:erro-config", errInfo(cfgErr))
       return { handled: false } // não dá pra afirmar que o agente está on -> deixa a saudação assumir
     }
 
@@ -89,10 +87,7 @@ export const maybeReplyWithAgent = async (
 
     // Daqui pra baixo o agente "é dono" do turno (handled:true), mesmo que fique em silêncio.
     const ehMidia = corpo === MEDIA_PLACEHOLDER
-    console.info(
-      "[whatsapp] agente:ativacao",
-      JSON.stringify({ tel4: last4(telefone), waMessageId, ehMidia, corpoLen: corpo.length }),
-    )
+    logWa("agente:ativacao", { tel4: last4(telefone), waMessageId, ehMidia, corpoLen: corpo.length })
 
     const rawFaq = valorDe(AGENTE_FAQ_KEY)
     const faq = rawFaq && rawFaq.trim() ? rawFaq : DEFAULT_AGENTE_FAQ
@@ -103,7 +98,7 @@ export const maybeReplyWithAgent = async (
       .eq("telefone", telefone)
       .maybeSingle()
     if (!conversa) {
-      console.info("[whatsapp] agente:sem-conversa", JSON.stringify({ tel4: last4(telefone), waMessageId }))
+      logWa("agente:sem-conversa", { tel4: last4(telefone), waMessageId })
       return { handled: true }
     }
 
@@ -123,7 +118,7 @@ export const maybeReplyWithAgent = async (
     const ultimaEntradaId = ((threadDesc ?? []) as { direcao: string; wa_message_id: string | null }[])
       .find((m) => m.direcao === "entrada")?.wa_message_id
     if (ultimaEntradaId && ultimaEntradaId !== waMessageId) {
-      console.info("[whatsapp] agente:debounce-superada", JSON.stringify({ tel4: last4(telefone), waMessageId }))
+      logWa("agente:debounce-superada", { tel4: last4(telefone), waMessageId })
       return { handled: true }
     }
 
@@ -134,7 +129,7 @@ export const maybeReplyWithAgent = async (
       (m) => m.direcao === "saida" && m.wa_message_id != null && !m.wa_message_id.startsWith("agente-"),
     )
     if (humanoAtivo) {
-      console.info("[whatsapp] agente:handoff-humano", JSON.stringify({ tel4: last4(telefone), waMessageId }))
+      logWa("agente:handoff-humano", { tel4: last4(telefone), waMessageId })
       return { handled: true }
     }
 
@@ -154,7 +149,7 @@ export const maybeReplyWithAgent = async (
       .select("marca, volume_litros, descricao, preco_avista, preco_segundo_barril")
       .eq("ativo", true)
       .order("marca")
-    if (prodErr) console.error("[whatsapp] erro lendo cardápio do agente:", prodErr)
+    if (prodErr) logWaError("agente:erro-cardapio", errInfo(prodErr))
 
     const cardapio = formatCardapio(
       ((produtos ?? []) as ProdutoRow[]).map((p) => ({
@@ -171,23 +166,29 @@ export const maybeReplyWithAgent = async (
     // respondeu, reduzindo repetição/re-saudação. Fallback p/ a msg atual se o histórico vier vazio.
     const messages = threadToMessages(thread)
     const finalMessages = messages.length > 0 ? messages : [{ role: "user" as const, content: corpo }]
-    console.info(
-      "[whatsapp] agente:prompt",
-      JSON.stringify({ tel4: last4(telefone), waMessageId, threadMsgs: thread.length, turnos: finalMessages.length, systemLen: system.length }),
-    )
+    logWa("agente:prompt", {
+      tel4: last4(telefone),
+      waMessageId,
+      threadMsgs: thread.length,
+      turnos: finalMessages.length,
+      systemLen: system.length,
+    })
 
     const t0 = Date.now()
     const reply = await askClaude(system, finalMessages)
-    console.info(
-      "[whatsapp] agente:resultado",
-      JSON.stringify({ tel4: last4(telefone), waMessageId, decisao: reply ? "respondeu" : "silencio", replyLen: reply?.length ?? 0, bedrockMs: Date.now() - t0 }),
-    )
+    logWa("agente:resultado", {
+      tel4: last4(telefone),
+      waMessageId,
+      decisao: reply ? "respondeu" : "silencio",
+      replyLen: reply?.length ?? 0,
+      bedrockMs: Date.now() - t0,
+    })
     if (!reply) return { handled: true } // erro/timeout/vazio -> silêncio
 
     await replyAndStore(supabase, conversa.id, telefone, waMessageId, reply, "agente")
     return { handled: true }
   } catch (err) {
-    console.error("[whatsapp] erro inesperado no agente:", err)
+    logWaError("agente:erro-inesperado", errInfo(err))
     // erro inesperado com a flag possivelmente on: handled:true evita uma saudação dobrada por cima.
     return { handled: true }
   }
