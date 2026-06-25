@@ -10,6 +10,8 @@ import type { OrdemUpdate } from "@/lib/admin-ordem"
 import { after } from "next/server"
 import { sendCustomerWhatsAppStatusUpdate, sendCustomerWhatsAppConfirmation } from "@/lib/whatsapp/notificacoes"
 import { sendCustomerOrderConfirmation } from "@/lib/email"
+import { sendWhatsAppMessage } from "@/lib/whatsapp"
+import { fetchConnection } from "@/lib/whatsapp/control"
 
 const statusOrder = STATUS_FLOW_ORDER
 
@@ -397,7 +399,11 @@ export const toggleEntregadorAtivo = async (id: string, ativo: boolean) => {
   revalidatePath("/admin/entregadores")
 }
 
-export const dispatchToEntregador = async (pedidoId: string, entregadorId: string) => {
+export const dispatchToEntregador = async (
+  pedidoId: string,
+  entregadorId: string,
+  dispatchText: string,
+): Promise<{ notified: boolean }> => {
   const { supabase } = await requireAdmin()
 
   const { data: pedido } = await supabase
@@ -411,7 +417,7 @@ export const dispatchToEntregador = async (pedidoId: string, entregadorId: strin
 
   const { data: entregador } = await supabase
     .from("entregadores")
-    .select("id, ativo")
+    .select("id, ativo, telefone")
     .eq("id", entregadorId)
     .single()
 
@@ -426,6 +432,22 @@ export const dispatchToEntregador = async (pedidoId: string, entregadorId: strin
 
   revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin/pedidos")
+
+  // Se o WhatsApp estiver conectado, notifica o entregador direto (substitui o copiar-e-colar
+  // manual). Best-effort: o despacho já foi efetivado — falha de conexão/envio só volta
+  // notified:false e a UI cai no comportamento de copiar. Nunca lança aqui.
+  let notified = false
+  try {
+    const conn = await fetchConnection()
+    if (conn.paired && entregador.telefone) {
+      const result = await sendWhatsAppMessage(entregador.telefone, dispatchText)
+      notified = result.ok
+    }
+  } catch {
+    // ignora: despacho já efetivado; a UI orienta a copiar e enviar manualmente
+  }
+
+  return { notified }
 }
 
 export const fetchActiveEntregadores = async () => {
