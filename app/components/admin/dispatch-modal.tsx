@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { dispatchToEntregador, fetchActiveEntregadores } from "@/lib/admin-actions"
+import { getWhatsappConnection } from "@/lib/whatsapp/admin-actions"
 import { Button, Select, fieldLabelClass } from "@/components/ui"
 
 type DispatchModalProps = {
@@ -25,7 +26,9 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
   const [loading, setLoading] = useState(false)
   const [loadingList, setLoadingList] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  // null = ainda verificando a conexão; controla se o botão envia (conectado) ou copia (hoje).
+  const [paired, setPaired] = useState<boolean | null>(null)
+  const [result, setResult] = useState<"notified" | "copied" | "send-failed" | null>(null)
 
   useEffect(() => {
     fetchActiveEntregadores()
@@ -37,6 +40,12 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
       .finally(() => setLoadingList(false))
   }, [])
 
+  useEffect(() => {
+    getWhatsappConnection()
+      .then((c) => setPaired(c.paired))
+      .catch(() => setPaired(false)) // na dúvida, trata como desconectado (cai no copiar)
+  }, [])
+
   const handleConfirm = async () => {
     if (!selectedId) return
     if (documentoStatus !== "verificado" && !confirm("Documentacao ainda nao verificada. Deseja despachar mesmo assim?")) return
@@ -44,10 +53,20 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
     setLoading(true)
     setError(null)
 
+    // Desconectado: copia já (preserva o gesto do clique p/ a clipboard). Conectado: envia pelo WhatsApp.
+    if (!paired) {
+      try { await navigator.clipboard.writeText(dispatchText) } catch {}
+    }
+
     try {
-      try { await navigator.clipboard.writeText(dispatchText); setCopied(true) } catch {}
-      await dispatchToEntregador(pedidoId, selectedId)
-      onClose()
+      const { notified } = await dispatchToEntregador(pedidoId, selectedId, dispatchText)
+      if (notified) {
+        setResult("notified")
+      } else {
+        // estava conectado mas o envio falhou -> copia como plano B
+        if (paired) { try { await navigator.clipboard.writeText(dispatchText) } catch {} }
+        setResult(paired ? "send-failed" : "copied")
+      }
     } catch (err: any) {
       setError(err.message ?? "Erro ao despachar")
       setLoading(false)
@@ -105,14 +124,37 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
-            <div className="flex gap-3 pt-2">
-              <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-                Cancelar
-              </Button>
-              <Button onClick={handleConfirm} disabled={loading || !selectedId || loadingList} className="flex-[2]">
-                {copied ? "Copiado! Despachando..." : loading ? "Despachando..." : "📋 Copiar e Confirmar"}
-              </Button>
-            </div>
+            {result ? (
+              <div className="space-y-3 pt-2">
+                {result === "notified" && (
+                  <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
+                    ✅ Entregador notificado no WhatsApp!
+                  </p>
+                )}
+                {result === "copied" && (
+                  <p className="text-sm text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 rounded-lg px-3 py-2">
+                    📋 Mensagem copiada! Cole no WhatsApp do entregador. (WhatsApp não conectado)
+                  </p>
+                )}
+                {result === "send-failed" && (
+                  <p className="text-sm text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 rounded-lg px-3 py-2">
+                    ⚠️ Não consegui enviar pelo WhatsApp — mensagem copiada, cole no WhatsApp do entregador.
+                  </p>
+                )}
+                <Button onClick={onClose} fullWidth>
+                  Fechar
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+                  Cancelar
+                </Button>
+                <Button onClick={handleConfirm} disabled={loading || !selectedId || loadingList} className="flex-[2]">
+                  {loading ? "Despachando..." : paired ? "📲 Enviar e Confirmar" : "📋 Copiar e Confirmar"}
+                </Button>
+              </div>
+            )}
           </div>
         </motion.div>
       </motion.div>

@@ -14,6 +14,7 @@ import ConsignadoBanner from "@/components/admin/consignado-banner"
 import EditOrderTrigger from "@/components/admin/edit-order-trigger"
 import EditLog from "@/components/admin/edit-log"
 import { calculateOrderTotals } from "@/lib/pricing"
+import { buildDispatchText } from "@/lib/whatsapp/entregador-message"
 import type { Produto } from "@/lib/types"
 
 type Props = {
@@ -23,35 +24,14 @@ type Props = {
 const formatPrice = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
-const buildDispatchText = (pedido: any, items: any[], cliente: any) => {
-  const itemLines = (items ?? []).map((item: any) => {
-    const marca = item.produtos?.marca ?? item.produtos?.[0]?.marca ?? ""
-    const volume = item.produtos?.volume_litros ?? item.produtos?.[0]?.volume_litros ?? ""
-    return `${item.quantidade}x ${marca} ${volume}L`
-  }).join(", ")
+type ItemRow = { quantidade: number; produtos: { marca: string; volume_litros: number } | { marca: string; volume_litros: number }[] | null }
 
-  const dataFormatted = new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")
-  const endereco = pedido.endereco_completo
-  const enderecoLine = endereco
-    ? `${endereco.rua}, ${endereco.numero}${endereco.complemento ? ` (${endereco.complemento})` : ""}`
-    : pedido.endereco
-
-  return [
-    `📍 Data do evento: ${dataFormatted} às ${pedido.horario_evento.slice(0, 5)}`,
-    `◼ Quantidade de Barris: ${itemLines}`,
-    `◼ Preferencia de Chopeira: ${pedido.tipo_chopeira}`,
-    `◼ Responsavel: ${cliente.nome}`,
-    `◼ Contato: ${cliente.telefone}`,
-    `◼ Municipio: ${endereco?.cidade ?? "—"}`,
-    `◼ Bairro: ${endereco?.bairro ?? "—"}`,
-    `◼ Endereco: ${enderecoLine}`,
-    `◼ Rampas/Escadas: ${pedido.rampas_escadas || "Nao"}`,
-    `◼ Valor: R$ ${pedido.subtotal.toFixed(2).replace(".", ",")}`,
-    `◼ Frete: R$ ${(pedido.frete || 0).toFixed(2).replace(".", ",")}`,
-    `◼ Forma de pagamento: ${pedido.metodo_pagamento ?? "—"}`,
-    `◼ Observacoes: ${pedido.observacoes || "—"}`,
-  ].join("\n")
-}
+// Mapeia as linhas cruas do Supabase (produtos vem objeto OU array, dependendo do join) p/ o builder.
+const toDispatchItens = (items: ItemRow[]) =>
+  (items ?? []).map((item) => {
+    const produto = Array.isArray(item.produtos) ? item.produtos[0] : item.produtos
+    return { quantidade: item.quantidade, marca: produto?.marca ?? "", volume: produto?.volume_litros ?? 0 }
+  })
 
 const AdminOrderDetailPage = async ({ params }: Props) => {
   const { id } = await params
@@ -338,7 +318,22 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                 currentStatus={pedido.status as PedidoStatus}
                 documentoStatus={pedido.documento_status}
                 frete={pedido.frete ?? 0}
-                dispatchText={buildDispatchText(pedido, items ?? [], pedido.clientes)}
+                dispatchText={buildDispatchText({
+                  pedidoId: pedido.id,
+                  clienteNome: pedido.clientes.nome,
+                  clienteTelefone: pedido.clientes.telefone,
+                  dataEvento: pedido.data_evento,
+                  horarioEvento: pedido.horario_evento,
+                  tipoChopeira: pedido.tipo_chopeira,
+                  rampasEscadas: pedido.rampas_escadas,
+                  subtotal: pedido.subtotal,
+                  frete: pedido.frete ?? 0,
+                  metodoPagamento: pedido.metodo_pagamento,
+                  observacoes: pedido.observacoes,
+                  endereco: pedido.endereco,
+                  enderecoCompleto: pedido.endereco_completo,
+                  itens: toDispatchItens(items ?? []),
+                })}
               />
               {!lockedForEdit && (
                 <div className="mt-4 pt-4 border-t border-white/10">
