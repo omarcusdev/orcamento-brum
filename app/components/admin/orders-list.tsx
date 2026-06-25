@@ -6,36 +6,14 @@ import { createClient } from "@/lib/supabase/client"
 import type { PedidoStatus } from "@/lib/types"
 import StatusFilter from "@/components/admin/status-filter"
 import OrderCard from "@/components/admin/order-card"
-
-type OrderWithClient = {
-  id: string
-  status: string
-  documento_status: string
-  total: number
-  data_evento: string
-  horario_evento: string
-  endereco: string
-  metodo_pagamento: string | null
-  created_at: string
-  arquivado_em: string | null
-  clientes: { nome: string; telefone: string }
-}
+import { PEDIDO_LIST_SELECT, normalizeOrders, type OrderListItem } from "@/lib/admin-pedidos"
 
 type OrdersListProps = {
-  initialOrders: OrderWithClient[]
+  initialOrders: OrderListItem[]
 }
 
 type ViewMode = "ativos" | "arquivados"
 type SortMode = "recente" | "evento"
-
-const normalizeOrders = (raw: unknown[]) =>
-  raw.map((row) => {
-    const record = row as Record<string, unknown>
-    return {
-      ...record,
-      clientes: Array.isArray(record.clientes) ? record.clientes[0] : record.clientes,
-    }
-  }) as OrderWithClient[]
 
 const OrdersList = ({ initialOrders }: OrdersListProps) => {
   const [orders, setOrders] = useState(initialOrders)
@@ -50,7 +28,7 @@ const OrdersList = ({ initialOrders }: OrdersListProps) => {
     const refetch = async () => {
       const { data } = await supabase
         .from("pedidos")
-        .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, arquivado_em, clientes(nome, telefone)")
+        .select(PEDIDO_LIST_SELECT)
         .order("created_at", { ascending: false })
 
       if (data) setOrders(normalizeOrders(data as unknown[]))
