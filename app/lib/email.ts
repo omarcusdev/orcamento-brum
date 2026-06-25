@@ -14,21 +14,31 @@ const formatPhone = (digits: string | null) => {
   return d
 }
 
-const renderHtml = (data: {
+type OrderEmailItem = { qtd: number; descricao: string; subtotal: number }
+
+type OrderEmailData = {
   pedidoId: string
   clienteNome: string
-  clienteTelefone: string
   dataEvento: string
   horarioEvento: string
   endereco: string
   tipoChopeira: string
-  itens: { qtd: number; descricao: string; subtotal: number }[]
+  itens: OrderEmailItem[]
   subtotal: number
   frete: number
   total: number
   metodoPagamento: string | null
   observacoes: string | null
-}) => {
+}
+
+const chopeiraLabel = (tipo: string) => (tipo === "eletrica" ? "Elétrica" : "Gelo")
+
+const metodoLabel = (metodo: string | null) =>
+  metodo === "pix" ? "Pix" : metodo === "cartao" ? "Cartão" : metodo === "dinheiro" ? "Dinheiro" : "—"
+
+const freteLabel = (frete: number) => (frete > 0 ? formatBRL(frete) : "a definir")
+
+const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) => {
   const itensRows = data.itens
     .map(
       (i) => `
@@ -43,8 +53,8 @@ const renderHtml = (data: {
     ? `<tr><td colspan="2" style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;line-height:1.5;"><strong>Observações:</strong> ${data.observacoes}</td></tr>`
     : ""
 
-  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
-  const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
+  const freteLine = freteLabel(data.frete)
+  const pagamentoLabel = metodoLabel(data.metodoPagamento)
   const adminUrl = `${ADMIN_BASE_URL}/admin/pedidos/${data.pedidoId}`
 
   return `<!DOCTYPE html>
@@ -88,7 +98,7 @@ const renderHtml = (data: {
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Chopeira</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;text-transform:capitalize;">${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;text-transform:capitalize;">${chopeiraLabel(data.tipoChopeira)}</td>
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Pagamento</td>
@@ -147,23 +157,9 @@ const renderHtml = (data: {
 </html>`
 }
 
-const renderText = (data: {
-  pedidoId: string
-  clienteNome: string
-  clienteTelefone: string
-  dataEvento: string
-  horarioEvento: string
-  endereco: string
-  tipoChopeira: string
-  itens: { qtd: number; descricao: string; subtotal: number }[]
-  subtotal: number
-  frete: number
-  total: number
-  metodoPagamento: string | null
-  observacoes: string | null
-}) => {
+const renderText = (data: OrderEmailData & { clienteTelefone: string }) => {
   const adminUrl = `${ADMIN_BASE_URL}/admin/pedidos/${data.pedidoId}`
-  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
+  const freteLine = freteLabel(data.frete)
   const lines = [
     `Novo pedido #${data.pedidoId.slice(0, 8)}`,
     "",
@@ -171,7 +167,7 @@ const renderText = (data: {
     `Telefone: ${data.clienteTelefone}`,
     `Evento: ${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
     `Endereço: ${data.endereco}`,
-    `Chopeira: ${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}`,
+    `Chopeira: ${chopeiraLabel(data.tipoChopeira)}`,
     `Pagamento: ${data.metodoPagamento ?? "—"}`,
     "",
     "Itens:",
@@ -275,20 +271,7 @@ export const sendNewOrderEmail = async (pedidoId: string) => {
   }
 }
 
-const renderCustomerHtml = (data: {
-  pedidoId: string
-  clienteNome: string
-  dataEvento: string
-  horarioEvento: string
-  endereco: string
-  tipoChopeira: string
-  itens: { qtd: number; descricao: string; subtotal: number }[]
-  subtotal: number
-  frete: number
-  total: number
-  metodoPagamento: string | null
-  observacoes: string | null
-}) => {
+const renderCustomerHtml = (data: OrderEmailData) => {
   const itensRows = data.itens
     .map(
       (i) => `
@@ -303,8 +286,8 @@ const renderCustomerHtml = (data: {
     ? `<tr><td colspan="2" style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;line-height:1.5;"><strong>Observações:</strong> ${data.observacoes}</td></tr>`
     : ""
 
-  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
-  const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
+  const freteLine = freteLabel(data.frete)
+  const pagamentoLabel = metodoLabel(data.metodoPagamento)
   const trackingUrl = `${CUSTOMER_BASE_URL}/pedido/${data.pedidoId}`
   const firstName = data.clienteNome.split(" ")[0]
 
@@ -363,7 +346,7 @@ const renderCustomerHtml = (data: {
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Chopeira</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;text-transform:capitalize;">${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;text-transform:capitalize;">${chopeiraLabel(data.tipoChopeira)}</td>
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Pagamento</td>
@@ -423,23 +406,10 @@ const renderCustomerHtml = (data: {
 </html>`
 }
 
-const renderCustomerText = (data: {
-  pedidoId: string
-  clienteNome: string
-  dataEvento: string
-  horarioEvento: string
-  endereco: string
-  tipoChopeira: string
-  itens: { qtd: number; descricao: string; subtotal: number }[]
-  subtotal: number
-  frete: number
-  total: number
-  metodoPagamento: string | null
-  observacoes: string | null
-}) => {
+const renderCustomerText = (data: OrderEmailData) => {
   const trackingUrl = `${CUSTOMER_BASE_URL}/pedido/${data.pedidoId}`
-  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
-  const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
+  const freteLine = freteLabel(data.frete)
+  const pagamentoLabel = metodoLabel(data.metodoPagamento)
   const firstName = data.clienteNome.split(" ")[0]
   const lines = [
     `Olá, ${firstName}!`,
@@ -450,7 +420,7 @@ const renderCustomerText = (data: {
     "",
     `Evento: ${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
     `Endereço: ${data.endereco}`,
-    `Chopeira: ${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}`,
+    `Chopeira: ${chopeiraLabel(data.tipoChopeira)}`,
     `Pagamento: ${pagamentoLabel}`,
     "",
     "Itens:",
