@@ -146,3 +146,17 @@ export const calculateOrderTotals = (items: OrderItemForTotals[]): OrderTotals =
 
   return { subtotalMin, subtotalMax, hasPendente }
 }
+
+// Valor "cheio" que fica salvo no pedido (colunas subtotal/total). Conta o consignado como SE FOSSE
+// usado (= subtotalMax: firmes + consignado que NÃO foi devolvido), abatendo só os barris devolvidos
+// no acerto. Assim o pedido nasce com o valor total em vez de R$ 0 enquanto o consignado está pendente.
+// Usado tanto na criação (createManualOrder) quanto no acerto (settleConsignado) p/ ficarem coerentes.
+export const calculateStoredTotals = (
+  items: OrderItemForTotals[],
+  frete: number,
+  desconto: number,
+): { subtotal: number; total: number } => {
+  const subtotal = round2(calculateOrderTotals(items).subtotalMax)
+  const total = round2(subtotal - desconto + frete)
+  return { subtotal, total }
+}

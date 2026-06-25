@@ -177,8 +177,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   )
 
   const totals = calculateOrderTotals(itemRowsForTotals)
-  const totalMin = totals.subtotalMin + frete
-  const totalMax = totals.subtotalMax + frete
+  // Valor cheio: consignado conta no total (abatido só no acerto), então mostramos o máximo — não R$ 0.
+  const total = totals.subtotalMax + frete
 
   const canSubmit =
     !submitting &&
@@ -456,10 +456,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                   </div>
                   <div className="bg-brand-dark border border-white/10 rounded-lg p-3 text-sm space-y-1">
                     <div className="flex justify-between text-brand-warm-gray">
-                      <span>Subtotal {hasConsignado ? "(usado/total)" : ""}</span>
-                      <span className="tabular-nums">
-                        {hasConsignado ? `${formatCurrency(totals.subtotalMin)} / ${formatCurrency(totals.subtotalMax)}` : formatCurrency(totals.subtotalMax)}
-                      </span>
+                      <span>Subtotal</span>
+                      <span className="tabular-nums">{formatCurrency(totals.subtotalMax)}</span>
                     </div>
                     <div className="flex justify-between text-brand-warm-gray">
                       <span>Frete</span>
@@ -467,10 +465,13 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                     </div>
                     <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
                       <span>Total</span>
-                      <span className="text-brand-yellow tabular-nums">
-                        {hasConsignado ? `${formatCurrency(totalMin)} / ${formatCurrency(totalMax)}` : formatCurrency(totalMin)}
-                      </span>
+                      <span className="text-brand-yellow tabular-nums">{formatCurrency(total)}</span>
                     </div>
+                    {hasConsignado && (
+                      <p className="text-[11px] text-brand-warm-gray pt-1">
+                        Consignado entra no total; no acerto a gente abate os barris devolvidos.
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>
