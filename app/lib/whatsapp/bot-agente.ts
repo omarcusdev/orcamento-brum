@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { askClaude } from "./bedrock"
+import { configValue } from "./config"
 import { logWa, logWaError, errInfo } from "./wa-log"
 import {
   AGENTE_FLAG_KEY,
@@ -82,7 +83,7 @@ export const maybeReplyWithAgent = async (
       return { handled: false } // não dá pra afirmar que o agente está on -> deixa a saudação assumir
     }
 
-    const valorDe = (chave: string) => cfg?.find((row) => row.chave === chave)?.valor
+    const valorDe = (chave: string) => configValue(cfg, chave)
     if (!agenteAtivo(valorDe(AGENTE_FLAG_KEY))) return { handled: false }
 
     // Daqui pra baixo o agente "é dono" do turno (handled:true), mesmo que fique em silêncio.
