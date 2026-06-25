@@ -8,22 +8,7 @@ import {
   statusFlagKey,
   statusMsgKey,
 } from "./status-messages"
-
-const formatEventDate = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("pt-BR")
-
-const buildConfirmationMessage = (data: {
-  clienteNome: string
-  pedidoId: string
-  itens: { quantidade: number; marca: string; volume: number }[]
-  dataEvento: string
-  horarioEvento: string
-}) => {
-  const itensText = data.itens
-    .map((item) => `${item.quantidade}x ${item.marca} ${item.volume}L`)
-    .join(", ")
-  const firstName = data.clienteNome.split(" ")[0]
-  return `Olá ${firstName}! Seu pedido #${data.pedidoId.slice(0, 8)} foi recebido. ${itensText}. Evento em ${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}. Em breve confirmamos os detalhes por aqui. — ALFA Chopp Delivery`
-}
+import { buildConfirmationMessage } from "./confirmacao-message"
 
 export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
   if (!(await isWhatsappFeatureEnabled("whatsapp_confirmacao_ativo"))) return
