@@ -8,7 +8,8 @@ import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
 import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES, isAutoArchiveStatus } from "@/lib/admin-status"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
 import { after } from "next/server"
-import { sendCustomerWhatsAppStatusUpdate } from "@/lib/whatsapp/notificacoes"
+import { sendCustomerWhatsAppStatusUpdate, sendCustomerWhatsAppConfirmation } from "@/lib/whatsapp/notificacoes"
+import { sendCustomerOrderConfirmation } from "@/lib/email"
 
 const statusOrder = STATUS_FLOW_ORDER
 
@@ -710,6 +711,13 @@ export const createManualOrder = async (input: ManualOrderInput) => {
 
   revalidatePath("/admin")
   revalidatePath("/admin/pedidos")
+
+  // Confirmação ao cliente (mesma do checkout): e-mail (se houver e-mail) + WhatsApp (gated pela
+  // flag whatsapp_confirmacao_ativo). Sem o e-mail interno de "novo pedido" — o admin acabou de criar.
+  // Via after(): falha de envio nunca quebra a criação do pedido.
+  after(() => sendCustomerOrderConfirmation(pedido.id))
+  after(() => sendCustomerWhatsAppConfirmation(pedido.id))
+
   return { pedidoId: pedido.id }
 }
 
