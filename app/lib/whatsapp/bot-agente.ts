@@ -62,6 +62,14 @@ type ProdutoRow = {
   preco_segundo_barril: number | string | null
 }
 
+// Linha do histórico da conversa (uma seleção, três usos: debounce, handoff, contexto).
+type ThreadRow = {
+  direcao: "entrada" | "saida"
+  corpo: string
+  ocorrida_em: string
+  wa_message_id: string | null
+}
+
 // Atendente IA. Chamado via after() na rota inbound, só para ENTRADA. Nunca lança; fail-closed.
 // Retorna { handled: true } sempre que a flag do agente está ligada (tenha enviado ou não) —
 // assim o coordenador suprime a saudação rule-based. { handled: false } = flag off (ou config
@@ -112,12 +120,12 @@ export const maybeReplyWithAgent = async (
       .eq("conversa_id", conversa.id)
       .order("ocorrida_em", { ascending: false })
       .limit(8)
+    const rows = (threadDesc ?? []) as ThreadRow[]
 
     // DEBOUNCE: se já chegou uma mensagem do cliente MAIS NOVA que esta, esta invocação se cala —
     // a invocação da mensagem mais recente responde (com o contexto completo da rajada). Evita o
     // bot mandar várias respostas seguidas quando o cliente escreve em sequência.
-    const ultimaEntradaId = ((threadDesc ?? []) as { direcao: string; wa_message_id: string | null }[])
-      .find((m) => m.direcao === "entrada")?.wa_message_id
+    const ultimaEntradaId = rows.find((m) => m.direcao === "entrada")?.wa_message_id
     if (ultimaEntradaId && ultimaEntradaId !== waMessageId) {
       logWa("agente:debounce-superada", { tel4: last4(telefone), waMessageId })
       return { handled: true }
@@ -126,7 +134,7 @@ export const maybeReplyWithAgent = async (
     // HANDOFF: se um operador HUMANO já respondeu nesta conversa (saida cujo wa_message_id NÃO
     // começa com "agente-"), o agente se cala e deixa o humano conduzir. Evita o bot atropelar
     // o atendimento humano e mandar link repetido por cima (queixa do cliente).
-    const humanoAtivo = ((threadDesc ?? []) as { direcao: string; wa_message_id: string | null }[]).some(
+    const humanoAtivo = rows.some(
       (m) => m.direcao === "saida" && m.wa_message_id != null && !m.wa_message_id.startsWith("agente-"),
     )
     if (humanoAtivo) {
@@ -141,7 +149,7 @@ export const maybeReplyWithAgent = async (
       return { handled: true }
     }
 
-    const thread: ThreadMsg[] = ((threadDesc ?? []) as { direcao: "entrada" | "saida"; corpo: string }[])
+    const thread: ThreadMsg[] = rows
       .map((m) => ({ direcao: m.direcao, corpo: m.corpo }))
       .reverse() // cronológico
 
