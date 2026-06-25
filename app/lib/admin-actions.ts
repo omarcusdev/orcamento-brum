@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
 import { productSchema, manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
-import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
+import { calculateStoredTotals, priceManualOrderLines } from "@/lib/pricing"
 import { STATUS_FLOW_ORDER, canRevertToStatus, LOCKED_EDIT_STATUSES, isAutoArchiveStatus } from "@/lib/admin-status"
 import type { OrdemUpdate } from "@/lib/admin-ordem"
 import { after } from "next/server"
@@ -682,15 +682,16 @@ export const createManualOrder = async (input: ManualOrderInput) => {
         }],
   )
 
-  const totals = calculateOrderTotals(
+  // Valor cheio: consignado conta como usado até ser devolvido (não nasce R$ 0). desconto=0 no manual.
+  const { subtotal, total } = calculateStoredTotals(
     itemRows.map((r) => ({
       subtotal: r.subtotal,
       is_consignado: r.is_consignado,
       consignado_status: r.consignado_status,
     })),
+    data.frete,
+    0,
   )
-  const subtotal = Number(totals.subtotalMin.toFixed(2))
-  const total = Number((subtotal + data.frete).toFixed(2))
 
   const { data: pedido, error: pedErr } = await supabase
     .from("pedidos")
@@ -772,13 +773,16 @@ export const settleConsignado = async (pedidoItemId: string, status: "usado" | "
     .eq("id", item.pedido_id)
     .single()
 
-  const totals = calculateOrderTotals((allItems ?? []).map((i) => ({
-    subtotal: Number(i.subtotal),
-    is_consignado: i.is_consignado,
-    consignado_status: i.consignado_status,
-  })))
-  const newSubtotal = Number(totals.subtotalMin.toFixed(2))
-  const newTotal = Number((newSubtotal - Number(pedido?.desconto ?? 0) + Number(pedido?.frete ?? 0)).toFixed(2))
+  // Valor cheio: abate só os barris DEVOLVIDOS; usados e pendentes seguem somando (coerente c/ a criação).
+  const { subtotal: newSubtotal, total: newTotal } = calculateStoredTotals(
+    (allItems ?? []).map((i) => ({
+      subtotal: Number(i.subtotal),
+      is_consignado: i.is_consignado,
+      consignado_status: i.consignado_status,
+    })),
+    Number(pedido?.frete ?? 0),
+    Number(pedido?.desconto ?? 0),
+  )
 
   await supabase
     .from("pedidos")
@@ -862,13 +866,16 @@ const recalcPedidoTotals = async (pedidoId: string) => {
     .select("frete, desconto")
     .eq("id", pedidoId)
     .single()
-  const totals = calculateOrderTotals((items ?? []).map((i) => ({
-    subtotal: Number(i.subtotal),
-    is_consignado: i.is_consignado,
-    consignado_status: i.consignado_status,
-  })))
-  const newSubtotal = Number(totals.subtotalMin.toFixed(2))
-  const newTotal = Number((newSubtotal - Number(pedido?.desconto ?? 0) + Number(pedido?.frete ?? 0)).toFixed(2))
+  // Valor cheio (mesma regra da criação/acerto): consignado conta como usado até ser devolvido.
+  const { subtotal: newSubtotal, total: newTotal } = calculateStoredTotals(
+    (items ?? []).map((i) => ({
+      subtotal: Number(i.subtotal),
+      is_consignado: i.is_consignado,
+      consignado_status: i.consignado_status,
+    })),
+    Number(pedido?.frete ?? 0),
+    Number(pedido?.desconto ?? 0),
+  )
   await supabase
     .from("pedidos")
     .update({ subtotal: newSubtotal, total: newTotal, updated_at: new Date().toISOString() })

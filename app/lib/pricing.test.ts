@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { calculateLine, getBasePrice, calculateOrderTotals, priceManualOrderLines } from "./pricing"
+import { calculateLine, getBasePrice, calculateOrderTotals, calculateStoredTotals, priceManualOrderLines } from "./pricing"
 
 const baseProduct = {
   preco_avista: 500,
@@ -129,6 +129,44 @@ describe("calculateOrderTotals", () => {
     expect(totals.subtotalMin).toBe(0)
     expect(totals.subtotalMax).toBe(0)
     expect(totals.hasPendente).toBe(false)
+  })
+})
+
+describe("calculateStoredTotals (valor cheio: consignado conta como usado até ser devolvido)", () => {
+  const item = (subtotal: number, is_consignado = false, consignado_status: string | null = null) => ({
+    subtotal,
+    is_consignado,
+    consignado_status,
+  })
+
+  it("soma itens firmes e aplica desconto e frete", () => {
+    const r = calculateStoredTotals([item(500), item(500)], 50, 100)
+    expect(r.subtotal).toBe(1000)
+    expect(r.total).toBe(950) // 1000 - 100 desconto + 50 frete
+  })
+
+  it("consignado PENDENTE entra pelo valor cheio (não zera) — corrige o bug do Jean", () => {
+    const r = calculateStoredTotals(
+      [item(550), item(400, true, "pendente"), item(400, true, "pendente")],
+      0,
+      0,
+    )
+    expect(r.subtotal).toBe(1350)
+    expect(r.total).toBe(1350)
+  })
+
+  it("consignado USADO continua somando", () => {
+    const r = calculateStoredTotals([item(550), item(400, true, "usado")], 0, 0)
+    expect(r.subtotal).toBe(950)
+  })
+
+  it("consignado DEVOLVIDO é abatido no acerto", () => {
+    const r = calculateStoredTotals([item(550), item(400, true, "devolvido")], 0, 0)
+    expect(r.subtotal).toBe(550)
+  })
+
+  it("arredonda em 2 casas", () => {
+    expect(calculateStoredTotals([item(33.333)], 0, 0).subtotal).toBe(33.33)
   })
 })
 
