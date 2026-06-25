@@ -1,5 +1,7 @@
 // Helpers puros de apresentação da faixa de contexto do inbox. Sem I/O.
 
+import { formatBRL } from "@/lib/format"
+
 export const pedidoRefCurto = (id: string): string => `#${id.slice(0, 8)}`
 
 // data_evento chega como 'YYYY-MM-DD' (string) -> 'DD/MM' sem depender de fuso
@@ -8,8 +10,7 @@ export const formatDataEvento = (iso: string): string => {
   return `${d}/${m}`
 }
 
-export const formatTotalBR = (total: number): string =>
-  total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+export const formatTotalBR = (total: number): string => formatBRL(total)
 
 // Remove chars com significado no filtro `.or()` do PostgREST (vírgula, parênteses,
 // curinga %, *, barra) — sem isso um termo do operador poderia quebrar/injetar o filtro.

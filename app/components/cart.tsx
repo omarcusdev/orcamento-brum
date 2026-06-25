@@ -5,9 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/cart-context"
 import CartItemRow from "@/components/cart-item"
 import { calculateLine } from "@/lib/pricing"
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+import { formatBRL } from "@/lib/format"
 
 const Cart = () => {
   const router = useRouter()
@@ -74,12 +72,12 @@ const Cart = () => {
                 {totalSavings > 0 && (
                   <div className="flex justify-between mb-2">
                     <span className="text-xs text-brand-warm-gray">Promo do 2º barril</span>
-                    <span className="text-xs text-green-400">- {formatPrice(totalSavings)}</span>
+                    <span className="text-xs text-green-400">- {formatBRL(totalSavings)}</span>
                   </div>
                 )}
                 <div className="flex justify-between mb-4">
                   <span className="font-medium text-brand-warm-gray text-sm">Total</span>
-                  <span className="font-display font-bold text-xl text-brand-yellow">{formatPrice(total)}</span>
+                  <span className="font-display font-bold text-xl text-brand-yellow">{formatBRL(total)}</span>
                 </div>
                 <motion.button
                   onClick={handleCheckout}

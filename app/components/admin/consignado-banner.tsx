@@ -4,14 +4,13 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { settleConsignado } from "@/lib/admin-actions"
 import { Button } from "@/components/ui"
+import { formatBRL } from "@/lib/format"
 
 type Props = {
   itemId: string
   produtoLabel: string
   subtotal: number
 }
-
-const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 const ConsignadoBanner = ({ itemId, produtoLabel, subtotal }: Props) => {
   const [loading, setLoading] = useState<"usado" | "devolvido" | null>(null)
@@ -38,7 +37,7 @@ const ConsignadoBanner = ({ itemId, produtoLabel, subtotal }: Props) => {
       <div>
         <p className="text-yellow-400 font-semibold text-sm">Consignado pendente</p>
         <p className="text-brand-gray-light text-sm">
-          {produtoLabel} — {formatCurrency(subtotal)} aguardando settlement
+          {produtoLabel} — {formatBRL(subtotal)} aguardando settlement
         </p>
       </div>
       <div className="flex gap-2">

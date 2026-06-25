@@ -5,13 +5,11 @@ import { motion } from "framer-motion"
 import type { Produto } from "@/lib/types"
 import { updateProductSecondBarrelPrice } from "@/lib/admin-actions"
 import { Input } from "@/components/ui"
+import { formatBRL } from "@/lib/format"
 
 type PromocoesListProps = {
   produtos: Produto[]
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const PromocoesList = ({ produtos: initialProdutos }: PromocoesListProps) => {
   const [produtos, setProdutos] = useState<Produto[]>(initialProdutos)
@@ -85,7 +83,7 @@ const PromocoesList = ({ produtos: initialProdutos }: PromocoesListProps) => {
             )}
           </div>
           <p className="text-xs text-brand-warm-gray mt-1">
-            1º barril: <span className="text-brand-gray-light">{formatPrice(produto.preco_avista)}</span>
+            1º barril: <span className="text-brand-gray-light">{formatBRL(produto.preco_avista)}</span>
           </p>
         </div>
 
@@ -134,11 +132,11 @@ const PromocoesList = ({ produtos: initialProdutos }: PromocoesListProps) => {
           ) : error ? (
             <span className="text-red-400">{error}</span>
           ) : previewSavings !== null ? (
-            <span className="text-green-400">desc. {formatPrice(previewSavings)}</span>
+            <span className="text-green-400">desc. {formatBRL(previewSavings)}</span>
           ) : savedAt ? (
             <span className="text-green-400">salvo</span>
           ) : produto.preco_segundo_barril ? (
-            <span className="text-brand-warm-gray">desc. {formatPrice(produto.preco_avista - produto.preco_segundo_barril)}</span>
+            <span className="text-brand-warm-gray">desc. {formatBRL(produto.preco_avista - produto.preco_segundo_barril)}</span>
           ) : (
             <span className="text-brand-warm-gray/60">sem promo</span>
           )}

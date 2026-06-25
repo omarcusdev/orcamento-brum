@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import type { CartItem } from "@/lib/types"
 import { calculateLine } from "@/lib/pricing"
+import { formatBRL } from "@/lib/format"
 
 type CartItemRowProps = {
   item: CartItem
@@ -10,9 +11,6 @@ type CartItemRowProps = {
   onDecrease: () => void
   onRemove: () => void
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProps) => {
   const line = calculateLine(item.produto, item.quantidade)
@@ -30,7 +28,7 @@ const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
       <p className="text-xs text-brand-warm-gray">{item.produto.volume_litros}L</p>
       {line.hasPromo && (
         <p className="text-[10px] text-green-400 mt-0.5">
-          1º {formatPrice(line.firstUnitPrice)} · 2º+ {formatPrice(line.extraUnitPrice)}
+          1º {formatBRL(line.firstUnitPrice)} · 2º+ {formatBRL(line.extraUnitPrice)}
         </p>
       )}
     </div>
@@ -54,7 +52,7 @@ const CartItemRow = ({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
       </motion.button>
     </div>
     <p className="font-display font-semibold text-sm w-20 text-right text-brand-yellow">
-      {formatPrice(line.total)}
+      {formatBRL(line.total)}
     </p>
     <motion.button
       onClick={onRemove}

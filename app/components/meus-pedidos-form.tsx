@@ -7,6 +7,7 @@ import { formatCpf, validateCpf } from "@/lib/cpf"
 import { getOrdersByCpf } from "@/lib/actions"
 import { statusConfig } from "@/components/order-status-badge"
 import type { PedidoStatus } from "@/lib/types"
+import { formatBRL, formatEventDate } from "@/lib/format"
 
 type OrderSummary = {
   id: string
@@ -20,12 +21,6 @@ type OrderSummary = {
   created_at: string
   itens: { quantidade: number; marca: string; volume: number }[]
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
-
-const formatDate = (date: string) =>
-  new Date(date + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
 
 const inputClassName =
   "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 placeholder:text-brand-warm-gray/40"
@@ -155,7 +150,7 @@ const MeusPedidosForm = () => {
                       <div>
                         <span className="font-mono text-xs text-brand-warm-gray">#{pedido.id.slice(0, 8)}</span>
                         <p className="text-white text-sm mt-1">
-                          {formatDate(pedido.data_evento)} as {pedido.horario_evento.slice(0, 5)}
+                          {formatEventDate(pedido.data_evento, { day: "2-digit", month: "short", year: "numeric" })} as {pedido.horario_evento.slice(0, 5)}
                         </p>
                       </div>
                       <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium border tracking-wide ${displayStatus.color}`}>
@@ -174,16 +169,16 @@ const MeusPedidosForm = () => {
                         <div className="space-y-1 mb-2">
                           <div className="flex justify-between text-xs">
                             <span className="text-brand-warm-gray">Subtotal</span>
-                            <span className="text-brand-gray-light">{formatPrice(pedido.subtotal)}</span>
+                            <span className="text-brand-gray-light">{formatBRL(pedido.subtotal)}</span>
                           </div>
                           <div className="flex justify-between text-xs">
                             <span className="text-amber-400">Frete adicionado</span>
-                            <span className="text-amber-400">{formatPrice(pedido.frete)}</span>
+                            <span className="text-amber-400">{formatBRL(pedido.frete)}</span>
                           </div>
                         </div>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className="font-display text-brand-yellow font-bold">{formatPrice(pedido.total)}</span>
+                        <span className="font-display text-brand-yellow font-bold">{formatBRL(pedido.total)}</span>
                         <span className="text-brand-yellow text-xs">Ver detalhes →</span>
                       </div>
                     </div>

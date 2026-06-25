@@ -1,14 +1,10 @@
 import { Resend } from "resend"
 import { createServiceClient } from "@/lib/supabase/service"
 import { logWaError, errInfo } from "@/lib/whatsapp/wa-log"
+import { formatBRL, formatEventDate } from "@/lib/format"
 
 const ADMIN_BASE_URL = "https://app-liart-one-77.vercel.app"
 const CUSTOMER_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.alfachopp.com.br"
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
-
-const formatDate = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("pt-BR")
 
 const formatPhone = (digits: string | null) => {
   if (!digits) return ""
@@ -38,7 +34,7 @@ const renderHtml = (data: {
       (i) => `
         <tr>
           <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;">${i.qtd}× ${i.descricao}</td>
-          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;text-align:right;">${formatPrice(i.subtotal)}</td>
+          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;text-align:right;">${formatBRL(i.subtotal)}</td>
         </tr>`
     )
     .join("")
@@ -47,7 +43,7 @@ const renderHtml = (data: {
     ? `<tr><td colspan="2" style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;line-height:1.5;"><strong>Observações:</strong> ${data.observacoes}</td></tr>`
     : ""
 
-  const freteLine = data.frete > 0 ? formatPrice(data.frete) : "a definir"
+  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
   const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
   const adminUrl = `${ADMIN_BASE_URL}/admin/pedidos/${data.pedidoId}`
 
@@ -84,7 +80,7 @@ const renderHtml = (data: {
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Evento</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;vertical-align:top;">Endereço</td>
@@ -111,7 +107,7 @@ const renderHtml = (data: {
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-top:1px solid #eeeeee;">
               <tr>
                 <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Subtotal</td>
-                <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${formatPrice(data.subtotal)}</td>
+                <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${formatBRL(data.subtotal)}</td>
               </tr>
               <tr>
                 <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Frete</td>
@@ -119,7 +115,7 @@ const renderHtml = (data: {
               </tr>
               <tr>
                 <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#1a1a1a;font-weight:bold;">Total</td>
-                <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:20px;color:#d4a017;font-weight:bold;text-align:right;">${formatPrice(data.total)}</td>
+                <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:20px;color:#d4a017;font-weight:bold;text-align:right;">${formatBRL(data.total)}</td>
               </tr>
             </table>
 
@@ -167,23 +163,23 @@ const renderText = (data: {
   observacoes: string | null
 }) => {
   const adminUrl = `${ADMIN_BASE_URL}/admin/pedidos/${data.pedidoId}`
-  const freteLine = data.frete > 0 ? formatPrice(data.frete) : "a definir"
+  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
   const lines = [
     `Novo pedido #${data.pedidoId.slice(0, 8)}`,
     "",
     `Cliente: ${data.clienteNome}`,
     `Telefone: ${data.clienteTelefone}`,
-    `Evento: ${formatDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
+    `Evento: ${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
     `Endereço: ${data.endereco}`,
     `Chopeira: ${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}`,
     `Pagamento: ${data.metodoPagamento ?? "—"}`,
     "",
     "Itens:",
-    ...data.itens.map((i) => `  ${i.qtd}× ${i.descricao} — ${formatPrice(i.subtotal)}`),
+    ...data.itens.map((i) => `  ${i.qtd}× ${i.descricao} — ${formatBRL(i.subtotal)}`),
     "",
-    `Subtotal: ${formatPrice(data.subtotal)}`,
+    `Subtotal: ${formatBRL(data.subtotal)}`,
     `Frete: ${freteLine}`,
-    `Total: ${formatPrice(data.total)}`,
+    `Total: ${formatBRL(data.total)}`,
   ]
   if (data.observacoes) lines.push("", `Observações: ${data.observacoes}`)
   lines.push("", `Ver no admin: ${adminUrl}`)
@@ -244,7 +240,7 @@ export const sendNewOrderEmail = async (pedidoId: string) => {
     const clienteNome = cliente?.nome ?? "—"
     const clienteTelefone = formatPhone(cliente?.telefone)
 
-    const subject = `Novo pedido #${pedidoId.slice(0, 8)} — ${formatPrice(pedido.total)} — ${clienteNome}`
+    const subject = `Novo pedido #${pedidoId.slice(0, 8)} — ${formatBRL(pedido.total)} — ${clienteNome}`
 
     const payload = {
       pedidoId,
@@ -298,7 +294,7 @@ const renderCustomerHtml = (data: {
       (i) => `
         <tr>
           <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;">${i.qtd}× ${i.descricao}</td>
-          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;text-align:right;">${formatPrice(i.subtotal)}</td>
+          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;text-align:right;">${formatBRL(i.subtotal)}</td>
         </tr>`
     )
     .join("")
@@ -307,7 +303,7 @@ const renderCustomerHtml = (data: {
     ? `<tr><td colspan="2" style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;line-height:1.5;"><strong>Observações:</strong> ${data.observacoes}</td></tr>`
     : ""
 
-  const freteLine = data.frete > 0 ? formatPrice(data.frete) : "a definir"
+  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
   const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
   const trackingUrl = `${CUSTOMER_BASE_URL}/pedido/${data.pedidoId}`
   const firstName = data.clienteNome.split(" ")[0]
@@ -359,7 +355,7 @@ const renderCustomerHtml = (data: {
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;width:120px;">Evento</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
+                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
               </tr>
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;vertical-align:top;">Endereço</td>
@@ -386,7 +382,7 @@ const renderCustomerHtml = (data: {
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-top:1px solid #eeeeee;">
               <tr>
                 <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Subtotal</td>
-                <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${formatPrice(data.subtotal)}</td>
+                <td style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${formatBRL(data.subtotal)}</td>
               </tr>
               <tr>
                 <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Frete</td>
@@ -394,7 +390,7 @@ const renderCustomerHtml = (data: {
               </tr>
               <tr>
                 <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#1a1a1a;font-weight:bold;">Total</td>
-                <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:20px;color:#d4a017;font-weight:bold;text-align:right;">${formatPrice(data.total)}</td>
+                <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:20px;color:#d4a017;font-weight:bold;text-align:right;">${formatBRL(data.total)}</td>
               </tr>
             </table>
 
@@ -442,7 +438,7 @@ const renderCustomerText = (data: {
   observacoes: string | null
 }) => {
   const trackingUrl = `${CUSTOMER_BASE_URL}/pedido/${data.pedidoId}`
-  const freteLine = data.frete > 0 ? formatPrice(data.frete) : "a definir"
+  const freteLine = data.frete > 0 ? formatBRL(data.frete) : "a definir"
   const pagamentoLabel = data.metodoPagamento === "pix" ? "Pix" : data.metodoPagamento === "cartao" ? "Cartão" : data.metodoPagamento === "dinheiro" ? "Dinheiro" : "—"
   const firstName = data.clienteNome.split(" ")[0]
   const lines = [
@@ -452,17 +448,17 @@ const renderCustomerText = (data: {
     "",
     "Próximo passo: envie seu documento pessoal e comprovante de residência na página do pedido.",
     "",
-    `Evento: ${formatDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
+    `Evento: ${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
     `Endereço: ${data.endereco}`,
     `Chopeira: ${data.tipoChopeira === "eletrica" ? "Elétrica" : "Gelo"}`,
     `Pagamento: ${pagamentoLabel}`,
     "",
     "Itens:",
-    ...data.itens.map((i) => `  ${i.qtd}× ${i.descricao} — ${formatPrice(i.subtotal)}`),
+    ...data.itens.map((i) => `  ${i.qtd}× ${i.descricao} — ${formatBRL(i.subtotal)}`),
     "",
-    `Subtotal: ${formatPrice(data.subtotal)}`,
+    `Subtotal: ${formatBRL(data.subtotal)}`,
     `Frete: ${freteLine}`,
-    `Total: ${formatPrice(data.total)}`,
+    `Total: ${formatBRL(data.total)}`,
   ]
   if (data.observacoes) lines.push("", `Observações: ${data.observacoes}`)
   lines.push("", `Acompanhar pedido: ${trackingUrl}`, "Salve esse link — é o seu comprovante.")

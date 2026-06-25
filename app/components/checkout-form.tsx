@@ -11,6 +11,7 @@ import { isAddressInDeliveryArea } from "@/lib/geo"
 import AddressAutocomplete from "@/components/address-autocomplete"
 import type { AddressData } from "@/components/address-autocomplete"
 import { calculateLine } from "@/lib/pricing"
+import { formatBRL } from "@/lib/format"
 
 type DeliveryConfig = {
   raioKm: number
@@ -22,9 +23,6 @@ type CheckoutFormProps = {
   deliveryConfig: DeliveryConfig
   exclusionZones: { lat: number; lng: number }[][]
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const inputClassName =
   "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 placeholder:text-brand-warm-gray/40"
@@ -260,11 +258,11 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                 <span className="text-brand-gray-light">
                   {item.quantidade}x {item.produto.marca} {item.produto.volume_litros}L
                 </span>
-                <span className="font-medium text-white">{formatPrice(line.total)}</span>
+                <span className="font-medium text-white">{formatBRL(line.total)}</span>
               </div>
               {line.hasPromo && (
                 <p className="text-[11px] text-green-400 mt-0.5">
-                  1º {formatPrice(line.firstUnitPrice)} · 2º+ {formatPrice(line.extraUnitPrice)}
+                  1º {formatBRL(line.firstUnitPrice)} · 2º+ {formatBRL(line.extraUnitPrice)}
                 </p>
               )}
             </div>
@@ -272,12 +270,12 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
           {totalSavings > 0 && (
             <div className="flex justify-between text-sm mt-3 pt-3 border-t border-white/10">
               <span className="text-brand-warm-gray">Promo do 2º barril</span>
-              <span className="text-green-400">- {formatPrice(totalSavings)}</span>
+              <span className="text-green-400">- {formatBRL(totalSavings)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t border-white/10">
             <span className="text-white">Total</span>
-            <span className="font-display text-brand-yellow">{formatPrice(total)}</span>
+            <span className="font-display text-brand-yellow">{formatBRL(total)}</span>
           </div>
           <p className="text-brand-warm-gray text-xs mt-2">O frete sera calculado e informado apos a confirmacao do pedido.</p>
         </motion.div>
@@ -577,7 +575,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
             whileTap={{ scale: 0.97 }}
             className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Enviando..." : `Confirmar Pedido — ${formatPrice(total)}`}
+            {loading ? "Enviando..." : `Confirmar Pedido — ${formatBRL(total)}`}
           </motion.button>
         </motion.form>
       </div>

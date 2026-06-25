@@ -1,4 +1,5 @@
 import type { ChatMsg } from "./bedrock"
+import { formatBRL } from "@/lib/format"
 
 export const AGENTE_FLAG_KEY = "whatsapp_bot_agente_ativo" as const
 export const AGENTE_FAQ_KEY = "whatsapp_bot_agente_faq" as const
@@ -22,8 +23,6 @@ Pagamento: Pix, cartão (crédito/débito) e dinheiro na entrega.
 Cobertura: RJ e Baixada Fluminense. O endereço exato é confirmado na hora do pedido no site.
 Como pedir: pelo site https://www.alfachopp.com.br.`
 
-const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-
 export type CardapioItem = {
   nome: string
   volume_litros: number
@@ -38,8 +37,8 @@ export const formatCardapio = (itens: CardapioItem[]): string => {
   return itens
     .map((i) => {
       const desc = i.descricao ? ` — ${i.descricao}` : ""
-      const segundo = i.preco_segundo_barril != null ? ` (2º barril: ${brl(i.preco_segundo_barril)})` : ""
-      return `- ${i.nome} ${i.volume_litros}L${desc}: ${brl(i.preco_avista)}${segundo}`
+      const segundo = i.preco_segundo_barril != null ? ` (2º barril: ${formatBRL(i.preco_segundo_barril)})` : ""
+      return `- ${i.nome} ${i.volume_litros}L${desc}: ${formatBRL(i.preco_avista)}${segundo}`
     })
     .join("\n")
 }

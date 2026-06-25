@@ -2,7 +2,7 @@
 // Formato "WhatsApp": linhas curtas + itens em lista (•), *negrito* nos rótulos — em vez de um bloco
 // corrido. Função pura/testada; o envio em si fica em notificacoes.ts.
 
-const formatEventDate = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("pt-BR")
+import { formatEventDate } from "@/lib/format"
 
 export const buildConfirmationMessage = (data: {
   clienteNome: string

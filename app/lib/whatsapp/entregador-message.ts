@@ -2,6 +2,8 @@
 // já usa (rótulos sem acento de propósito) e ADICIONA o código do pedido no topo. Função pura/testada;
 // é a mesma string mostrada no modal de despacho E enviada pelo WhatsApp quando o número está conectado.
 
+import { formatEventDate } from "@/lib/format"
+
 export type DispatchItem = { quantidade: number; marca: string; volume: number }
 
 export const buildDispatchText = (data: {
@@ -21,7 +23,7 @@ export const buildDispatchText = (data: {
   itens: DispatchItem[]
 }): string => {
   const itemLines = data.itens.map((i) => `${i.quantidade}x ${i.marca} ${i.volume}L`).join(", ")
-  const dataFormatted = new Date(data.dataEvento + "T00:00:00").toLocaleDateString("pt-BR")
+  const dataFormatted = formatEventDate(data.dataEvento)
   const ec = data.enderecoCompleto
   const enderecoLine = ec
     ? `${ec.rua}, ${ec.numero}${ec.complemento ? ` (${ec.complemento})` : ""}`

@@ -14,15 +14,13 @@ import ConsignadoBanner from "@/components/admin/consignado-banner"
 import EditOrderTrigger from "@/components/admin/edit-order-trigger"
 import EditLog from "@/components/admin/edit-log"
 import { calculateOrderTotals } from "@/lib/pricing"
+import { formatBRL, formatEventDate } from "@/lib/format"
 import { buildDispatchText } from "@/lib/whatsapp/entregador-message"
 import type { Produto } from "@/lib/types"
 
 type Props = {
   params: Promise<{ id: string }>
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 type ItemRow = { quantidade: number; produtos: { marca: string; volume_litros: number } | { marca: string; volume_litros: number }[] | null }
 
@@ -198,7 +196,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-brand-warm-gray">Data</span>
-                  <span className="text-white">{new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")}</span>
+                  <span className="text-white">{formatEventDate(pedido.data_evento)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-brand-warm-gray">Horario</span>
@@ -261,19 +259,19 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                     <span className={item.consignado_status === "devolvido" ? "text-brand-warm-gray line-through" : "text-brand-gray-light"}>
                       {item.quantidade}x {marca} {volume}L{consignTag}
                     </span>
-                    <span className="font-medium text-white">{formatPrice(Number(item.subtotal))}</span>
+                    <span className="font-medium text-white">{formatBRL(Number(item.subtotal))}</span>
                   </div>
                 )
               })}
               <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-brand-warm-gray">Subtotal</span>
-                  <span className="text-white">{formatPrice(pedido.subtotal)}</span>
+                  <span className="text-white">{formatBRL(pedido.subtotal)}</span>
                 </div>
                 {pedido.desconto > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-brand-warm-gray">Desconto</span>
-                    <span className="text-green-400">- {formatPrice(pedido.desconto)}</span>
+                    <span className="text-green-400">- {formatBRL(pedido.desconto)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm items-center">
@@ -293,8 +291,8 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                   <span className="text-white">Total</span>
                   <span className="text-brand-yellow">
                     {totals.hasPendente
-                      ? `${formatPrice(totalMin)} / ${formatPrice(totalMax)}`
-                      : formatPrice(pedido.total)}
+                      ? `${formatBRL(totalMin)} / ${formatBRL(totalMax)}`
+                      : formatBRL(pedido.total)}
                   </span>
                 </div>
                 {totals.hasPendente && (

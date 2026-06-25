@@ -3,15 +3,13 @@
 import Image from "next/image"
 import { motion } from "framer-motion"
 import type { Produto } from "@/lib/types"
+import { formatBRL } from "@/lib/format"
 
 type ProductCardProps = {
   produto: Produto
   onAdd: (produto: Produto) => void
   index?: number
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const ProductCard = ({ produto, onAdd, index = 0 }: ProductCardProps) => (
   <motion.div
@@ -48,11 +46,11 @@ const ProductCard = ({ produto, onAdd, index = 0 }: ProductCardProps) => (
       <h3 className="font-display text-white text-2xl mb-1">{produto.marca}</h3>
       <p className="text-sm text-brand-warm-gray mb-4">Barril {produto.volume_litros}L</p>
       <div className="mt-auto">
-        <p className="font-display text-3xl font-bold text-brand-yellow">{formatPrice(produto.preco_avista)}</p>
+        <p className="font-display text-3xl font-bold text-brand-yellow">{formatBRL(produto.preco_avista)}</p>
         <p className="text-xs text-brand-warm-gray mt-0.5">no pix/dinheiro</p>
         {produto.preco_segundo_barril && produto.preco_segundo_barril < produto.preco_avista && (
           <p className="text-xs text-green-400 mt-1.5 font-medium">
-            2º barril por {formatPrice(produto.preco_segundo_barril)}
+            2º barril por {formatBRL(produto.preco_segundo_barril)}
           </p>
         )}
       </div>
