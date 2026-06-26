@@ -27,16 +27,6 @@ export const verifyDocument = async (clienteId: string, pedidoId: string) => {
   revalidatePedido(pedidoId)
 }
 
-export const getDocumentSignedUrl = async (clienteId: string, tipo: "pessoal" | "residencia") => {
-  await requireAdmin()
-  const serviceClient = createServiceClient()
-  const { data, error } = await serviceClient.storage
-    .from("documentos")
-    .createSignedUrl(`${clienteId}/${tipo}`, 300)
-  if (error) throw error
-  return data.signedUrl
-}
-
 export const getDocumentSignedUrlByPath = async (storagePath: string) => {
   await requireAdmin()
   const serviceClient = createServiceClient()
