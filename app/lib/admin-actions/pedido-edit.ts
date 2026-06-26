@@ -66,27 +66,6 @@ export const createManualOrder = async (input: ManualOrderInput) => {
   const data = parsed.data
   const { supabase, user } = await requireAdmin()
 
-  let clienteId: string
-  if (data.cliente.kind === "existing") {
-    clienteId = data.cliente.id
-  } else {
-    const cpfDigits = data.cliente.cpf?.replace(/\D/g, "") ?? null
-    const { data: newCliente, error: cliErr } = await supabase
-      .from("clientes")
-      .insert({
-        nome: data.cliente.nome,
-        telefone: data.cliente.telefone,
-        cpf: cpfDigits,
-        email: data.cliente.email ?? null,
-      })
-      .select("id")
-      .single()
-    if (cliErr || !newCliente) {
-      throw new Error(`Erro ao criar cliente: ${cliErr?.message ?? "desconhecido"}`)
-    }
-    clienteId = newCliente.id
-  }
-
   const productIds = data.items.map((i) => i.produto_id)
   const { data: produtos, error: produtosErr } = await supabase
     .from("produtos")
@@ -139,12 +118,16 @@ export const createManualOrder = async (input: ManualOrderInput) => {
     0,
   )
 
-  const { data: pedido, error: pedErr } = await supabase
-    .from("pedidos")
-    .insert({
-      cliente_id: clienteId,
-      status: "confirmado",
-      documento_status: "pendente",
+  // Discriminated union is read-only — build explicit payload so CPF is digit-only for new clientes.
+  const clientePayload = data.cliente.kind === "existing"
+    ? data.cliente
+    : { kind: "new" as const, nome: data.cliente.nome, telefone: data.cliente.telefone, cpf: data.cliente.cpf?.replace(/\D/g, "") ?? null, email: data.cliente.email ?? null }
+
+  // Single transactional RPC: cliente (upsert-or-reuse) + pedido + itens + status_log in one shot.
+  // A mid-way failure inside the function rolls back everything — no orphaned clientes.
+  const { data: pedidoId, error: rpcErr } = await supabase.rpc("create_manual_order", {
+    p_cliente: clientePayload,
+    p_pedido: {
       endereco: data.endereco,
       endereco_completo: data.endereco_completo,
       data_evento: data.data_evento,
@@ -158,25 +141,11 @@ export const createManualOrder = async (input: ManualOrderInput) => {
       total,
       metodo_pagamento: data.metodo_pagamento,
       pago: data.pago,
-    })
-    .select("id")
-    .single()
-  if (pedErr || !pedido) throw new Error(`Erro ao criar pedido: ${pedErr?.message ?? "desconhecido"}`)
-
-  const { error: itemsErr } = await supabase
-    .from("pedido_itens")
-    .insert(itemRows.map((r) => ({ ...r, pedido_id: pedido.id })))
-  if (itemsErr) {
-    await supabase.from("pedidos").delete().eq("id", pedido.id)
-    throw new Error(`Erro ao inserir itens: ${itemsErr.message}`)
-  }
-
-  await supabase.from("pedido_status_log").insert({
-    pedido_id: pedido.id,
-    status_anterior: null,
-    status_novo: "confirmado",
-    changed_by: user.id,
+    },
+    p_itens: itemRows,
+    p_user: user.id,
   })
+  if (rpcErr || !pedidoId) throw new Error(`Erro ao criar pedido: ${rpcErr?.message ?? "desconhecido"}`)
 
   revalidatePath("/admin")
   revalidatePath("/admin/pedidos")
@@ -184,10 +153,10 @@ export const createManualOrder = async (input: ManualOrderInput) => {
   // Confirmação ao cliente (mesma do checkout): e-mail (se houver e-mail) + WhatsApp (gated pela
   // flag whatsapp_confirmacao_ativo). Sem o e-mail interno de "novo pedido" — o admin acabou de criar.
   // Via after(): falha de envio nunca quebra a criação do pedido.
-  after(() => sendCustomerOrderConfirmation(pedido.id))
-  after(() => sendCustomerWhatsAppConfirmation(pedido.id))
+  after(() => sendCustomerOrderConfirmation(pedidoId))
+  after(() => sendCustomerWhatsAppConfirmation(pedidoId))
 
-  return { pedidoId: pedido.id }
+  return { pedidoId }
 }
 
 export const settleConsignado = async (pedidoItemId: string, status: "usado" | "devolvido") => {
