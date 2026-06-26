@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
-import { calculateStoredTotals, priceManualOrderLines } from "@/lib/pricing"
+import { calculateStoredTotals, priceManualOrderLines, barrelUnitPrices } from "@/lib/pricing"
 import { LOCKED_EDIT_STATUSES, isFreteLocked } from "@/lib/admin-status"
 import { after } from "next/server"
 import { sendCustomerWhatsAppConfirmation } from "@/lib/whatsapp/notificacoes"
@@ -326,12 +326,10 @@ export const addPedidoItem = async (
     .single()
   if (!produto) throw new Error("Produto nao encontrado")
 
-  const firstUnitPrice = pedido.metodo_pagamento === "cartao" && produto.preco_cartao
-    ? Number(produto.preco_cartao)
-    : Number(produto.preco_avista)
-  const secondUnitPrice = produto.preco_segundo_barril != null
-    ? Number(produto.preco_segundo_barril)
-    : firstUnitPrice
+  const { firstUnitPrice, secondUnitPrice } = barrelUnitPrices(
+    { id: produtoId, preco_avista: Number(produto.preco_avista), preco_cartao: produto.preco_cartao != null ? Number(produto.preco_cartao) : null, preco_segundo_barril: produto.preco_segundo_barril != null ? Number(produto.preco_segundo_barril) : null },
+    pedido.metodo_pagamento === "cartao" ? "cartao" : "pix",
+  )
 
   if (isConsignado) {
     const consignadoQty = Math.max(1, Math.floor(quantidade))

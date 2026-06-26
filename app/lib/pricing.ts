@@ -60,6 +60,11 @@ const unitPricesFor = (produto: ProdutoForPricing, metodoPagamento: PaymentMetho
   return { firstUnitPrice, secondUnitPrice: promoApplies ? segundoBarril! : firstUnitPrice }
 }
 
+// Public wrapper over unitPricesFor — returns the guarded per-barrel prices so callers
+// (like addPedidoItem) don't re-implement the "2º-barril must be cheaper than à vista" rule.
+export const barrelUnitPrices = (produto: ProdutoForPricing, metodoPagamento: PaymentMethod = "pix") =>
+  unitPricesFor(produto, metodoPagamento)
+
 type BarrelWalk = {
   firmSeen: Record<string, number>
   consignadoSeen: Record<string, number>
