@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { calculateLine, getBasePrice, calculateOrderTotals, calculateStoredTotals, priceManualOrderLines } from "./pricing"
+import { barrelUnitPrices } from "./pricing"
 
 const baseProduct = {
   preco_avista: 500,
@@ -261,5 +262,17 @@ describe("priceManualOrderLines", () => {
     )
     expect(priced[0].subtotal).toBe(650)
     expect(priced[1].subtotal).toBe(650)
+  })
+})
+
+describe("barrelUnitPrices (guarded 2º barril)", () => {
+  it("aplica o 2º barril só quando é mais barato que à vista", () => {
+    expect(barrelUnitPrices({ id: "x", preco_avista: 500, preco_cartao: null, preco_segundo_barril: 385 })).toEqual({ firstUnitPrice: 500, secondUnitPrice: 385 })
+  })
+  it("ignora 2º barril >= à vista (trava): segundo cai pro preço cheio", () => {
+    expect(barrelUnitPrices({ id: "x", preco_avista: 500, preco_cartao: null, preco_segundo_barril: 600 })).toEqual({ firstUnitPrice: 500, secondUnitPrice: 500 })
+  })
+  it("usa preco_cartao como base no cartão", () => {
+    expect(barrelUnitPrices({ id: "x", preco_avista: 500, preco_cartao: 530, preco_segundo_barril: 385 }, "cartao")).toEqual({ firstUnitPrice: 530, secondUnitPrice: 385 })
   })
 })

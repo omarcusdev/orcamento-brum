@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { verifyDocument, revertDocumentoVerificacao, getDocumentSignedUrlByPath, getDocumentSignedUrl } from "@/lib/admin-actions"
+import { verifyDocument, revertDocumentoVerificacao, getDocumentSignedUrlByPath } from "@/lib/admin-actions"
 
 type DocumentSectionProps = {
   clienteId: string
@@ -51,7 +51,7 @@ const DocumentSection = ({
     setLoadingResidencia(true)
     setDocError(null)
     try {
-      const url = await getDocumentSignedUrl(clienteId, "residencia")
+      const url = await getDocumentSignedUrlByPath(`${clienteId}/residencia`)
       setResidenciaUrl(url)
     } catch {
       setDocError("Erro ao carregar comprovante de residencia")

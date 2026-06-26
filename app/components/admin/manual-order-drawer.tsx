@@ -8,6 +8,7 @@ import AddressAutocomplete, { type AddressData } from "@/components/address-auto
 import type { Produto } from "@/lib/types"
 import type { ManualOrderInput } from "@/lib/schemas"
 import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
+import { formatBRL } from "@/lib/format"
 import {
   Button,
   Checkbox,
@@ -41,17 +42,15 @@ type Props = {
   produtos: Produto[]
 }
 
-const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-
 const sectionHeaderClass = "text-xs font-semibold uppercase tracking-[0.18em] text-brand-yellow/80 mb-3 pb-1.5 border-b border-white/10"
 
 const describeBarrels = (barrelPrices: number[]) => {
-  if (barrelPrices.length <= 1) return formatCurrency(barrelPrices[0] ?? 0)
+  if (barrelPrices.length <= 1) return formatBRL(barrelPrices[0] ?? 0)
   const [first, ...rest] = barrelPrices
   const allEqual = rest.every((price) => price === first)
   return allEqual
-    ? `${barrelPrices.length}x ${formatCurrency(first)}`
-    : `${formatCurrency(first)} + ${rest.length}x ${formatCurrency(rest[0])}`
+    ? `${barrelPrices.length}x ${formatBRL(first)}`
+    : `${formatBRL(first)} + ${rest.length}x ${formatBRL(rest[0])}`
 }
 
 const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
@@ -424,8 +423,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                         )}
                         <p className="text-xs text-brand-warm-gray">
                           {item.is_consignado
-                            ? `${describeBarrels(calc.barrelPrices)}${item.quantidade > 1 ? ` = ${formatCurrency(calc.subtotal)}` : ""} (consignado)`
-                            : formatCurrency(calc.subtotal)}
+                            ? `${describeBarrels(calc.barrelPrices)}${item.quantidade > 1 ? ` = ${formatBRL(calc.subtotal)}` : ""} (consignado)`
+                            : formatBRL(calc.subtotal)}
                         </p>
                       </div>
                     )
@@ -457,15 +456,15 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                   <div className="bg-brand-dark border border-white/10 rounded-lg p-3 text-sm space-y-1">
                     <div className="flex justify-between text-brand-warm-gray">
                       <span>Subtotal</span>
-                      <span className="tabular-nums">{formatCurrency(totals.subtotalMax)}</span>
+                      <span className="tabular-nums">{formatBRL(totals.subtotalMax)}</span>
                     </div>
                     <div className="flex justify-between text-brand-warm-gray">
                       <span>Frete</span>
-                      <span className="tabular-nums">{formatCurrency(frete)}</span>
+                      <span className="tabular-nums">{formatBRL(frete)}</span>
                     </div>
                     <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
                       <span>Total</span>
-                      <span className="text-brand-yellow tabular-nums">{formatCurrency(total)}</span>
+                      <span className="text-brand-yellow tabular-nums">{formatBRL(total)}</span>
                     </div>
                     {hasConsignado && (
                       <p className="text-[11px] text-brand-warm-gray pt-1">

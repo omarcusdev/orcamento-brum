@@ -6,6 +6,7 @@ import { RefreshCcw, X } from "lucide-react"
 import { updatePedido, addPedidoItem, removePedidoItem, updatePedidoItem } from "@/lib/admin-actions"
 import AddressAutocomplete, { type AddressData } from "@/components/address-autocomplete"
 import { calculateOrderTotals } from "@/lib/pricing"
+import { formatBRL } from "@/lib/format"
 import {
   Button,
   Checkbox,
@@ -64,8 +65,6 @@ type Props = {
   items: EditableItem[]
   produtos: Produto[]
 }
-
-const formatCurrency = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 const sectionHeaderClass = "text-xs font-semibold uppercase tracking-[0.18em] text-brand-yellow/80 mb-3 pb-1.5 border-b border-white/10"
 
@@ -404,23 +403,23 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
                     <div className="flex justify-between text-brand-warm-gray">
                       <span>Subtotal {liveTotals.hasPendente ? "(usado/total)" : ""}</span>
                       <span className="tabular-nums">
-                        {liveTotals.hasPendente ? `${formatCurrency(liveTotals.subtotalMin)} / ${formatCurrency(liveTotals.subtotalMax)}` : formatCurrency(liveTotals.subtotalMax)}
+                        {liveTotals.hasPendente ? `${formatBRL(liveTotals.subtotalMin)} / ${formatBRL(liveTotals.subtotalMax)}` : formatBRL(liveTotals.subtotalMax)}
                       </span>
                     </div>
                     {desconto > 0 && (
                       <div className="flex justify-between text-brand-warm-gray">
                         <span>Desconto</span>
-                        <span className="tabular-nums">−{formatCurrency(desconto)}</span>
+                        <span className="tabular-nums">−{formatBRL(desconto)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-brand-warm-gray">
                       <span>Frete</span>
-                      <span className="tabular-nums">{formatCurrency(frete)}</span>
+                      <span className="tabular-nums">{formatBRL(frete)}</span>
                     </div>
                     <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
                       <span>Total</span>
                       <span className="text-brand-yellow tabular-nums">
-                        {liveTotals.hasPendente ? `${formatCurrency(liveTotals.totalMin)} / ${formatCurrency(liveTotals.totalMax)}` : formatCurrency(liveTotals.totalMax)}
+                        {liveTotals.hasPendente ? `${formatBRL(liveTotals.totalMin)} / ${formatBRL(liveTotals.totalMax)}` : formatBRL(liveTotals.totalMax)}
                       </span>
                     </div>
                   </div>
@@ -515,7 +514,7 @@ const ItemRow = ({
           <MoneyInput value={preco} onChange={setPreco} onBlur={commitPreco} min={0} disabled={busy || disabled} aria-label="Preço unitário" />
         </div>
         <span className="text-[11px] text-brand-warm-gray">/un</span>
-        <span className="text-white font-semibold tabular-nums">{formatCurrency(Number(item.subtotal))}</span>
+        <span className="text-white font-semibold tabular-nums">{formatBRL(Number(item.subtotal))}</span>
       </div>
     </li>
   )

@@ -3,26 +3,8 @@ import FadeIn from "@/components/admin/fade-in"
 import OrdersList from "@/components/admin/orders-list"
 import NewOrderTrigger from "@/components/admin/new-order-trigger"
 import { archiveRecolhidoOrders } from "@/lib/admin-actions"
+import { PEDIDO_LIST_SELECT, normalizeOrders } from "@/lib/admin-pedidos"
 import type { Produto } from "@/lib/types"
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const normalizeOrders = (raw: any[]) =>
-  raw.map((row: Record<string, any>) => ({
-    ...row,
-    clientes: Array.isArray(row.clientes) ? row.clientes[0] : row.clientes,
-  })) as {
-    id: string
-    status: string
-    documento_status: string
-    total: number
-    data_evento: string
-    horario_evento: string
-    endereco: string
-    metodo_pagamento: string | null
-    created_at: string
-    arquivado_em: string | null
-    clientes: { nome: string; telefone: string }
-  }[]
 
 const PedidosPage = async () => {
   await archiveRecolhidoOrders()
@@ -31,7 +13,7 @@ const PedidosPage = async () => {
   const [{ data: rawOrders }, { data: produtos }] = await Promise.all([
     supabase
       .from("pedidos")
-      .select("id, status, documento_status, total, data_evento, horario_evento, endereco, metodo_pagamento, created_at, arquivado_em, clientes(nome, telefone)")
+      .select(PEDIDO_LIST_SELECT)
       .order("created_at", { ascending: false }),
     supabase
       .from("produtos")

@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
 import { archiveOrder, unarchiveOrder } from "@/lib/admin-actions"
+import { formatBRL, formatEventDate } from "@/lib/format"
 
 type OrderCardProps = {
   pedido: {
@@ -24,14 +25,13 @@ type OrderCardProps = {
   index?: number
 }
 
+const metodoLabel: Record<string, string> = { pix: "Pix", cartao: "Cartão", dinheiro: "Dinheiro" }
+
 const docStatusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Docs pendentes", className: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30" },
   enviado: { label: "Docs enviados", className: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
   verificado: { label: "Docs verificados", className: "text-green-400 bg-green-400/10 border-green-400/30" },
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const formatRecebidoEm = (isoDate: string) => {
   const created = new Date(isoDate)
@@ -94,15 +94,20 @@ const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
         </div>
         <div className="flex items-center justify-between text-sm text-brand-gray-light">
           <span>
-            {new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")} as {pedido.horario_evento.slice(0, 5)}
+            {formatEventDate(pedido.data_evento)} as {pedido.horario_evento.slice(0, 5)}
           </span>
-          <span className="font-bold text-brand-yellow">{formatPrice(pedido.total)}</span>
+          <span className="font-bold text-brand-yellow">{formatBRL(pedido.total)}</span>
         </div>
         <p className="text-xs text-brand-warm-gray mt-1 truncate">{pedido.endereco}</p>
         <div className="mt-2 flex items-center gap-2">
           <span className={`text-xs px-2 py-0.5 rounded-full border ${docStatusConfig[pedido.documento_status]?.className ?? ""}`}>
             {docStatusConfig[pedido.documento_status]?.label ?? pedido.documento_status}
           </span>
+          {pedido.metodo_pagamento && (
+            <span className="text-xs px-2 py-0.5 rounded-full border border-white/15 text-brand-gray-light bg-white/5">
+              {metodoLabel[pedido.metodo_pagamento] ?? pedido.metodo_pagamento}
+            </span>
+          )}
           {arquivado && (
             <span className="text-xs px-2 py-0.5 rounded-full border border-white/15 text-brand-warm-gray bg-white/5">
               Arquivado

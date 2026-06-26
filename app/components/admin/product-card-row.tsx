@@ -5,6 +5,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { motion } from "framer-motion"
 import type { Produto } from "@/lib/types"
+import { formatBRL } from "@/lib/format"
 
 type ProductCardRowProps = {
   produto: Produto
@@ -13,9 +14,6 @@ type ProductCardRowProps = {
   onEdit: () => void
   onDelete: () => void
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const ProductCardRow = ({ produto, isToggling, onToggle, onEdit, onDelete }: ProductCardRowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: produto.id })
@@ -80,11 +78,11 @@ const ProductCardRow = ({ produto, isToggling, onToggle, onEdit, onDelete }: Pro
             </span>
           </div>
           <p className="text-sm text-brand-warm-gray mt-1">
-            {formatPrice(produto.preco_avista)}
-            {produto.preco_cartao && ` / ${formatPrice(produto.preco_cartao)} cartao`}
+            {formatBRL(produto.preco_avista)}
+            {produto.preco_cartao && ` / ${formatBRL(produto.preco_cartao)} cartao`}
             {produto.preco_segundo_barril && (
               <span className="text-green-400">
-                {" · 2º "}{formatPrice(produto.preco_segundo_barril)}
+                {" · 2º "}{formatBRL(produto.preco_segundo_barril)}
               </span>
             )}
           </p>
