@@ -7,7 +7,6 @@ import {
   MEDIA_PLACEHOLDER,
   DEFAULT_AGENTE_FAQ,
   type CardapioItem,
-  type ThreadMsg,
 } from "./bot-agente-kb"
 
 describe("agenteAtivo (fail-closed: só 'true' liga)", () => {
