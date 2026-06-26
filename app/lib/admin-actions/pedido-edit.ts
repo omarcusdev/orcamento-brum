@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
 import { calculateStoredTotals, priceManualOrderLines } from "@/lib/pricing"
-import { LOCKED_EDIT_STATUSES } from "@/lib/admin-status"
+import { LOCKED_EDIT_STATUSES, isFreteLocked } from "@/lib/admin-status"
 import { after } from "next/server"
 import { sendCustomerWhatsAppConfirmation } from "@/lib/whatsapp/notificacoes"
 import { sendCustomerOrderConfirmation } from "@/lib/email"
@@ -23,8 +23,7 @@ export const updateFrete = async (pedidoId: string, frete: number) => {
 
   if (!pedido) throw new Error("Pedido nao encontrado")
 
-  const lockedStatuses = ["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"]
-  if (lockedStatuses.includes(pedido.status)) {
+  if (isFreteLocked(pedido.status)) {
     throw new Error("Frete nao pode ser alterado apos despacho")
   }
 

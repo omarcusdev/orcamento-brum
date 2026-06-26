@@ -13,23 +13,15 @@ import ArchiveToggle from "@/components/admin/archive-toggle"
 import ConsignadoBanner from "@/components/admin/consignado-banner"
 import EditOrderTrigger from "@/components/admin/edit-order-trigger"
 import EditLog from "@/components/admin/edit-log"
-import { calculateOrderTotals } from "@/lib/pricing"
 import { formatBRL, formatEventDate } from "@/lib/format"
 import { buildDispatchText } from "@/lib/whatsapp/entregador-message"
+import { LOCKED_EDIT_STATUSES, isFreteLocked } from "@/lib/admin-status"
+import { orderDisplayTotals, toDispatchItens } from "@/lib/admin-ordem-detail"
 import type { Produto } from "@/lib/types"
 
 type Props = {
   params: Promise<{ id: string }>
 }
-
-type ItemRow = { quantidade: number; produtos: { marca: string; volume_litros: number } | { marca: string; volume_litros: number }[] | null }
-
-// Mapeia as linhas cruas do Supabase (produtos vem objeto OU array, dependendo do join) p/ o builder.
-const toDispatchItens = (items: ItemRow[]) =>
-  (items ?? []).map((item) => {
-    const produto = Array.isArray(item.produtos) ? item.produtos[0] : item.produtos
-    return { quantidade: item.quantidade, marca: produto?.marca ?? "", volume: produto?.volume_litros ?? 0 }
-  })
 
 const AdminOrderDetailPage = async ({ params }: Props) => {
   const { id } = await params
@@ -82,12 +74,10 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
     is_consignado: !!i.is_consignado,
     consignado_status: i.consignado_status as string | null,
   }))
-  const totals = calculateOrderTotals(itemsForTotals)
-  const totalMin = totals.subtotalMin - (pedido.desconto ?? 0) + (pedido.frete ?? 0)
-  const totalMax = totals.subtotalMax - (pedido.desconto ?? 0) + (pedido.frete ?? 0)
+  const totals = orderDisplayTotals(itemsForTotals, pedido.desconto ?? 0, pedido.frete ?? 0)
   const consignadosPendentes = (items ?? []).filter((i: any) => i.is_consignado && i.consignado_status === "pendente")
 
-  const lockedForEdit = ["entregue", "pago", "recolhido", "cancelado"].includes(pedido.status)
+  const lockedForEdit = LOCKED_EDIT_STATUSES.includes(pedido.status)
   const editablePedido = {
     id: pedido.id,
     status: pedido.status,
@@ -132,7 +122,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
         </div>
       </FadeIn>
 
-      {pedido.frete === 0 && !["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"].includes(pedido.status) && (
+      {pedido.frete === 0 && !isFreteLocked(pedido.status) && (
         <FreteBanner />
       )}
 
@@ -277,21 +267,21 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
                 <div className="flex justify-between text-sm items-center">
                   <div>
                     <span className="text-brand-yellow font-medium">Frete</span>
-                    {pedido.frete === 0 && !["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"].includes(pedido.status) && (
+                    {pedido.frete === 0 && !isFreteLocked(pedido.status) && (
                       <span className="text-amber-400 text-xs ml-2">← definir valor</span>
                     )}
                   </div>
                   <FreteInput
                     pedidoId={pedido.id}
                     initialFrete={pedido.frete}
-                    readOnly={["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"].includes(pedido.status)}
+                    readOnly={isFreteLocked(pedido.status)}
                   />
                 </div>
                 <div className="flex justify-between font-bold pt-2 border-t border-white/10">
                   <span className="text-white">Total</span>
                   <span className="text-brand-yellow">
                     {totals.hasPendente
-                      ? `${formatBRL(totalMin)} / ${formatBRL(totalMax)}`
+                      ? `${formatBRL(totals.totalMin)} / ${formatBRL(totals.totalMax)}`
                       : formatBRL(pedido.total)}
                   </span>
                 </div>
