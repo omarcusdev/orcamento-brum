@@ -7,6 +7,7 @@ import { after } from "next/server"
 import { sendCustomerWhatsAppStatusUpdate } from "@/lib/whatsapp/notificacoes"
 import { sendWhatsAppMessage } from "@/lib/whatsapp"
 import { fetchConnection } from "@/lib/whatsapp/control"
+import { revalidatePedido } from "./revalidate"
 
 const statusOrder = STATUS_FLOW_ORDER
 
@@ -50,8 +51,7 @@ export const advanceOrderStatus = async (pedidoId: string, currentStatus: string
   if (error) throw error
   if (count === 0) throw new Error("Status do pedido foi alterado por outro usuario")
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 
   after(() => sendCustomerWhatsAppStatusUpdate(pedidoId, nextStatus))
 
@@ -68,8 +68,7 @@ export const cancelOrder = async (pedidoId: string) => {
 
   if (error) throw error
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 
   after(() => sendCustomerWhatsAppStatusUpdate(pedidoId, "cancelado"))
 }
@@ -85,8 +84,7 @@ export const archiveOrder = async (pedidoId: string) => {
 
   if (error) throw new Error(`Falha ao arquivar pedido: ${error.message}`)
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 }
 
 export const unarchiveOrder = async (pedidoId: string) => {
@@ -99,8 +97,7 @@ export const unarchiveOrder = async (pedidoId: string) => {
 
   if (error) throw new Error(`Falha ao desarquivar pedido: ${error.message}`)
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 }
 
 // Rede de seguranca: arquiva qualquer pedido "recolhido" que ainda esteja na esteira
@@ -151,8 +148,7 @@ export const dispatchToEntregador = async (
 
   if (error) throw error
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 
   // Se o WhatsApp estiver conectado, notifica o entregador direto (substitui o copiar-e-colar
   // manual). Best-effort: o despacho já foi efetivado — falha de conexão/envio só volta

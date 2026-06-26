@@ -3,6 +3,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { createServiceClient } from "@/lib/supabase/service"
 import { revalidatePath } from "next/cache"
+import { revalidatePedido } from "./revalidate"
 
 export const verifyDocument = async (clienteId: string, pedidoId: string) => {
   const { supabase, user } = await requireAdmin()
@@ -23,8 +24,7 @@ export const verifyDocument = async (clienteId: string, pedidoId: string) => {
     .eq("id", pedidoId)
   if (pedidoError) throw pedidoError
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 }
 
 export const getDocumentSignedUrl = async (clienteId: string, tipo: "pessoal" | "residencia") => {

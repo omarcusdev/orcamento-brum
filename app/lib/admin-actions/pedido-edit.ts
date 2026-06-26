@@ -8,6 +8,7 @@ import { LOCKED_EDIT_STATUSES } from "@/lib/admin-status"
 import { after } from "next/server"
 import { sendCustomerWhatsAppConfirmation } from "@/lib/whatsapp/notificacoes"
 import { sendCustomerOrderConfirmation } from "@/lib/email"
+import { revalidatePedido } from "./revalidate"
 
 export const updateFrete = async (pedidoId: string, frete: number) => {
   const { supabase } = await requireAdmin()
@@ -36,8 +37,7 @@ export const updateFrete = async (pedidoId: string, frete: number) => {
 
   if (error) throw error
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 }
 
 export const searchClientes = async (query: string) => {
@@ -209,32 +209,9 @@ export const settleConsignado = async (pedidoItemId: string, status: "usado" | "
     .eq("id", pedidoItemId)
   if (updateErr) throw updateErr
 
-  const { data: allItems } = await supabase
-    .from("pedido_itens")
-    .select("subtotal, is_consignado, consignado_status")
-    .eq("pedido_id", item.pedido_id)
-
-  const { data: pedido } = await supabase
-    .from("pedidos")
-    .select("frete, desconto")
-    .eq("id", item.pedido_id)
-    .single()
-
-  // Valor cheio: abate só os barris DEVOLVIDOS; usados e pendentes seguem somando (coerente c/ a criação).
-  const { subtotal: newSubtotal, total: newTotal } = calculateStoredTotals(
-    (allItems ?? []).map((i) => ({
-      subtotal: Number(i.subtotal),
-      is_consignado: i.is_consignado,
-      consignado_status: i.consignado_status,
-    })),
-    Number(pedido?.frete ?? 0),
-    Number(pedido?.desconto ?? 0),
-  )
-
-  await supabase
-    .from("pedidos")
-    .update({ subtotal: newSubtotal, total: newTotal, updated_at: new Date().toISOString() })
-    .eq("id", item.pedido_id)
+  // Recalcula o total armazenado (valor cheio: abate só os barris DEVOLVIDOS) — mesma regra
+  // da criação e da edição de itens.
+  await recalcPedidoTotals(item.pedido_id)
 
   await supabase.from("pedido_edit_log").insert({
     pedido_id: item.pedido_id,
@@ -244,8 +221,7 @@ export const settleConsignado = async (pedidoItemId: string, status: "usado" | "
     changed_by: user.id,
   })
 
-  revalidatePath(`/admin/pedidos/${item.pedido_id}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(item.pedido_id)
 }
 
 export const updatePedido = async (pedidoId: string, input: UpdatePedidoInput) => {
@@ -298,8 +274,7 @@ export const updatePedido = async (pedidoId: string, input: UpdatePedidoInput) =
     diffs.map((d) => ({ ...d, pedido_id: pedidoId, changed_by: user.id })),
   )
 
-  revalidatePath(`/admin/pedidos/${pedidoId}`)
-  revalidatePath("/admin/pedidos")
+  revalidatePedido(pedidoId)
 }
 
 const recalcPedidoTotals = async (pedidoId: string) => {
