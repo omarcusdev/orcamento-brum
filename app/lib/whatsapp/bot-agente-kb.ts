@@ -45,10 +45,6 @@ export const formatCardapio = (itens: CardapioItem[]): string => {
 
 export type ThreadMsg = { direcao: "entrada" | "saida"; corpo: string }
 
-// Histórico recente -> texto "Cliente:/Atendente:" em ordem cronológica (thread vazia -> "").
-export const formatHistorico = (thread: ThreadMsg[]): string =>
-  thread.map((m) => `${m.direcao === "entrada" ? "Cliente" : "Atendente"}: ${m.corpo}`).join("\n")
-
 // Histórico cru -> turnos reais user/assistant pro Bedrock, em vez de um único bloco de texto.
 // Mandar turnos reais dá ao modelo memória do que ele mesmo já respondeu, o que reduz repetição
 // e re-saudações. Sanitiza para as exigências da API Anthropic/Bedrock: o primeiro turno tem que

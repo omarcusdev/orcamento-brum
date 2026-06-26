@@ -37,15 +37,6 @@ export const calculateLine = (
   }
 }
 
-export const calculateLineUnitPrice = (
-  produto: Pick<Produto, "preco_avista" | "preco_cartao" | "preco_segundo_barril">,
-  quantidade: number,
-  metodoPagamento: PaymentMethod = "pix",
-) => {
-  const { total } = calculateLine(produto, quantidade, metodoPagamento)
-  return quantidade > 0 ? total / quantidade : 0
-}
-
 export type ManualLineInput = {
   produto_id: string
   quantidade: number

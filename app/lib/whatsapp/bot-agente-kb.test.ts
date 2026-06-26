@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest"
 import {
   agenteAtivo,
   formatCardapio,
-  formatHistorico,
   buildSystemPrompt,
   threadToMessages,
   MEDIA_PLACEHOLDER,
@@ -40,20 +39,6 @@ describe("formatCardapio", () => {
   })
   it("lista vazia -> aviso curto, não quebra", () => {
     expect(formatCardapio([])).toMatch(/sem itens|indispon/i)
-  })
-})
-
-describe("formatHistorico", () => {
-  it("mapeia entrada->Cliente e saida->Atendente em ordem", () => {
-    const thread: ThreadMsg[] = [
-      { direcao: "entrada", corpo: "oi" },
-      { direcao: "saida", corpo: "Olá! 🍻" },
-      { direcao: "entrada", corpo: "qual o horário?" },
-    ]
-    expect(formatHistorico(thread)).toBe("Cliente: oi\nAtendente: Olá! 🍻\nCliente: qual o horário?")
-  })
-  it("thread vazia -> string vazia", () => {
-    expect(formatHistorico([])).toBe("")
   })
 })
 
