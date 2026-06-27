@@ -1,15 +1,17 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { RefreshCcw, X } from "lucide-react"
+import { X } from "lucide-react"
 import { updatePedido, addPedidoItem, removePedidoItem, updatePedidoItem } from "@/lib/admin-actions"
-import AddressAutocomplete, { type AddressData } from "@/components/address-autocomplete"
+import { type AddressData } from "@/components/address-autocomplete"
+import { addressDataToEnderecoCompleto } from "@/lib/address"
+import { AddressSearchToggle } from "@/components/admin/address-search-toggle"
 import { calculateOrderTotals } from "@/lib/pricing"
 import { formatBRL } from "@/lib/format"
 import {
   Button,
   Checkbox,
+  Drawer,
   Input,
   MoneyInput,
   NumberStepper,
@@ -90,7 +92,6 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
   const [horarioEvento, setHorarioEvento] = useState(original.horario_evento)
   const [endereco, setEndereco] = useState(original.endereco)
   const [enderecoCompleto, setEnderecoCompleto] = useState(original.endereco_completo)
-  const [showAddressAutocomplete, setShowAddressAutocomplete] = useState(false)
   const [observacoes, setObservacoes] = useState(original.observacoes)
   const [rampasEscadas, setRampasEscadas] = useState(original.rampas_escadas)
   const [tipoChopeira, setTipoChopeira] = useState<"gelo" | "eletrica">(original.tipo_chopeira)
@@ -139,18 +140,7 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
 
   const handleAddressSelect = (addr: AddressData) => {
     setEndereco(addr.formatted)
-    setEnderecoCompleto({
-      rua: addr.rua,
-      numero: addr.numero,
-      bairro: addr.bairro,
-      cidade: addr.cidade,
-      estado: addr.estado,
-      cep: addr.cep,
-      complemento: enderecoCompleto?.complemento ?? "",
-      lat: addr.lat,
-      lng: addr.lng,
-    })
-    setShowAddressAutocomplete(false)
+    setEnderecoCompleto(addressDataToEnderecoCompleto(addr, enderecoCompleto?.complemento ?? ""))
   }
 
   const handleDiscard = () => {
@@ -165,7 +155,6 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
     setDesconto(original.desconto)
     setMetodoPagamento(original.metodo_pagamento)
     setPago(original.pago)
-    setShowAddressAutocomplete(false)
     setError(null)
   }
 
@@ -239,208 +228,166 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-          onClick={() => !saving && onClose()}
-        >
-          <motion.aside
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "tween", duration: 0.25 }}
-            onClick={(e) => e.stopPropagation()}
-            className="absolute right-0 top-0 h-full w-full max-w-xl bg-brand-surface border-l border-white/10 flex flex-col"
-          >
-            <header className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <h2 className="font-display text-xl font-bold text-white tracking-wide">EDITAR PEDIDO</h2>
-                {hasChanges && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-yellow/15 text-brand-yellow border border-brand-yellow/30">
-                    {changedFields.length} {changedFields.length === 1 ? "alteração" : "alterações"}
-                  </span>
-                )}
+    <Drawer
+      open={open}
+      onClose={onClose}
+      closeDisabled={saving}
+      title="EDITAR PEDIDO"
+      headerExtra={
+        hasChanges ? (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-yellow/15 text-brand-yellow border border-brand-yellow/30">
+            {changedFields.length} {changedFields.length === 1 ? "alteração" : "alterações"}
+          </span>
+        ) : null
+      }
+      footer={
+        <>
+          <Button variant="secondary" onClick={handleDiscard} disabled={saving || !hasChanges} className="flex-1">
+            Descartar
+          </Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving || !hasChanges} className="flex-[2]">
+            {saving ? "Salvando..." : hasChanges ? `Salvar (${changedFields.length})` : "Sem alterações"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-6">
+        <section>
+          <h3 className={sectionHeaderClass}>Evento</h3>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={fieldLabelClass}>Data</label>
+                <Input type="date" value={dataEvento} onChange={(e) => setDataEvento(e.target.value)} />
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={saving}
-                aria-label="Fechar"
-                className="text-brand-warm-gray hover:text-white disabled:opacity-50 cursor-pointer p-1 rounded hover:bg-white/5 transition"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </header>
-
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-              <section>
-                <h3 className={sectionHeaderClass}>Evento</h3>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className={fieldLabelClass}>Data</label>
-                      <Input type="date" value={dataEvento} onChange={(e) => setDataEvento(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className={fieldLabelClass}>Horário</label>
-                      <Input type="time" value={horarioEvento} onChange={(e) => setHorarioEvento(e.target.value)} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={fieldLabelClass}>Chopeira</label>
-                    <Segmented
-                      value={tipoChopeira}
-                      onChange={setTipoChopeira}
-                      ariaLabel="Tipo de chopeira"
-                      options={[
-                        { value: "gelo", label: "Gelo" },
-                        { value: "eletrica", label: "Elétrica" },
-                      ]}
-                    />
-                  </div>
-                  <Textarea placeholder="Rampas / escadas (opcional)" value={rampasEscadas} onChange={(e) => setRampasEscadas(e.target.value)} className="h-16" />
-                  <Textarea placeholder="Observações (opcional)" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className="h-16" />
-                </div>
-              </section>
-
-              <section>
-                <h3 className={sectionHeaderClass}>Endereço</h3>
-                <div className="space-y-2">
-                  <Input
-                    type="text"
-                    value={endereco}
-                    onChange={(e) => setEndereco(e.target.value)}
-                    placeholder="Rua, número, bairro..."
-                  />
-                  {showAddressAutocomplete ? (
-                    <div className="space-y-2 bg-brand-dark/50 border border-brand-yellow/20 rounded-lg p-2">
-                      <AddressAutocomplete onAddressSelect={handleAddressSelect} inputClassName="w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 text-sm text-white placeholder-brand-warm-gray/70 focus:border-brand-yellow/40 focus:ring-1 focus:ring-brand-yellow/30 outline-none" />
-                      <Button variant="ghost" size="sm" onClick={() => setShowAddressAutocomplete(false)}>
-                        Cancelar busca
-                      </Button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddressAutocomplete(true)}
-                      className="text-[11px] text-brand-yellow/90 hover:text-brand-yellow uppercase tracking-wider cursor-pointer inline-flex items-center gap-1.5"
-                    >
-                      <RefreshCcw className="h-3 w-3" />
-                      Trocar via Google
-                    </button>
-                  )}
-                </div>
-              </section>
-
-              <section>
-                <h3 className={sectionHeaderClass}>Itens</h3>
-                <ul className="space-y-2">
-                  {items.map((item) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      busy={itemBusy === item.id}
-                      disabled={itemBusy !== null && itemBusy !== item.id}
-                      onUpdate={(patch) => handleUpdateItem(item.id, patch)}
-                      onRemove={() => handleRemoveItem(item.id)}
-                    />
-                  ))}
-                </ul>
-
-                <div className="mt-3 bg-brand-dark border border-white/10 rounded-lg p-3 space-y-2.5">
-                  <p className="text-[11px] text-brand-warm-gray uppercase tracking-wider">Adicionar item</p>
-                  <div className="flex gap-2">
-                    <Select value={newItemProdutoId} onChange={(e) => setNewItemProdutoId(e.target.value)} className="flex-1">
-                      {produtos.map((p) => <option key={p.id} value={p.id}>{p.marca} {p.volume_litros}L</option>)}
-                    </Select>
-                    <NumberStepper value={newItemQty} onChange={setNewItemQty} min={1} />
-                  </div>
-                  <Checkbox
-                    checked={newItemConsignado}
-                    onChange={(e) => setNewItemConsignado(e.target.checked)}
-                    label="Marcar como consignado (paga só se usar)"
-                  />
-                  <Button
-                    variant="ghost-yellow"
-                    fullWidth
-                    onClick={handleAddItem}
-                    disabled={itemBusy !== null || !newItemProdutoId}
-                  >
-                    {itemBusy === "add" ? "Adicionando..." : "+ Adicionar item"}
-                  </Button>
-                </div>
-              </section>
-
-              <section>
-                <h3 className={sectionHeaderClass}>Pagamento</h3>
-                <div className="space-y-3">
-                  <Segmented
-                    value={metodoPagamento}
-                    onChange={setMetodoPagamento}
-                    ariaLabel="Método de pagamento"
-                    options={[
-                      { value: "pix", label: "PIX" },
-                      { value: "cartao", label: "Cartão" },
-                      { value: "dinheiro", label: "Dinheiro" },
-                    ]}
-                  />
-                  <Checkbox checked={pago} onChange={(e) => setPago(e.target.checked)} label="Cliente já pagou" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className={fieldLabelClass}>Frete</label>
-                      <MoneyInput value={frete} onChange={setFrete} min={0} aria-label="Frete" />
-                    </div>
-                    <div>
-                      <label className={fieldLabelClass}>Desconto</label>
-                      <MoneyInput value={desconto} onChange={setDesconto} min={0} aria-label="Desconto" />
-                    </div>
-                  </div>
-                  <div className="bg-brand-dark border border-white/10 rounded-lg p-3 text-sm space-y-1">
-                    <div className="flex justify-between text-brand-warm-gray">
-                      <span>Subtotal {liveTotals.hasPendente ? "(usado/total)" : ""}</span>
-                      <span className="tabular-nums">
-                        {liveTotals.hasPendente ? `${formatBRL(liveTotals.subtotalMin)} / ${formatBRL(liveTotals.subtotalMax)}` : formatBRL(liveTotals.subtotalMax)}
-                      </span>
-                    </div>
-                    {desconto > 0 && (
-                      <div className="flex justify-between text-brand-warm-gray">
-                        <span>Desconto</span>
-                        <span className="tabular-nums">−{formatBRL(desconto)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-brand-warm-gray">
-                      <span>Frete</span>
-                      <span className="tabular-nums">{formatBRL(frete)}</span>
-                    </div>
-                    <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
-                      <span>Total</span>
-                      <span className="text-brand-yellow tabular-nums">
-                        {liveTotals.hasPendente ? `${formatBRL(liveTotals.totalMin)} / ${formatBRL(liveTotals.totalMax)}` : formatBRL(liveTotals.totalMax)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{error}</p>}
+              <div>
+                <label className={fieldLabelClass}>Horário</label>
+                <Input type="time" value={horarioEvento} onChange={(e) => setHorarioEvento(e.target.value)} />
+              </div>
             </div>
+            <div>
+              <label className={fieldLabelClass}>Chopeira</label>
+              <Segmented
+                value={tipoChopeira}
+                onChange={setTipoChopeira}
+                ariaLabel="Tipo de chopeira"
+                options={[
+                  { value: "gelo", label: "Gelo" },
+                  { value: "eletrica", label: "Elétrica" },
+                ]}
+              />
+            </div>
+            <Textarea placeholder="Rampas / escadas (opcional)" value={rampasEscadas} onChange={(e) => setRampasEscadas(e.target.value)} className="h-16" />
+            <Textarea placeholder="Observações (opcional)" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className="h-16" />
+          </div>
+        </section>
 
-            <footer className="px-6 py-4 border-t border-white/10 flex gap-2 bg-brand-surface">
-              <Button variant="secondary" onClick={handleDiscard} disabled={saving || !hasChanges} className="flex-1">
-                Descartar
-              </Button>
-              <Button variant="primary" onClick={handleSave} disabled={saving || !hasChanges} className="flex-[2]">
-                {saving ? "Salvando..." : hasChanges ? `Salvar (${changedFields.length})` : "Sem alterações"}
-              </Button>
-            </footer>
-          </motion.aside>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        <section>
+          <h3 className={sectionHeaderClass}>Endereço</h3>
+          <div className="space-y-2">
+            <Input
+              type="text"
+              value={endereco}
+              onChange={(e) => setEndereco(e.target.value)}
+              placeholder="Rua, número, bairro..."
+            />
+            <AddressSearchToggle onSelect={handleAddressSelect} openLabel="Trocar via Google" />
+          </div>
+        </section>
+
+        <section>
+          <h3 className={sectionHeaderClass}>Itens</h3>
+          <ul className="space-y-2">
+            {items.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                busy={itemBusy === item.id}
+                disabled={itemBusy !== null && itemBusy !== item.id}
+                onUpdate={(patch) => handleUpdateItem(item.id, patch)}
+                onRemove={() => handleRemoveItem(item.id)}
+              />
+            ))}
+          </ul>
+
+          <div className="mt-3 bg-brand-dark border border-white/10 rounded-lg p-3 space-y-2.5">
+            <p className="text-[11px] text-brand-warm-gray uppercase tracking-wider">Adicionar item</p>
+            <div className="flex gap-2">
+              <Select value={newItemProdutoId} onChange={(e) => setNewItemProdutoId(e.target.value)} className="flex-1">
+                {produtos.map((p) => <option key={p.id} value={p.id}>{p.marca} {p.volume_litros}L</option>)}
+              </Select>
+              <NumberStepper value={newItemQty} onChange={setNewItemQty} min={1} />
+            </div>
+            <Checkbox
+              checked={newItemConsignado}
+              onChange={(e) => setNewItemConsignado(e.target.checked)}
+              label="Marcar como consignado (paga só se usar)"
+            />
+            <Button
+              variant="ghost-yellow"
+              fullWidth
+              onClick={handleAddItem}
+              disabled={itemBusy !== null || !newItemProdutoId}
+            >
+              {itemBusy === "add" ? "Adicionando..." : "+ Adicionar item"}
+            </Button>
+          </div>
+        </section>
+
+        <section>
+          <h3 className={sectionHeaderClass}>Pagamento</h3>
+          <div className="space-y-3">
+            <Segmented
+              value={metodoPagamento}
+              onChange={setMetodoPagamento}
+              ariaLabel="Método de pagamento"
+              options={[
+                { value: "pix", label: "PIX" },
+                { value: "cartao", label: "Cartão" },
+                { value: "dinheiro", label: "Dinheiro" },
+              ]}
+            />
+            <Checkbox checked={pago} onChange={(e) => setPago(e.target.checked)} label="Cliente já pagou" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={fieldLabelClass}>Frete</label>
+                <MoneyInput value={frete} onChange={setFrete} min={0} aria-label="Frete" />
+              </div>
+              <div>
+                <label className={fieldLabelClass}>Desconto</label>
+                <MoneyInput value={desconto} onChange={setDesconto} min={0} aria-label="Desconto" />
+              </div>
+            </div>
+            <div className="bg-brand-dark border border-white/10 rounded-lg p-3 text-sm space-y-1">
+              <div className="flex justify-between text-brand-warm-gray">
+                <span>Subtotal {liveTotals.hasPendente ? "(usado/total)" : ""}</span>
+                <span className="tabular-nums">
+                  {liveTotals.hasPendente ? `${formatBRL(liveTotals.subtotalMin)} / ${formatBRL(liveTotals.subtotalMax)}` : formatBRL(liveTotals.subtotalMax)}
+                </span>
+              </div>
+              {desconto > 0 && (
+                <div className="flex justify-between text-brand-warm-gray">
+                  <span>Desconto</span>
+                  <span className="tabular-nums">−{formatBRL(desconto)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-brand-warm-gray">
+                <span>Frete</span>
+                <span className="tabular-nums">{formatBRL(frete)}</span>
+              </div>
+              <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
+                <span>Total</span>
+                <span className="text-brand-yellow tabular-nums">
+                  {liveTotals.hasPendente ? `${formatBRL(liveTotals.totalMin)} / ${formatBRL(liveTotals.totalMax)}` : formatBRL(liveTotals.totalMax)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{error}</p>}
+      </div>
+    </Drawer>
   )
 }
 
