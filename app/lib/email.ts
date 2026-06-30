@@ -2,6 +2,7 @@ import { Resend } from "resend"
 import { createServiceClient } from "@/lib/supabase/service"
 import { logWaError, errInfo } from "@/lib/whatsapp/wa-log"
 import { formatBRL, formatEventDate } from "@/lib/format"
+import { emailShell, ctaButton, infoRow, itensRows } from "@/lib/email-template"
 
 const ADMIN_BASE_URL = "https://app-liart-one-77.vercel.app"
 const CUSTOMER_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.alfachopp.com.br"
@@ -38,17 +39,7 @@ const metodoLabel = (metodo: string | null) =>
 
 const freteLabel = (frete: number) => (frete > 0 ? formatBRL(frete) : "a definir")
 
-const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) => {
-  const itensRows = data.itens
-    .map(
-      (i) => `
-        <tr>
-          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;">${i.qtd}× ${i.descricao}</td>
-          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;text-align:right;">${formatBRL(i.subtotal)}</td>
-        </tr>`
-    )
-    .join("")
-
+export const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) => {
   const obsBlock = data.observacoes
     ? `<tr><td colspan="2" style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;line-height:1.5;"><strong>Observações:</strong> ${data.observacoes}</td></tr>`
     : ""
@@ -57,53 +48,23 @@ const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) => {
   const pagamentoLabel = metodoLabel(data.metodoPagamento)
   const adminUrl = `${ADMIN_BASE_URL}/admin/pedidos/${data.pedidoId}`
 
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Novo pedido</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f5f0e8;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f0e8" style="background-color:#f5f0e8;">
-  <tr>
-    <td align="center" style="padding:24px 12px;">
-      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;">
-        <tr>
-          <td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:24px 32px;border-top-left-radius:8px;border-top-right-radius:8px;">
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#e8b912;letter-spacing:2px;text-transform:uppercase;">ALFA Chopp Delivery</p>
-            <h1 style="margin:8px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;color:#ffffff;line-height:1.2;">Novo pedido recebido</h1>
-            <p style="margin:6px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#b5afa6;">#${data.pedidoId.slice(0, 8)}</p>
-          </td>
-        </tr>
-        <tr>
+  return emailShell({
+    title: "Novo pedido",
+    headerEyebrow: "ALFA Chopp Delivery",
+    headerTitle: "Novo pedido recebido",
+    headerSub: `#${data.pedidoId.slice(0, 8)}`,
+    body: `        <tr>
           <td style="padding:24px 32px;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;width:120px;">Cliente</td>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;font-weight:bold;">${data.clienteNome}</td>
               </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Telefone</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${data.clienteTelefone}</td>
-              </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Evento</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
-              </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;vertical-align:top;">Endereço</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${data.endereco}</td>
-              </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Chopeira</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;text-transform:capitalize;">${chopeiraLabel(data.tipoChopeira)}</td>
-              </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Pagamento</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${pagamentoLabel}</td>
-              </tr>
+              ${infoRow("Telefone", data.clienteTelefone)}
+              ${infoRow("Evento", `${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`)}
+              ${infoRow("Endereço", data.endereco, { valueAlignTop: true })}
+              ${infoRow("Chopeira", chopeiraLabel(data.tipoChopeira), { capitalize: true })}
+              ${infoRow("Pagamento", pagamentoLabel)}
               ${obsBlock}
             </table>
 
@@ -111,7 +72,7 @@ const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) => {
               <tr>
                 <td colspan="2" style="padding-top:16px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a8278;letter-spacing:1px;text-transform:uppercase;">Itens</td>
               </tr>
-              ${itensRows}
+              ${itensRows(data.itens)}
             </table>
 
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-top:1px solid #eeeeee;">
@@ -132,13 +93,7 @@ const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) => {
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
               <tr>
                 <td align="center">
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td bgcolor="#e8b912" style="background-color:#e8b912;border-radius:6px;">
-                        <a href="${adminUrl}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;font-weight:bold;text-decoration:none;letter-spacing:0.5px;">Ver pedido no admin →</a>
-                      </td>
-                    </tr>
-                  </table>
+                  ${ctaButton(adminUrl, "Ver pedido no admin →")}
                 </td>
               </tr>
             </table>
@@ -148,13 +103,8 @@ const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) => {
           <td style="padding:16px 32px 24px 32px;border-top:1px solid #eeeeee;">
             <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8278;text-align:center;line-height:1.5;">Notificação automática · ALFA Chopp Delivery</p>
           </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`
+        </tr>`,
+  })
 }
 
 const renderText = (data: OrderEmailData & { clienteTelefone: string }) => {
@@ -271,17 +221,7 @@ export const sendNewOrderEmail = async (pedidoId: string) => {
   }
 }
 
-const renderCustomerHtml = (data: OrderEmailData) => {
-  const itensRows = data.itens
-    .map(
-      (i) => `
-        <tr>
-          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;">${i.qtd}× ${i.descricao}</td>
-          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.4;text-align:right;">${formatBRL(i.subtotal)}</td>
-        </tr>`
-    )
-    .join("")
-
+export const renderCustomerHtml = (data: OrderEmailData) => {
   const obsBlock = data.observacoes
     ? `<tr><td colspan="2" style="padding-top:12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;line-height:1.5;"><strong>Observações:</strong> ${data.observacoes}</td></tr>`
     : ""
@@ -291,27 +231,12 @@ const renderCustomerHtml = (data: OrderEmailData) => {
   const trackingUrl = `${CUSTOMER_BASE_URL}/pedido/${data.pedidoId}`
   const firstName = data.clienteNome.split(" ")[0]
 
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Recebemos seu pedido</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f5f0e8;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f0e8" style="background-color:#f5f0e8;">
-  <tr>
-    <td align="center" style="padding:24px 12px;">
-      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;">
-        <tr>
-          <td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:24px 32px;border-top-left-radius:8px;border-top-right-radius:8px;">
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#e8b912;letter-spacing:2px;text-transform:uppercase;">ALFA Chopp Delivery</p>
-            <h1 style="margin:8px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;color:#ffffff;line-height:1.2;">Recebemos seu pedido!</h1>
-            <p style="margin:6px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#b5afa6;">#${data.pedidoId.slice(0, 8)}</p>
-          </td>
-        </tr>
-        <tr>
+  return emailShell({
+    title: "Recebemos seu pedido",
+    headerEyebrow: "ALFA Chopp Delivery",
+    headerTitle: "Recebemos seu pedido!",
+    headerSub: `#${data.pedidoId.slice(0, 8)}`,
+    body: `        <tr>
           <td style="padding:24px 32px 8px 32px;">
             <p style="margin:0 0 12px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.5;">Olá, ${firstName}!</p>
             <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;line-height:1.6;">Recebemos seu pedido e estamos verificando os detalhes. Vamos te confirmar pelo WhatsApp em breve.</p>
@@ -340,18 +265,9 @@ const renderCustomerHtml = (data: OrderEmailData) => {
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;width:120px;">Evento</td>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
               </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;vertical-align:top;">Endereço</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${data.endereco}</td>
-              </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Chopeira</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;text-transform:capitalize;">${chopeiraLabel(data.tipoChopeira)}</td>
-              </tr>
-              <tr>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;">Pagamento</td>
-                <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${pagamentoLabel}</td>
-              </tr>
+              ${infoRow("Endereço", data.endereco, { valueAlignTop: true })}
+              ${infoRow("Chopeira", chopeiraLabel(data.tipoChopeira), { capitalize: true })}
+              ${infoRow("Pagamento", pagamentoLabel)}
               ${obsBlock}
             </table>
 
@@ -359,7 +275,7 @@ const renderCustomerHtml = (data: OrderEmailData) => {
               <tr>
                 <td colspan="2" style="padding-top:16px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a8278;letter-spacing:1px;text-transform:uppercase;">Itens</td>
               </tr>
-              ${itensRows}
+              ${itensRows(data.itens)}
             </table>
 
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-top:1px solid #eeeeee;">
@@ -380,13 +296,7 @@ const renderCustomerHtml = (data: OrderEmailData) => {
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
               <tr>
                 <td align="center">
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td bgcolor="#e8b912" style="background-color:#e8b912;border-radius:6px;">
-                        <a href="${trackingUrl}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;font-weight:bold;text-decoration:none;letter-spacing:0.5px;">Acompanhar pedido →</a>
-                      </td>
-                    </tr>
-                  </table>
+                  ${ctaButton(trackingUrl, "Acompanhar pedido →")}
                   <p style="margin:12px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a8278;line-height:1.5;">Salve esse link — é o seu comprovante.</p>
                 </td>
               </tr>
@@ -397,13 +307,8 @@ const renderCustomerHtml = (data: OrderEmailData) => {
           <td style="padding:16px 32px 24px 32px;border-top:1px solid #eeeeee;">
             <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8278;text-align:center;line-height:1.5;">Em caso de dúvidas, responda esse email ou aguarde nosso contato pelo WhatsApp.</p>
           </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`
+        </tr>`,
+  })
 }
 
 const renderCustomerText = (data: OrderEmailData) => {
@@ -437,39 +342,19 @@ const renderCustomerText = (data: OrderEmailData) => {
 
 const WHATSAPP_ADMIN_URL = `${ADMIN_BASE_URL}/admin/whatsapp`
 
-const renderWhatsAppDownHtml = (reasonLabel: string) => `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>WhatsApp desconectado</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f5f0e8;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f0e8" style="background-color:#f5f0e8;">
-  <tr>
-    <td align="center" style="padding:24px 12px;">
-      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;">
-        <tr>
-          <td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:24px 32px;border-top-left-radius:8px;border-top-right-radius:8px;">
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#e8b912;letter-spacing:2px;text-transform:uppercase;">ALFA Chopp Delivery</p>
-            <h1 style="margin:8px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;color:#ffffff;line-height:1.2;">WhatsApp desconectado</h1>
-          </td>
-        </tr>
-        <tr>
+export const renderWhatsAppDownHtml = (reasonLabel: string) =>
+  emailShell({
+    title: "WhatsApp desconectado",
+    headerEyebrow: "ALFA Chopp Delivery",
+    headerTitle: "WhatsApp desconectado",
+    body: `        <tr>
           <td style="padding:24px 32px;">
             <p style="margin:0 0 12px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a1a1a;line-height:1.5;">A conexão do WhatsApp caiu (${reasonLabel}). Os pedidos não estão sendo confirmados automaticamente pelo WhatsApp até a reconexão.</p>
             <p style="margin:0 0 24px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;line-height:1.6;">Acesse o painel, leia o QR code com o celular e o envio volta ao normal.</p>
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td align="center">
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td bgcolor="#e8b912" style="background-color:#e8b912;border-radius:6px;">
-                        <a href="${WHATSAPP_ADMIN_URL}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;font-weight:bold;text-decoration:none;letter-spacing:0.5px;">Reconectar o WhatsApp →</a>
-                      </td>
-                    </tr>
-                  </table>
+                  ${ctaButton(WHATSAPP_ADMIN_URL, "Reconectar o WhatsApp →")}
                 </td>
               </tr>
             </table>
@@ -479,13 +364,8 @@ const renderWhatsAppDownHtml = (reasonLabel: string) => `<!DOCTYPE html>
           <td style="padding:16px 32px 24px 32px;border-top:1px solid #eeeeee;">
             <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#8a8278;text-align:center;line-height:1.5;">Alerta automático · ALFA Chopp Delivery</p>
           </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`
+        </tr>`,
+  })
 
 const reasonLabels: Record<"logged_out" | "offline", string> = {
   logged_out: "a sessão foi desconectada pelo WhatsApp",
