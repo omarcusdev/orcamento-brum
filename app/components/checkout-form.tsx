@@ -12,6 +12,9 @@ import AddressAutocomplete from "@/components/address-autocomplete"
 import type { AddressData } from "@/components/address-autocomplete"
 import { calculateLine } from "@/lib/pricing"
 import { formatBRL } from "@/lib/format"
+import { validateCheckout } from "@/lib/checkout-validation"
+import { getDaysInMonth, buildYearOptions } from "@/lib/checkout-datetime"
+import { EventDateTimePicker } from "@/components/checkout/event-datetime-picker"
 
 type DeliveryConfig = {
   raioKm: number
@@ -35,27 +38,6 @@ const formatPhone = (value: string) => {
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
-
-const selectClassName =
-  "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22%23B5AFA6%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m2%204%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat"
-
-const MESES = [
-  "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-]
-
-const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1)
-
-const getDaysInMonth = (month: number, year: number) =>
-  new Date(year, month, 0).getDate()
-
-const buildYearOptions = () => {
-  const currentYear = new Date().getFullYear()
-  return [currentYear, currentYear + 1]
-}
-
-const HORAS = Array.from({ length: 15 }, (_, i) => i + 8)
-const MINUTOS = [0, 15, 30, 45]
 
 const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => {
   const router = useRouter()
@@ -127,39 +109,21 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
     setLoading(true)
     setError(null)
 
-    if (!address) {
-      setError("Selecione um endereco valido")
+    const validationError = validateCheckout({
+      address: address ? { numero: address.numero } : null,
+      addressInArea,
+      dataEvento,
+      tipoChopeira,
+      temRampas,
+    })
+    if (validationError) {
+      setError(validationError)
       setLoading(false)
       return
     }
-
-    if (addressInArea === false) {
-      setError("Infelizmente nao atendemos essa regiao")
-      setLoading(false)
-      return
-    }
-
-    const eventDate = new Date(dataEvento + "T00:00:00")
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    if (eventDate < today) {
-      setError("A data do evento nao pode ser no passado")
-      setLoading(false)
-      return
-    }
-
-    if (!tipoChopeira) {
-      setError("Selecione o tipo de chopeira")
-      setLoading(false)
-      return
-    }
-
-    if (address && !temRampas) {
-      setError("Informe se o local possui rampas ou escadas")
-      setLoading(false)
-      return
-    }
+    // validateCheckout already requires a non-null address; re-narrow here so TS
+    // knows `address` below is defined (the check itself is unreachable).
+    if (!address) return
 
     const formData = new FormData(e.currentTarget)
 
@@ -431,85 +395,15 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
             </motion.div>
           )}
 
-          <div>
-            <label className={labelClassName}>Data do evento *</label>
-            <div className="grid grid-cols-3 gap-3">
-              <select
-                required
-                value={dia}
-                onChange={(e) => setDia(e.target.value)}
-                className={selectClassName}
-              >
-                <option value="" disabled>Dia</option>
-                {DAY_OPTIONS.map((d) => (
-                  <option key={d} value={String(d)}>{d}</option>
-                ))}
-              </select>
-              <select
-                required
-                value={mes}
-                onChange={(e) => setMes(e.target.value)}
-                className={selectClassName}
-              >
-                <option value="" disabled>Mes</option>
-                {MESES.map((nome, idx) => (
-                  <option key={nome} value={String(idx + 1)}>{nome}</option>
-                ))}
-              </select>
-              <select
-                required
-                value={ano}
-                onChange={(e) => setAno(e.target.value)}
-                className={selectClassName}
-              >
-                {buildYearOptions().map((y) => (
-                  <option key={y} value={String(y)}>{y}</option>
-                ))}
-              </select>
-            </div>
-            {diaInvalida && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-400 text-sm mt-2"
-              >
-                O mes de {MESES[selectedMonth - 1]} nao tem dia {dia} — selecione um dia ate {maxDays}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <label className={labelClassName}>Horario do evento *</label>
-            <div className="grid grid-cols-2 gap-3">
-              <select
-                required
-                value={hora}
-                onChange={(e) => { setHora(e.target.value); if (minuto === "") setMinuto("0") }}
-                className={selectClassName}
-              >
-                <option value="" disabled>Hora</option>
-                {HORAS.map((h) => {
-                  const full = (bookedSlots[h] ?? 0) >= 2
-                  return (
-                    <option key={h} value={String(h)} disabled={full}>
-                      {String(h).padStart(2, "0")}h{full ? " (indisponivel)" : ""}
-                    </option>
-                  )
-                })}
-              </select>
-              <select
-                required
-                value={minuto}
-                onChange={(e) => setMinuto(e.target.value)}
-                className={selectClassName}
-              >
-                <option value="" disabled>Minuto</option>
-                {MINUTOS.map((m) => (
-                  <option key={m} value={String(m)}>{String(m).padStart(2, "0")}min</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <EventDateTimePicker
+            dia={dia} mes={mes} ano={ano} hora={hora} minuto={minuto}
+            onDia={setDia} onMes={setMes} onAno={setAno}
+            onHora={(v) => { setHora(v); if (minuto === "") setMinuto("0") }}
+            onMinuto={setMinuto}
+            maxDays={maxDays} diaInvalida={diaInvalida} selectedMonth={selectedMonth}
+            yearOptions={buildYearOptions(now.getFullYear())}
+            bookedSlots={bookedSlots}
+          />
 
           <div>
             <label className={labelClassName}>Preferência de Chopeira *</label>
