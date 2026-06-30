@@ -22,3 +22,9 @@ export const formatPhone = (value: string) => {
 export const firstName = (fullName: string) => fullName.trim().split(" ")[0]
 export const shortId = (id: string) => id.slice(0, 8)
 export const formatTime = (hms: string) => hms.slice(0, 5)
+
+const METODO_PAGAMENTO_LABELS: Record<string, string> = { pix: "Pix", cartao: "Cartão", dinheiro: "Dinheiro" }
+
+// Friendly payment-method label. null -> "—"; unknown -> the raw value (so nothing is hidden).
+export const metodoPagamentoLabel = (metodo: string | null): string =>
+  metodo ? (METODO_PAGAMENTO_LABELS[metodo] ?? metodo) : "—"

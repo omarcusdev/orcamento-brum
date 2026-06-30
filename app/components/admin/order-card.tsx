@@ -7,7 +7,7 @@ import type { PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
 import { useConfirm } from "@/components/admin/confirm-provider"
 import { archiveOrder, unarchiveOrder } from "@/lib/admin-actions"
-import { formatBRL, formatEventDate } from "@/lib/format"
+import { formatBRL, formatEventDate, metodoPagamentoLabel } from "@/lib/format"
 
 type OrderCardProps = {
   pedido: {
@@ -25,8 +25,6 @@ type OrderCardProps = {
   }
   index?: number
 }
-
-const metodoLabel: Record<string, string> = { pix: "Pix", cartao: "Cartão", dinheiro: "Dinheiro" }
 
 const docStatusConfig: Record<string, { label: string; className: string }> = {
   pendente: { label: "Docs pendentes", className: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30" },
@@ -116,7 +114,7 @@ const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
           </span>
           {pedido.metodo_pagamento && (
             <span className="text-xs px-2 py-0.5 rounded-full border border-white/15 text-brand-gray-light bg-white/5">
-              {metodoLabel[pedido.metodo_pagamento] ?? pedido.metodo_pagamento}
+              {metodoPagamentoLabel(pedido.metodo_pagamento)}
             </span>
           )}
           {arquivado && (

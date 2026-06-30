@@ -118,7 +118,7 @@ const renderText = (data: OrderEmailData & { clienteTelefone: string }) => {
     `Evento: ${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
     `Endereço: ${data.endereco}`,
     `Chopeira: ${chopeiraLabel(data.tipoChopeira)}`,
-    `Pagamento: ${data.metodoPagamento ?? "—"}`,
+    `Pagamento: ${metodoLabel(data.metodoPagamento)}`,
     "",
     "Itens:",
     ...data.itens.map((i) => `  ${i.qtd}× ${i.descricao} — ${formatBRL(i.subtotal)}`),

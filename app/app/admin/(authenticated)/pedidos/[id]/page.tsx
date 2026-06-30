@@ -13,7 +13,7 @@ import ArchiveToggle from "@/components/admin/archive-toggle"
 import ConsignadoBanner from "@/components/admin/consignado-banner"
 import EditOrderTrigger from "@/components/admin/edit-order-trigger"
 import EditLog from "@/components/admin/edit-log"
-import { formatBRL, formatEventDate } from "@/lib/format"
+import { formatBRL, formatEventDate, metodoPagamentoLabel } from "@/lib/format"
 import { buildDispatchText } from "@/lib/whatsapp/entregador-message"
 import { LOCKED_EDIT_STATUSES, isFreteLocked } from "@/lib/admin-status"
 import { orderDisplayTotals, toDispatchItens } from "@/lib/admin-ordem-detail"
@@ -291,7 +291,7 @@ const AdminOrderDetailPage = async ({ params }: Props) => {
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span className="text-brand-warm-gray">Pagamento</span>
-                <span className="text-brand-yellow">{pedido.metodo_pagamento ?? "—"}</span>
+                <span className="text-brand-yellow">{metodoPagamentoLabel(pedido.metodo_pagamento)}</span>
               </div>
             </div>
           </FadeIn>

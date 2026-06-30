@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { formatBRL, formatEventDate } from "./format"
 import { formatPhone, firstName, shortId, formatTime } from "./format"
+import { metodoPagamentoLabel } from "./format"
 
 describe("formatBRL", () => {
   it("formata reais no padrão pt-BR com 2 casas", () => {
@@ -75,5 +76,19 @@ describe("firstName / shortId / formatTime", () => {
   it("formatTime trims to HH:MM", () => {
     expect(formatTime("18:30:00")).toBe("18:30")
     expect(formatTime("18:30")).toBe("18:30")
+  })
+})
+
+describe("metodoPagamentoLabel", () => {
+  it("maps known methods to friendly labels", () => {
+    expect(metodoPagamentoLabel("pix")).toBe("Pix")
+    expect(metodoPagamentoLabel("cartao")).toBe("Cartão")
+    expect(metodoPagamentoLabel("dinheiro")).toBe("Dinheiro")
+  })
+  it("renders a dash for null", () => {
+    expect(metodoPagamentoLabel(null)).toBe("—")
+  })
+  it("falls back to the raw value for unknown methods", () => {
+    expect(metodoPagamentoLabel("boleto")).toBe("boleto")
   })
 })
