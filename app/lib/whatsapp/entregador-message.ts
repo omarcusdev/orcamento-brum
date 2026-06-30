@@ -2,7 +2,7 @@
 // já usa (rótulos sem acento de propósito) e ADICIONA o código do pedido no topo. Função pura/testada;
 // é a mesma string mostrada no modal de despacho E enviada pelo WhatsApp quando o número está conectado.
 
-import { formatEventDate } from "@/lib/format"
+import { formatEventDate, shortId, formatTime } from "@/lib/format"
 
 export type DispatchItem = { quantidade: number; marca: string; volume: number }
 
@@ -30,8 +30,8 @@ export const buildDispatchText = (data: {
     : data.endereco
 
   return [
-    `🔖 Pedido #${data.pedidoId.slice(0, 8)}`,
-    `📍 Data do evento: ${dataFormatted} às ${data.horarioEvento.slice(0, 5)}`,
+    `🔖 Pedido #${shortId(data.pedidoId)}`,
+    `📍 Data do evento: ${dataFormatted} às ${formatTime(data.horarioEvento)}`,
     `◼ Quantidade de Barris: ${itemLines}`,
     `◼ Preferencia de Chopeira: ${data.tipoChopeira}`,
     `◼ Responsavel: ${data.clienteNome}`,

@@ -3,18 +3,12 @@
 import { useState, useEffect } from "react"
 import { createEntregador, updateEntregador } from "@/lib/admin-actions"
 import { Button, Input, Modal, fieldLabelClass } from "@/components/ui"
+import { formatPhone } from "@/lib/format"
 import type { Entregador } from "@/lib/types"
 
 type EntregadorModalProps = {
   entregador: Entregador | null
   onClose: () => void
-}
-
-const formatPhone = (value: string) => {
-  const digits = value.replace(/\D/g, "").slice(0, 11)
-  if (digits.length <= 2) return digits.length ? `(${digits}` : ""
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
 const EntregadorModal = ({ entregador, onClose }: EntregadorModalProps) => {

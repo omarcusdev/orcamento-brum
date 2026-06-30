@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { formatBRL, formatEventDate } from "./format"
+import { formatPhone, firstName, shortId, formatTime } from "./format"
 
 describe("formatBRL", () => {
   it("formata reais no padrão pt-BR com 2 casas", () => {
@@ -42,5 +43,33 @@ describe("formatEventDate", () => {
     expect(formatEventDate("2026-12-31", { day: "2-digit", month: "short", year: "numeric" })).toBe(
       ref("2026-12-31", { day: "2-digit", month: "short", year: "numeric" }),
     )
+  })
+})
+
+describe("formatPhone (as-you-type BR mask)", () => {
+  it("masks an 11-digit mobile", () => {
+    expect(formatPhone("21999991234")).toBe("(21) 99999-1234")
+  })
+  it("masks progressively and caps at 11 digits", () => {
+    expect(formatPhone("21")).toBe("(21")
+    expect(formatPhone("219999")).toBe("(21) 9999")
+    expect(formatPhone("2199999123456")).toBe("(21) 99999-1234")
+  })
+  it("strips non-digits", () => {
+    expect(formatPhone("(21) 9")).toBe("(21) 9")
+  })
+})
+
+describe("firstName / shortId / formatTime", () => {
+  it("firstName takes the first token", () => {
+    expect(firstName("Maria Silva Santos")).toBe("Maria")
+    expect(firstName("Maria")).toBe("Maria")
+  })
+  it("shortId takes the first 8 chars", () => {
+    expect(shortId("abcdef12-3456-7890")).toBe("abcdef12")
+  })
+  it("formatTime trims to HH:MM", () => {
+    expect(formatTime("18:30:00")).toBe("18:30")
+    expect(formatTime("18:30")).toBe("18:30")
   })
 })

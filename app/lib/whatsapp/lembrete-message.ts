@@ -1,4 +1,5 @@
 import type { WhatsappFeatureKey } from "./features"
+import { formatTime } from "@/lib/format"
 
 // Tipado como WhatsappFeatureKey: um rename em WHATSAPP_FEATURE_KEYS quebra aqui (compile-time),
 // garantindo que esta chave continua igual ao gate lido pela rota/orquestrador.
@@ -28,7 +29,7 @@ export const formatDataBR = (iso: string): string => {
 }
 
 // horario_evento chega como 'HH:MM:SS' -> 'HH:MM'
-export const formatHorario = (t: string): string => t.slice(0, 5)
+export const formatHorario = (t: string): string => formatTime(t)
 
 // hora atual no fuso de Sao Paulo (0-23); hourCycle h23 evita "24" na meia-noite
 export const horaEmSaoPaulo = (now: Date): number =>

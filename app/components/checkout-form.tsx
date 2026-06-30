@@ -11,7 +11,7 @@ import { isAddressInDeliveryArea } from "@/lib/geo"
 import AddressAutocomplete from "@/components/address-autocomplete"
 import type { AddressData } from "@/components/address-autocomplete"
 import { calculateLine } from "@/lib/pricing"
-import { formatBRL } from "@/lib/format"
+import { formatBRL, formatPhone } from "@/lib/format"
 import { validateCheckout } from "@/lib/checkout-validation"
 import { getDaysInMonth, buildYearOptions } from "@/lib/checkout-datetime"
 import { EventDateTimePicker } from "@/components/checkout/event-datetime-picker"
@@ -31,13 +31,6 @@ const inputClassName =
   "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 placeholder:text-brand-warm-gray/40"
 
 const labelClassName = "block text-sm font-medium text-brand-gray-light mb-1.5"
-
-const formatPhone = (value: string) => {
-  const digits = value.replace(/\D/g, "").slice(0, 11)
-  if (digits.length <= 2) return digits.length ? `(${digits}` : ""
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
-}
 
 const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => {
   const router = useRouter()

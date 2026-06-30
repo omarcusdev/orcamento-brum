@@ -1,8 +1,8 @@
 // Helpers puros de apresentação da faixa de contexto do inbox. Sem I/O.
 
-import { formatBRL } from "@/lib/format"
+import { formatBRL, shortId } from "@/lib/format"
 
-export const pedidoRefCurto = (id: string): string => `#${id.slice(0, 8)}`
+export const pedidoRefCurto = (id: string): string => `#${shortId(id)}`
 
 // data_evento chega como 'YYYY-MM-DD' (string) -> 'DD/MM' sem depender de fuso
 export const formatDataEvento = (iso: string): string => {
