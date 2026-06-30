@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useConfirm } from "@/components/admin/confirm-provider"
 import { dispatchToEntregador, fetchActiveEntregadores } from "@/lib/admin-actions"
 import { getWhatsappConnection } from "@/lib/whatsapp/admin-actions"
 import { Button, Modal, Select, fieldLabelClass } from "@/components/ui"
@@ -28,6 +29,7 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
   // null = ainda verificando a conexão; controla se o botão envia (conectado) ou copia (hoje).
   const [paired, setPaired] = useState<boolean | null>(null)
   const [result, setResult] = useState<"notified" | "copied" | "send-failed" | null>(null)
+  const { confirm } = useConfirm()
 
   useEffect(() => {
     fetchActiveEntregadores()
@@ -47,8 +49,24 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
 
   const handleConfirm = async () => {
     if (!selectedId) return
-    if (documentoStatus !== "verificado" && !confirm("Documentacao ainda nao verificada. Deseja despachar mesmo assim?")) return
-    if (frete === 0 && !confirm("Frete nao definido. Apos o despacho, o valor do frete nao podera mais ser alterado. Deseja continuar sem frete?")) return
+    if (
+      documentoStatus !== "verificado" &&
+      !(await confirm({
+        title: "Documentação não verificada",
+        message: "Documentacao ainda nao verificada. Deseja despachar mesmo assim?",
+        confirmLabel: "Despachar mesmo assim",
+      }))
+    )
+      return
+    if (
+      frete === 0 &&
+      !(await confirm({
+        title: "Frete não definido",
+        message: "Frete nao definido. Apos o despacho, o valor do frete nao podera mais ser alterado. Deseja continuar sem frete?",
+        confirmLabel: "Continuar sem frete",
+      }))
+    )
+      return
     setLoading(true)
     setError(null)
 

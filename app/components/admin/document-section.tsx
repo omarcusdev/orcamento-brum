@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useConfirm } from "@/components/admin/confirm-provider"
 import { verifyDocument, revertDocumentoVerificacao, getDocumentSignedUrlByPath } from "@/lib/admin-actions"
 
 type DocumentSectionProps = {
@@ -28,12 +28,12 @@ const DocumentSection = ({
   const [verifiedAt, setVerifiedAt] = useState(documentoVerificadoEm)
   const [verifying, setVerifying] = useState(false)
   const [reverting, setReverting] = useState(false)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pessoalSignedUrls, setPessoalSignedUrls] = useState<Record<string, string>>({})
   const [residenciaUrl, setResidenciaUrl] = useState<string | null>(null)
   const [loadingPessoal, setLoadingPessoal] = useState<string | null>(null)
   const [loadingResidencia, setLoadingResidencia] = useState(false)
   const [docError, setDocError] = useState<string | null>(null)
+  const { confirm } = useConfirm()
 
   const handleViewPessoal = async (storagePath: string) => {
     setLoadingPessoal(storagePath)
@@ -60,7 +60,14 @@ const DocumentSection = ({
   }
 
   const handleRevertVerification = async () => {
-    if (!confirm("Desfazer verificacao do documento? Sera necessario verificar novamente antes de avancar.")) return
+    if (
+      !(await confirm({
+        title: "Desfazer verificação",
+        message: "Desfazer verificacao do documento? Sera necessario verificar novamente antes de avancar.",
+        confirmLabel: "Desfazer",
+      }))
+    )
+      return
     setReverting(true)
     setDocError(null)
     try {
@@ -75,8 +82,15 @@ const DocumentSection = ({
   }
 
   const handleVerify = async () => {
+    if (
+      !(await confirm({
+        title: "Confirmar verificação",
+        message: "Tem certeza que deseja marcar os documentos como verificados? O pedido podera avancar apos esta acao.",
+        confirmLabel: "Verificar",
+      }))
+    )
+      return
     setVerifying(true)
-    setShowConfirmModal(false)
     try {
       await verifyDocument(clienteId, pedidoId)
       setVerified(true)
@@ -161,90 +175,48 @@ const DocumentSection = ({
   }
 
   return (
-    <>
-      <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
-        <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">DOCUMENTOS</h2>
+    <div className="bg-brand-surface rounded-xl border border-white/10 p-5">
+      <h2 className="font-display text-lg font-bold text-white tracking-wide mb-3">DOCUMENTOS</h2>
 
-        {verified && (
-          <div className="flex items-center justify-between gap-2 px-4 py-3 rounded-md border border-green-500/30 bg-green-900/20 mb-4">
-            <div className="flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-              <span className="text-green-400 text-sm font-medium">
-                Verificados {verifiedAt ? `em ${new Date(verifiedAt).toLocaleDateString("pt-BR")}` : ""}
-              </span>
-            </div>
-            <button
-              onClick={handleRevertVerification}
-              disabled={reverting}
-              className="text-yellow-400 text-xs underline hover:text-yellow-300 disabled:opacity-50"
-            >
-              {reverting ? "..." : "Revisar de novo"}
-            </button>
+      {verified && (
+        <div className="flex items-center justify-between gap-2 px-4 py-3 rounded-md border border-green-500/30 bg-green-900/20 mb-4">
+          <div className="flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <span className="text-green-400 text-sm font-medium">
+              Verificados {verifiedAt ? `em ${new Date(verifiedAt).toLocaleDateString("pt-BR")}` : ""}
+            </span>
           </div>
-        )}
-
-        <div className="space-y-4">
-          {renderPessoalViewer()}
-          {renderResidenciaViewer()}
-
-          {docError && (
-            <p className="text-red-400 text-sm">{docError}</p>
-          )}
-
-          {!verified && (
-            <button
-              onClick={() => setShowConfirmModal(true)}
-              disabled={verifying}
-              className="w-full px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg text-sm hover:bg-green-700 transition cursor-pointer disabled:opacity-50"
-            >
-              {verifying ? "Verificando..." : "Verificar documentos"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {showConfirmModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-            onClick={() => setShowConfirmModal(false)}
+          <button
+            onClick={handleRevertVerification}
+            disabled={reverting}
+            className="text-yellow-400 text-xs underline hover:text-yellow-300 disabled:opacity-50"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-brand-surface rounded-xl border border-white/10 p-6 max-w-sm w-full space-y-4"
-            >
-              <h3 className="font-display text-lg font-bold text-white">Confirmar verificacao</h3>
-              <p className="text-sm text-brand-warm-gray">
-                Tem certeza que deseja marcar os documentos como verificados? O pedido podera avancar apos esta acao.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-white/10 text-brand-gray-light rounded-lg text-sm hover:border-white/20 transition cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleVerify}
-                  className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg text-sm hover:bg-green-700 transition cursor-pointer"
-                >
-                  Verificar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+            {reverting ? "..." : "Revisar de novo"}
+          </button>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {renderPessoalViewer()}
+        {renderResidenciaViewer()}
+
+        {docError && (
+          <p className="text-red-400 text-sm">{docError}</p>
         )}
-      </AnimatePresence>
-    </>
+
+        {!verified && (
+          <button
+            onClick={handleVerify}
+            disabled={verifying}
+            className="w-full px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg text-sm hover:bg-green-700 transition cursor-pointer disabled:opacity-50"
+          >
+            {verifying ? "Verificando..." : "Verificar documentos"}
+          </button>
+        )}
+      </div>
+    </div>
   )
 }
 

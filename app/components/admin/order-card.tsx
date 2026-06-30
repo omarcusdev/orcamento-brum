@@ -5,6 +5,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
+import { useConfirm } from "@/components/admin/confirm-provider"
 import { archiveOrder, unarchiveOrder } from "@/lib/admin-actions"
 import { formatBRL, formatEventDate } from "@/lib/format"
 
@@ -50,12 +51,22 @@ const formatRecebidoEm = (isoDate: string) => {
 const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
   const [busy, setBusy] = useState(false)
   const arquivado = !!pedido.arquivado_em
+  const { confirm, alert } = useConfirm()
 
   const handleArchiveClick = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
     if (busy) return
-    if (!arquivado && !confirm(`Excluir o pedido de ${pedido.clientes.nome} da esteira? Vai pra aba 'Arquivados' e pode ser restaurado.`)) return
+    if (
+      !arquivado &&
+      !(await confirm({
+        title: "Excluir pedido",
+        message: `Excluir o pedido de ${pedido.clientes.nome} da esteira? Vai pra aba 'Arquivados' e pode ser restaurado.`,
+        confirmLabel: "Excluir",
+        variant: "danger",
+      }))
+    )
+      return
     setBusy(true)
     try {
       if (arquivado) {
@@ -64,7 +75,7 @@ const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
         await archiveOrder(pedido.id)
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao processar")
+      await alert({ title: "Erro", message: err instanceof Error ? err.message : "Erro ao processar" })
     } finally {
       setBusy(false)
     }

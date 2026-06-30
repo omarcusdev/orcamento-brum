@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import OrderCard from "./order-card"
+import { ConfirmProvider } from "./confirm-provider"
 
 vi.mock("@/lib/admin-actions", () => ({ archiveOrder: vi.fn(), unarchiveOrder: vi.fn() }))
 
@@ -14,7 +15,11 @@ const pedido = {
 
 describe("OrderCard payment badge", () => {
   it("mostra o método de pagamento", () => {
-    render(<OrderCard pedido={pedido} />)
+    render(
+      <ConfirmProvider>
+        <OrderCard pedido={pedido} />
+      </ConfirmProvider>,
+    )
     expect(screen.getByText("Pix")).toBeInTheDocument()
   })
 })
