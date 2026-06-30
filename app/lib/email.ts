@@ -62,7 +62,7 @@ export const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) =
               </tr>
               ${infoRow("Telefone", data.clienteTelefone)}
               ${infoRow("Evento", `${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`)}
-              ${infoRow("Endereço", data.endereco, { valueAlignTop: true })}
+              ${infoRow("Endereço", data.endereco, { labelAlignTop: true })}
               ${infoRow("Chopeira", chopeiraLabel(data.tipoChopeira), { capitalize: true })}
               ${infoRow("Pagamento", pagamentoLabel)}
               ${obsBlock}
@@ -265,7 +265,7 @@ export const renderCustomerHtml = (data: OrderEmailData) => {
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#555555;width:120px;">Evento</td>
                 <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}</td>
               </tr>
-              ${infoRow("Endereço", data.endereco, { valueAlignTop: true })}
+              ${infoRow("Endereço", data.endereco, { labelAlignTop: true })}
               ${infoRow("Chopeira", chopeiraLabel(data.tipoChopeira), { capitalize: true })}
               ${infoRow("Pagamento", pagamentoLabel)}
               ${obsBlock}

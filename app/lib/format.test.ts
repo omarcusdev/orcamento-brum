@@ -65,6 +65,10 @@ describe("firstName / shortId / formatTime", () => {
     expect(firstName("Maria Silva Santos")).toBe("Maria")
     expect(firstName("Maria")).toBe("Maria")
   })
+  it("firstName trims surrounding whitespace before taking the token", () => {
+    expect(firstName("  Maria Silva")).toBe("Maria")
+    expect(firstName("Maria  ")).toBe("Maria")
+  })
   it("shortId takes the first 8 chars", () => {
     expect(shortId("abcdef12-3456-7890")).toBe("abcdef12")
   })

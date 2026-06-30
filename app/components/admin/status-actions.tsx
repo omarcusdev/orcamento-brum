@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
 import OrderStatusBadge, { statusConfig } from "@/components/order-status-badge"
 import { advanceOrderStatus, cancelOrder } from "@/lib/admin-actions"

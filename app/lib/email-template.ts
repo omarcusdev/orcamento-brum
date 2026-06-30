@@ -48,14 +48,14 @@ export const ctaButton = (href: string, label: string): string =>
                   </table>`
 
 // label-value row for the info tables in order emails.
-// `valueAlignTop` adds vertical-align:top to the label cell (keeps it pinned when value wraps).
+// `labelAlignTop` adds vertical-align:top to the label cell (keeps it pinned when value wraps).
 // `capitalize` adds text-transform:capitalize to the value cell.
 export const infoRow = (
   label: string,
   value: string,
-  opts?: { valueAlignTop?: boolean; capitalize?: boolean }
+  opts?: { labelAlignTop?: boolean; capitalize?: boolean }
 ): string => {
-  const labelExtra = opts?.valueAlignTop ? "vertical-align:top;" : ""
+  const labelExtra = opts?.labelAlignTop ? "vertical-align:top;" : ""
   const valueExtra = opts?.capitalize ? "text-transform:capitalize;" : ""
   return `<tr>
                 <td style="padding:8px 0;font-family:${FONT};font-size:14px;color:#555555;${labelExtra}">${label}</td>
