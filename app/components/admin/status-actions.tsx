@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
-import { statusConfig } from "@/components/order-status-badge"
+import OrderStatusBadge, { statusConfig } from "@/components/order-status-badge"
 import { advanceOrderStatus, cancelOrder } from "@/lib/admin-actions"
 import DispatchModal from "@/components/admin/dispatch-modal"
 import RevertStatusModal from "@/components/admin/revert-status-modal"
@@ -58,9 +58,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-brand-warm-gray">Status atual:</span>
-            <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium border tracking-wide ${statusConfig[currentStatus].color}`}>
-              {statusConfig[currentStatus].label}
-            </span>
+            <OrderStatusBadge status={currentStatus} />
           </div>
           <Button type="button" variant="secondary" fullWidth onClick={() => setShowRevert(true)}>
             Voltar status
@@ -83,9 +81,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm text-brand-warm-gray">Status atual:</span>
-        <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium border tracking-wide ${statusConfig[currentStatus].color}`}>
-          {statusConfig[currentStatus].label}
-        </span>
+        <OrderStatusBadge status={currentStatus} />
       </div>
 
       {nextStatus && (
