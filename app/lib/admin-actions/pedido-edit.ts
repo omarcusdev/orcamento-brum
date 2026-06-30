@@ -209,6 +209,9 @@ export const updatePedido = async (pedidoId: string, input: UpdatePedidoInput) =
   if (LOCKED_EDIT_STATUSES.includes(pedido.status)) {
     throw new Error(`Pedido em status ${pedido.status} nao pode ser editado`)
   }
+  if (isFreteLocked(pedido.status) && changes.frete !== undefined && changes.frete !== pedido.frete) {
+    throw new Error("Frete nao pode ser alterado apos despacho")
+  }
 
   const diffs: { field: string; old_value: unknown; new_value: unknown }[] = []
   const updates: Record<string, unknown> = {}

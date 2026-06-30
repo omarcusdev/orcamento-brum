@@ -19,8 +19,8 @@ export const canRevertToStatus = (current: string, target: string): boolean => {
 
 export const LOCKED_EDIT_STATUSES = ["entregue", "pago", "recolhido", "cancelado"] as const
 
-// Frete trava do despacho em diante (o FreteInput vira read-only). NB: o EditOrderDrawer ainda
-// permite editar frete em enviar_para_entregador/em_rota — divergência conhecida, decisão de produto.
+// Frete trava do despacho em diante: FreteInput vira read-only, updateFrete/updatePedido rejeitam a
+// alteração, e o EditOrderDrawer desabilita o campo. Editável apenas em "confirmado".
 const FRETE_LOCKED_STATUSES = ["enviar_para_entregador", "em_rota", "entregue", "pago", "recolhido", "cancelado"]
 export const isFreteLocked = (status: string): boolean => FRETE_LOCKED_STATUSES.includes(status)
 

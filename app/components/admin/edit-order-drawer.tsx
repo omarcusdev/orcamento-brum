@@ -8,6 +8,7 @@ import { addressDataToEnderecoCompleto } from "@/lib/address"
 import { AddressSearchToggle } from "@/components/admin/address-search-toggle"
 import { calculateOrderTotals } from "@/lib/pricing"
 import { formatBRL } from "@/lib/format"
+import { isFreteLocked } from "@/lib/admin-status"
 import {
   Button,
   Checkbox,
@@ -107,6 +108,8 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
   const [saving, setSaving] = useState(false)
   const [itemBusy, setItemBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const freteLocked = isFreteLocked(pedido.status)
 
   const changedFields = useMemo(() => {
     const fields: string[] = []
@@ -351,7 +354,8 @@ const EditOrderDrawer = ({ open, onClose, pedido, items, produtos }: Props) => {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className={fieldLabelClass}>Frete</label>
-                <MoneyInput value={frete} onChange={setFrete} min={0} aria-label="Frete" />
+                <MoneyInput value={frete} onChange={setFrete} min={0} disabled={freteLocked} aria-label="Frete" />
+                {freteLocked && <p className="text-[11px] text-brand-warm-gray mt-1">Travado após o despacho</p>}
               </div>
               <div>
                 <label className={fieldLabelClass}>Desconto</label>
