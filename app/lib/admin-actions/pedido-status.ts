@@ -168,7 +168,7 @@ export const dispatchToEntregador = async (
 }
 
 export const revertOrderStatus = async (pedidoId: string, newStatus: string) => {
-  const { supabase, user } = await requireAdmin()
+  const { supabase } = await requireAdmin()
 
   const { data: pedido } = await supabase
     .from("pedidos")
@@ -194,12 +194,8 @@ export const revertOrderStatus = async (pedidoId: string, newStatus: string) => 
 
   if (updateError) throw updateError
 
-  await supabase.from("pedido_status_log").insert({
-    pedido_id: pedidoId,
-    status_anterior: pedido.status,
-    status_novo: newStatus,
-    changed_by: user.id,
-  })
+  // Status log is written once by the pedidos_status_log trigger (migration 029), which captures
+  // changed_by via auth.uid() — no explicit insert here (that used to double-log every revert).
 
   revalidatePath(`/admin/pedidos/${pedidoId}`)
   revalidatePath("/admin")
