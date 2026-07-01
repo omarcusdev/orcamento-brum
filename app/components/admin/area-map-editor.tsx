@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback } from "react"
 import { GoogleMap, useJsApiLoader, Marker, Circle, Polygon, DrawingManager } from "@react-google-maps/api"
 import { saveDeliveryArea, createExclusionZone, deleteExclusionZone, renameExclusionZone } from "@/lib/admin-actions"
 import { Button, Input, fieldLabelClass } from "@/components/ui"
@@ -36,7 +36,6 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [hoveredZoneId, setHoveredZoneId] = useState<string | null>(null)
-  const markerRef = useRef<google.maps.Marker | null>(null)
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
@@ -141,7 +140,6 @@ const AreaMapEditor = ({ initialCenter, initialRadius, initialZones }: AreaMapEd
             position={center}
             draggable
             onDragEnd={handleMarkerDragEnd}
-            onLoad={(marker) => { markerRef.current = marker }}
           />
           <Circle
             center={center}
