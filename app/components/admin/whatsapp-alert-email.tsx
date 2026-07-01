@@ -61,7 +61,7 @@ const WhatsappAlertEmail = ({ initialEmail, disabled = false }: WhatsappAlertEma
           placeholder="financeiro@exemplo.com"
         />
         <div className="flex items-center gap-3">
-          <Button type="submit" loading={saving} disabled={disabled}>
+          <Button type="submit" disabled={disabled || saving}>
             {saving ? "Salvando..." : "Salvar"}
           </Button>
           {feedback === "saved" && (
