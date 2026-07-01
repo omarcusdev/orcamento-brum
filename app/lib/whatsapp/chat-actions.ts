@@ -73,12 +73,6 @@ export const enviarRespostaChat = async (conversaId: string, texto: string): Pro
   return { ok: result.ok }
 }
 
-export const excluirConversa = async (conversaId: string): Promise<void> => {
-  const { supabase } = await requireAdmin()
-  // Exclusão por titular (LGPD). Cascade apaga as mensagens.
-  await supabase.from("conversas_whatsapp").delete().eq("id", conversaId)
-}
-
 export type PedidoResumoCliente = {
   id: string
   status: string
