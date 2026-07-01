@@ -5,7 +5,6 @@ import {
   buildSystemPrompt,
   threadToMessages,
   MEDIA_PLACEHOLDER,
-  DEFAULT_AGENTE_FAQ,
   type CardapioItem,
 } from "./bot-agente-kb"
 

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
 import type { Entregador } from "@/lib/types"
 import { Plus } from "lucide-react"
 import { toggleEntregadorAtivo } from "@/lib/admin-actions"

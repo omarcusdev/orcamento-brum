@@ -15,9 +15,6 @@ const POLL_INTERVAL_MS = 3_000
 const isPairing = (connection: WhatsappConnection) =>
   !connection.paired && (connection.qrDataUrl !== null || connection.code !== null)
 
-const isIdle = (connection: WhatsappConnection) =>
-  !connection.paired && connection.qrDataUrl === null && connection.code === null
-
 type PairingMethod = "qr" | "code"
 
 type WhatsAppConnectionProps = {

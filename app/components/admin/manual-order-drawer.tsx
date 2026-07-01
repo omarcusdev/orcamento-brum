@@ -282,7 +282,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                   ))}
                 </ul>
               ) : clienteQuery.length >= 2 ? (
-                <p className="text-xs text-brand-warm-gray">Nenhum cliente encontrado. Use "Criar novo".</p>
+                <p className="text-xs text-brand-warm-gray">Nenhum cliente encontrado. Use &quot;Criar novo&quot;.</p>
               ) : null}
             </div>
           )}
