@@ -73,7 +73,7 @@ export const Drawer = ({
                 onClick={requestClose}
                 disabled={closeDisabled}
                 aria-label="Fechar"
-                className="text-brand-warm-gray hover:text-white disabled:opacity-50 cursor-pointer p-1 rounded hover:bg-white/5 transition"
+                className="text-brand-warm-gray hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer p-1 rounded hover:bg-white/5 transition"
               >
                 <X className="h-5 w-5" />
               </button>

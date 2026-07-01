@@ -54,6 +54,7 @@ export const Modal = ({
       <motion.div
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? "modal-title" : undefined}
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -62,7 +63,7 @@ export const Modal = ({
         className={`bg-brand-surface border border-white/10 rounded-xl p-6 w-full ${maxWidths[maxWidth]} max-h-[90vh] overflow-y-auto ${className ?? ""}`}
       >
         {title && (
-          <h3 className="font-display text-lg font-bold text-white tracking-wide mb-4">{title}</h3>
+          <h3 id="modal-title" className="font-display text-lg font-bold text-white tracking-wide mb-4">{title}</h3>
         )}
         {children}
       </motion.div>
