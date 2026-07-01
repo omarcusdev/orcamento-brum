@@ -9,6 +9,7 @@ import { rm } from "node:fs/promises"
 import pino from "pino"
 import QRCode from "qrcode-terminal"
 import { extractInbound, forwardInbound } from "./inbound.js"
+import { postSigned } from "./webhook.js"
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 
@@ -41,14 +42,7 @@ const sendDownAlert = async (reason: "logged_out" | "offline"): Promise<void> =>
   }
 
   try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "x-alert-secret": secret,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ reason, since: new Date().toISOString() }),
-    })
+    await postSigned(webhookUrl, secret, "x-alert-secret", { reason, since: new Date().toISOString() })
   } catch (err) {
     console.error("Failed to deliver WhatsApp down alert:", err)
   }
