@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
 import { Modal, Button } from "@/components/ui"
 
 type ConfirmOptions = {
@@ -49,8 +49,12 @@ export const ConfirmProvider = ({ children }: { children: ReactNode }) => {
     setRequest(null)
   }
 
+  // confirm/alert are useCallback-stable, so this value only changes if they do (never in practice) —
+  // keeps consumers from re-rendering on every dialog open/close.
+  const value = useMemo(() => ({ confirm, alert }), [confirm, alert])
+
   return (
-    <ConfirmContext.Provider value={{ confirm, alert }}>
+    <ConfirmContext.Provider value={value}>
       {children}
       {request && (
         <Modal onClose={() => settle(false)} maxWidth="sm" title={request.opts.title}>
