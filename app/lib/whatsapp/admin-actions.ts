@@ -15,6 +15,7 @@ import {
   parseFlag,
   type WhatsappFeatureKey,
 } from "./features"
+import { configValue } from "./config"
 import {
   STATUS_NOTIFY_STATUSES,
   DEFAULT_STATUS_MESSAGES,
@@ -125,8 +126,7 @@ export const getWhatsappFeatures = async (): Promise<WhatsappFeatures> => {
     .select("chave, valor")
     .in("chave", [...WHATSAPP_FEATURE_KEYS])
 
-  const valorDe = (chave: WhatsappFeatureKey) =>
-    parseFlag(data?.find((row) => row.chave === chave)?.valor)
+  const valorDe = (chave: WhatsappFeatureKey) => parseFlag(configValue(data, chave))
 
   return {
     confirmacao: valorDe("whatsapp_confirmacao_ativo"),
@@ -178,7 +178,7 @@ export const getWhatsappStatusEntregaConfig = async (): Promise<StatusEntregaCon
   ]
 
   const { data } = await supabase.from("configuracoes").select("chave, valor").in("chave", chaves)
-  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+  const valorDe = (chave: string) => configValue(data, chave)
 
   const porStatus = Object.fromEntries(
     STATUS_NOTIFY_STATUSES.map((s) => {
@@ -254,7 +254,7 @@ export const getWhatsappLembreteConfig = async (): Promise<LembreteConfig> => {
     .select("chave, valor")
     .in("chave", [LEMBRETE_FLAG_KEY, LEMBRETE_HORA_KEY, LEMBRETE_MSG_KEY])
 
-  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+  const valorDe = (chave: string) => configValue(data, chave)
   const rawMsg = valorDe(LEMBRETE_MSG_KEY)
 
   return {
@@ -331,7 +331,7 @@ export const getWhatsappBotSaudacaoConfig = async (): Promise<BotSaudacaoConfig>
     .select("chave, valor")
     .in("chave", [BOT_SAUDACAO_FLAG_KEY, BOT_SAUDACAO_JANELA_KEY, BOT_SAUDACAO_MSG_KEY])
 
-  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+  const valorDe = (chave: string) => configValue(data, chave)
   const rawMsg = valorDe(BOT_SAUDACAO_MSG_KEY)
 
   return {
@@ -408,7 +408,7 @@ export const getWhatsappAgenteConfig = async (): Promise<AgenteConfig> => {
     .select("chave, valor")
     .in("chave", [AGENTE_FLAG_KEY, AGENTE_FAQ_KEY])
 
-  const valorDe = (chave: string) => data?.find((row) => row.chave === chave)?.valor
+  const valorDe = (chave: string) => configValue(data, chave)
   const rawFaq = valorDe(AGENTE_FAQ_KEY)
 
   return {

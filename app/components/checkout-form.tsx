@@ -11,6 +11,10 @@ import { isAddressInDeliveryArea } from "@/lib/geo"
 import AddressAutocomplete from "@/components/address-autocomplete"
 import type { AddressData } from "@/components/address-autocomplete"
 import { calculateLine } from "@/lib/pricing"
+import { formatBRL, formatPhone } from "@/lib/format"
+import { validateCheckout } from "@/lib/checkout-validation"
+import { getDaysInMonth, buildYearOptions } from "@/lib/checkout-datetime"
+import { EventDateTimePicker } from "@/components/checkout/event-datetime-picker"
 
 type DeliveryConfig = {
   raioKm: number
@@ -23,41 +27,10 @@ type CheckoutFormProps = {
   exclusionZones: { lat: number; lng: number }[][]
 }
 
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
-
 const inputClassName =
   "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 placeholder:text-brand-warm-gray/40"
 
 const labelClassName = "block text-sm font-medium text-brand-gray-light mb-1.5"
-
-const formatPhone = (value: string) => {
-  const digits = value.replace(/\D/g, "").slice(0, 11)
-  if (digits.length <= 2) return digits.length ? `(${digits}` : ""
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
-}
-
-const selectClassName =
-  "w-full px-4 py-3 rounded-md border border-white/10 bg-brand-surface text-white text-sm focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none transition-colors duration-200 appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22%23B5AFA6%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m2%204%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat"
-
-const MESES = [
-  "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-]
-
-const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1)
-
-const getDaysInMonth = (month: number, year: number) =>
-  new Date(year, month, 0).getDate()
-
-const buildYearOptions = () => {
-  const currentYear = new Date().getFullYear()
-  return [currentYear, currentYear + 1]
-}
-
-const HORAS = Array.from({ length: 15 }, (_, i) => i + 8)
-const MINUTOS = [0, 15, 30, 45]
 
 const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => {
   const router = useRouter()
@@ -129,39 +102,21 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
     setLoading(true)
     setError(null)
 
-    if (!address) {
-      setError("Selecione um endereco valido")
+    const validationError = validateCheckout({
+      address: address ? { numero: address.numero } : null,
+      addressInArea,
+      dataEvento,
+      tipoChopeira,
+      temRampas,
+    })
+    if (validationError) {
+      setError(validationError)
       setLoading(false)
       return
     }
-
-    if (addressInArea === false) {
-      setError("Infelizmente nao atendemos essa regiao")
-      setLoading(false)
-      return
-    }
-
-    const eventDate = new Date(dataEvento + "T00:00:00")
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    if (eventDate < today) {
-      setError("A data do evento nao pode ser no passado")
-      setLoading(false)
-      return
-    }
-
-    if (!tipoChopeira) {
-      setError("Selecione o tipo de chopeira")
-      setLoading(false)
-      return
-    }
-
-    if (address && !temRampas) {
-      setError("Informe se o local possui rampas ou escadas")
-      setLoading(false)
-      return
-    }
+    // validateCheckout already requires a non-null address; re-narrow here so TS
+    // knows `address` below is defined (the check itself is unreachable).
+    if (!address) return
 
     const formData = new FormData(e.currentTarget)
 
@@ -260,11 +215,11 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
                 <span className="text-brand-gray-light">
                   {item.quantidade}x {item.produto.marca} {item.produto.volume_litros}L
                 </span>
-                <span className="font-medium text-white">{formatPrice(line.total)}</span>
+                <span className="font-medium text-white">{formatBRL(line.total)}</span>
               </div>
               {line.hasPromo && (
                 <p className="text-[11px] text-green-400 mt-0.5">
-                  1º {formatPrice(line.firstUnitPrice)} · 2º+ {formatPrice(line.extraUnitPrice)}
+                  1º {formatBRL(line.firstUnitPrice)} · 2º+ {formatBRL(line.extraUnitPrice)}
                 </p>
               )}
             </div>
@@ -272,12 +227,12 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
           {totalSavings > 0 && (
             <div className="flex justify-between text-sm mt-3 pt-3 border-t border-white/10">
               <span className="text-brand-warm-gray">Promo do 2º barril</span>
-              <span className="text-green-400">- {formatPrice(totalSavings)}</span>
+              <span className="text-green-400">- {formatBRL(totalSavings)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t border-white/10">
             <span className="text-white">Total</span>
-            <span className="font-display text-brand-yellow">{formatPrice(total)}</span>
+            <span className="font-display text-brand-yellow">{formatBRL(total)}</span>
           </div>
           <p className="text-brand-warm-gray text-xs mt-2">O frete sera calculado e informado apos a confirmacao do pedido.</p>
         </motion.div>
@@ -433,85 +388,15 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
             </motion.div>
           )}
 
-          <div>
-            <label className={labelClassName}>Data do evento *</label>
-            <div className="grid grid-cols-3 gap-3">
-              <select
-                required
-                value={dia}
-                onChange={(e) => setDia(e.target.value)}
-                className={selectClassName}
-              >
-                <option value="" disabled>Dia</option>
-                {DAY_OPTIONS.map((d) => (
-                  <option key={d} value={String(d)}>{d}</option>
-                ))}
-              </select>
-              <select
-                required
-                value={mes}
-                onChange={(e) => setMes(e.target.value)}
-                className={selectClassName}
-              >
-                <option value="" disabled>Mes</option>
-                {MESES.map((nome, idx) => (
-                  <option key={nome} value={String(idx + 1)}>{nome}</option>
-                ))}
-              </select>
-              <select
-                required
-                value={ano}
-                onChange={(e) => setAno(e.target.value)}
-                className={selectClassName}
-              >
-                {buildYearOptions().map((y) => (
-                  <option key={y} value={String(y)}>{y}</option>
-                ))}
-              </select>
-            </div>
-            {diaInvalida && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-400 text-sm mt-2"
-              >
-                O mes de {MESES[selectedMonth - 1]} nao tem dia {dia} — selecione um dia ate {maxDays}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <label className={labelClassName}>Horario do evento *</label>
-            <div className="grid grid-cols-2 gap-3">
-              <select
-                required
-                value={hora}
-                onChange={(e) => { setHora(e.target.value); if (minuto === "") setMinuto("0") }}
-                className={selectClassName}
-              >
-                <option value="" disabled>Hora</option>
-                {HORAS.map((h) => {
-                  const full = (bookedSlots[h] ?? 0) >= 2
-                  return (
-                    <option key={h} value={String(h)} disabled={full}>
-                      {String(h).padStart(2, "0")}h{full ? " (indisponivel)" : ""}
-                    </option>
-                  )
-                })}
-              </select>
-              <select
-                required
-                value={minuto}
-                onChange={(e) => setMinuto(e.target.value)}
-                className={selectClassName}
-              >
-                <option value="" disabled>Minuto</option>
-                {MINUTOS.map((m) => (
-                  <option key={m} value={String(m)}>{String(m).padStart(2, "0")}min</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <EventDateTimePicker
+            dia={dia} mes={mes} ano={ano} hora={hora} minuto={minuto}
+            onDia={setDia} onMes={setMes} onAno={setAno}
+            onHora={(v) => { setHora(v); if (minuto === "") setMinuto("0") }}
+            onMinuto={setMinuto}
+            maxDays={maxDays} diaInvalida={diaInvalida} selectedMonth={selectedMonth}
+            yearOptions={buildYearOptions(now.getFullYear())}
+            bookedSlots={bookedSlots}
+          />
 
           <div>
             <label className={labelClassName}>Preferência de Chopeira *</label>
@@ -577,7 +462,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
             whileTap={{ scale: 0.97 }}
             className="w-full bg-brand-yellow text-brand-black font-medium py-4 rounded-md text-sm tracking-wide uppercase cursor-pointer transition-colors duration-200 hover:bg-brand-amber disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Enviando..." : `Confirmar Pedido — ${formatPrice(total)}`}
+            {loading ? "Enviando..." : `Confirmar Pedido — ${formatBRL(total)}`}
           </motion.button>
         </motion.form>
       </div>

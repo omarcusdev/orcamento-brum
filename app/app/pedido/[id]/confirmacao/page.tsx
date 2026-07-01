@@ -2,16 +2,11 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import CopyLinkButton from "@/components/copy-link-button"
+import { formatBRL, formatEventDate } from "@/lib/format"
 
 type Props = {
   params: Promise<{ id: string }>
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
-
-const formatDate = (date: string) =>
-  new Date(date + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
 
 const ConfirmacaoPage = async ({ params }: Props) => {
   const { id } = await params
@@ -114,14 +109,14 @@ const ConfirmacaoPage = async ({ params }: Props) => {
                 <span className="text-white text-sm">
                   {item.quantidade}x {item.produtos?.marca} {item.produtos?.volume_litros}L
                 </span>
-                <span className="text-brand-yellow text-sm font-medium">{formatPrice(item.subtotal)}</span>
+                <span className="text-brand-yellow text-sm font-medium">{formatBRL(item.subtotal)}</span>
               </div>
             ))}
           </div>
 
           <div className="flex justify-between items-center pt-3 border-t border-white/10">
             <span className="text-white font-medium">Total</span>
-            <span className="font-display text-2xl text-brand-yellow">{formatPrice(pedido.total)}</span>
+            <span className="font-display text-2xl text-brand-yellow">{formatBRL(pedido.total)}</span>
           </div>
         </div>
 
@@ -132,7 +127,7 @@ const ConfirmacaoPage = async ({ params }: Props) => {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-brand-warm-gray">Evento</span>
-            <span className="text-white">{formatDate(pedido.data_evento)} às {pedido.horario_evento.slice(0, 5)}</span>
+            <span className="text-white">{formatEventDate(pedido.data_evento, { day: "2-digit", month: "long", year: "numeric" })} às {pedido.horario_evento.slice(0, 5)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-brand-warm-gray">Endereço</span>

@@ -6,7 +6,6 @@ type Size = "sm" | "md" | "lg"
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant
   size?: Size
-  loading?: boolean
   fullWidth?: boolean
   children: ReactNode
 }
@@ -32,7 +31,6 @@ const sizes: Record<Size, string> = {
 export const Button = ({
   variant = "primary",
   size = "md",
-  loading = false,
   fullWidth = false,
   disabled,
   className,
@@ -41,7 +39,7 @@ export const Button = ({
 }: ButtonProps) => (
   <button
     {...rest}
-    disabled={disabled || loading}
+    disabled={disabled}
     className={`${baseClass} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className ?? ""}`}
   >
     {children}

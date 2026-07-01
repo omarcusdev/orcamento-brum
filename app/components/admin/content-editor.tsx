@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { saveConteudo } from "@/lib/admin-actions"
-import { Button } from "@/components/ui"
+import { Button, Input, Textarea, Select, fieldLabelClass } from "@/components/ui"
 import type { HeroContent, FeaturesContent, FaqContent, FooterContent, FeatureItem, FaqItem } from "@/lib/types"
 
 const ICON_OPTIONS = [
@@ -13,9 +13,6 @@ const ICON_OPTIONS = [
 
 const tabs = ["Hero", "Features", "FAQ", "Footer"] as const
 type Tab = typeof tabs[number]
-
-const inputClassName = "w-full px-3 py-2 rounded-lg bg-brand-dark border border-white/10 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow outline-none text-sm text-white placeholder-brand-warm-gray"
-const labelClassName = "block text-sm font-medium text-brand-gray-light mb-1"
 
 type ContentEditorProps = {
   hero: HeroContent | null
@@ -157,21 +154,21 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
         {activeTab === "Hero" && (
           <div className="space-y-4">
             <div>
-              <label className={labelClassName}>Titulo</label>
-              <input value={hero.titulo} onChange={(e) => setHero({ ...hero, titulo: e.target.value })} className={inputClassName} />
+              <label className={fieldLabelClass}>Titulo</label>
+              <Input value={hero.titulo} onChange={(e) => setHero({ ...hero, titulo: e.target.value })} />
             </div>
             <div>
-              <label className={labelClassName}>Subtitulo</label>
-              <textarea value={hero.subtitulo} onChange={(e) => setHero({ ...hero, subtitulo: e.target.value })} rows={2} className={`${inputClassName} resize-none`} />
+              <label className={fieldLabelClass}>Subtitulo</label>
+              <Textarea value={hero.subtitulo} onChange={(e) => setHero({ ...hero, subtitulo: e.target.value })} rows={2} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClassName}>Texto botao principal</label>
-                <input value={hero.cta_texto} onChange={(e) => setHero({ ...hero, cta_texto: e.target.value })} className={inputClassName} />
+                <label className={fieldLabelClass}>Texto botao principal</label>
+                <Input value={hero.cta_texto} onChange={(e) => setHero({ ...hero, cta_texto: e.target.value })} />
               </div>
               <div>
-                <label className={labelClassName}>Texto botao WhatsApp</label>
-                <input value={hero.cta_whatsapp_texto} onChange={(e) => setHero({ ...hero, cta_whatsapp_texto: e.target.value })} className={inputClassName} />
+                <label className={fieldLabelClass}>Texto botao WhatsApp</label>
+                <Input value={hero.cta_whatsapp_texto} onChange={(e) => setHero({ ...hero, cta_whatsapp_texto: e.target.value })} />
               </div>
             </div>
             <Button onClick={() => handleSave("hero", hero as unknown as Record<string, unknown>)} disabled={saving}>
@@ -184,12 +181,12 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClassName}>Titulo da secao</label>
-                <input value={features.titulo} onChange={(e) => setFeatures({ ...features, titulo: e.target.value })} className={inputClassName} />
+                <label className={fieldLabelClass}>Titulo da secao</label>
+                <Input value={features.titulo} onChange={(e) => setFeatures({ ...features, titulo: e.target.value })} />
               </div>
               <div>
-                <label className={labelClassName}>Subtitulo</label>
-                <input value={features.subtitulo} onChange={(e) => setFeatures({ ...features, subtitulo: e.target.value })} className={inputClassName} />
+                <label className={fieldLabelClass}>Subtitulo</label>
+                <Input value={features.subtitulo} onChange={(e) => setFeatures({ ...features, subtitulo: e.target.value })} />
               </div>
             </div>
             {features.items.map((item, idx) => (
@@ -199,14 +196,14 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
                   <button onClick={() => removeFeatureItem(idx)} className="text-red-400 text-xs hover:text-red-300 cursor-pointer">Remover</button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <input value={item.titulo} onChange={(e) => updateFeatureItem(idx, "titulo", e.target.value)} placeholder="Titulo" className={inputClassName} />
-                  <select value={item.icone} onChange={(e) => updateFeatureItem(idx, "icone", e.target.value)} className={inputClassName}>
+                  <Input value={item.titulo} onChange={(e) => updateFeatureItem(idx, "titulo", e.target.value)} placeholder="Titulo" />
+                  <Select value={item.icone} onChange={(e) => updateFeatureItem(idx, "icone", e.target.value)}>
                     {ICON_OPTIONS.map((icon) => (
                       <option key={icon} value={icon}>{icon}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
-                <textarea value={item.descricao} onChange={(e) => updateFeatureItem(idx, "descricao", e.target.value)} placeholder="Descricao" rows={2} className={`${inputClassName} resize-none`} />
+                <Textarea value={item.descricao} onChange={(e) => updateFeatureItem(idx, "descricao", e.target.value)} placeholder="Descricao" rows={2} />
               </div>
             ))}
             <button onClick={addFeatureItem} className="text-brand-yellow text-sm font-medium hover:text-brand-amber transition cursor-pointer">+ Adicionar item</button>
@@ -222,12 +219,12 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClassName}>Titulo da secao</label>
-                <input value={faq.titulo} onChange={(e) => setFaq({ ...faq, titulo: e.target.value })} className={inputClassName} />
+                <label className={fieldLabelClass}>Titulo da secao</label>
+                <Input value={faq.titulo} onChange={(e) => setFaq({ ...faq, titulo: e.target.value })} />
               </div>
               <div>
-                <label className={labelClassName}>Subtitulo</label>
-                <input value={faq.subtitulo} onChange={(e) => setFaq({ ...faq, subtitulo: e.target.value })} className={inputClassName} />
+                <label className={fieldLabelClass}>Subtitulo</label>
+                <Input value={faq.subtitulo} onChange={(e) => setFaq({ ...faq, subtitulo: e.target.value })} />
               </div>
             </div>
             {faq.items.map((item, idx) => (
@@ -236,8 +233,8 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
                   <span className="text-xs text-brand-warm-gray">Pergunta {idx + 1}</span>
                   <button onClick={() => removeFaqItem(idx)} className="text-red-400 text-xs hover:text-red-300 cursor-pointer">Remover</button>
                 </div>
-                <input value={item.pergunta} onChange={(e) => updateFaqItem(idx, "pergunta", e.target.value)} placeholder="Pergunta" className={inputClassName} />
-                <textarea value={item.resposta} onChange={(e) => updateFaqItem(idx, "resposta", e.target.value)} placeholder="Resposta" rows={2} className={`${inputClassName} resize-none`} />
+                <Input value={item.pergunta} onChange={(e) => updateFaqItem(idx, "pergunta", e.target.value)} placeholder="Pergunta" />
+                <Textarea value={item.resposta} onChange={(e) => updateFaqItem(idx, "resposta", e.target.value)} placeholder="Resposta" rows={2} />
               </div>
             ))}
             <button onClick={addFaqItem} className="text-brand-yellow text-sm font-medium hover:text-brand-amber transition cursor-pointer">+ Adicionar pergunta</button>
@@ -252,8 +249,8 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
         {activeTab === "Footer" && (
           <div className="space-y-4">
             <div>
-              <label className={labelClassName}>Texto do footer</label>
-              <input value={footer.texto} onChange={(e) => setFooter({ ...footer, texto: e.target.value })} className={inputClassName} />
+              <label className={fieldLabelClass}>Texto do footer</label>
+              <Input value={footer.texto} onChange={(e) => setFooter({ ...footer, texto: e.target.value })} />
             </div>
             {footer.links.map((link, idx) => (
               <div key={idx} className="bg-brand-dark rounded-lg p-4 space-y-3">
@@ -262,8 +259,8 @@ const ContentEditor = ({ hero: initialHero, features: initialFeatures, faq: init
                   <button onClick={() => removeFooterLink(idx)} className="text-red-400 text-xs hover:text-red-300 cursor-pointer">Remover</button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <input value={link.label} onChange={(e) => updateFooterLink(idx, "label", e.target.value)} placeholder="Label" className={inputClassName} />
-                  <input value={link.url} onChange={(e) => updateFooterLink(idx, "url", e.target.value)} placeholder="URL" className={inputClassName} />
+                  <Input value={link.label} onChange={(e) => updateFooterLink(idx, "label", e.target.value)} placeholder="Label" />
+                  <Input value={link.url} onChange={(e) => updateFooterLink(idx, "url", e.target.value)} placeholder="URL" />
                 </div>
               </div>
             ))}

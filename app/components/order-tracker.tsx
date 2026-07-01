@@ -8,15 +8,13 @@ import type { Pedido, PedidoStatusLog, PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
 import OrderTimeline from "@/components/order-timeline"
 import DocumentUploadSection from "@/components/document-upload-section"
+import { formatBRL, formatEventDate } from "@/lib/format"
 
 type OrderTrackerProps = {
   pedido: Pedido & { clientes: { nome: string } }
   items: { quantidade: number; preco_unitario: number; produtos: { marca: string; volume_litros: number } }[]
   logs: PedidoStatusLog[]
 }
-
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
 const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: OrderTrackerProps) => {
   const [pedido, setPedido] = useState(initialPedido)
@@ -81,7 +79,7 @@ const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: Order
             </div>
             <div className="flex justify-between">
               <span className="text-brand-warm-gray">Evento</span>
-              <span className="text-white">{new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")} às {pedido.horario_evento.slice(0, 5)}</span>
+              <span className="text-white">{formatEventDate(pedido.data_evento)} às {pedido.horario_evento.slice(0, 5)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-brand-warm-gray">Endereço</span>
@@ -109,7 +107,7 @@ const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: Order
           {items.map((item, idx) => (
             <div key={idx} className="flex justify-between items-center py-1.5 text-sm">
               <span className="text-white">{item.quantidade}x {item.produtos.marca} {item.produtos.volume_litros}L</span>
-              <span className="text-brand-yellow font-medium">{formatPrice(item.preco_unitario * item.quantidade)}</span>
+              <span className="text-brand-yellow font-medium">{formatBRL(item.preco_unitario * item.quantidade)}</span>
             </div>
           ))}
           <div className="pt-4 mt-4 border-t border-white/10 space-y-2">
@@ -117,11 +115,11 @@ const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: Order
               <>
                 <div className="flex justify-between text-sm">
                   <span className="text-brand-warm-gray">Subtotal</span>
-                  <span className="text-brand-gray-light">{formatPrice(pedido.subtotal)}</span>
+                  <span className="text-brand-gray-light">{formatBRL(pedido.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-brand-warm-gray">Frete</span>
-                  <span className="text-brand-gray-light">{formatPrice(pedido.frete)}</span>
+                  <span className="text-brand-gray-light">{formatBRL(pedido.frete)}</span>
                 </div>
               </>
             ) : (
@@ -132,7 +130,7 @@ const OrderTracker = ({ pedido: initialPedido, items, logs: initialLogs }: Order
             )}
             <div className="flex justify-between items-center">
               <span className="text-white font-medium">Total</span>
-              <span className="font-display text-2xl text-brand-yellow">{formatPrice(pedido.total)}</span>
+              <span className="font-display text-2xl text-brand-yellow">{formatBRL(pedido.total)}</span>
             </div>
           </div>
         </motion.div>

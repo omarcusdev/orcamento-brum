@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { isWhatsappFeatureEnabled } from "./features"
+import { configValue } from "./config"
 import { logWaError, errInfo } from "./wa-log"
 import {
   LEMBRETE_FLAG_KEY,
@@ -43,7 +44,7 @@ export const runLembreteVespera = async (): Promise<LembreteRunResult> => {
       .in("chave", [LEMBRETE_HORA_KEY, LEMBRETE_MSG_KEY])
     if (cfgErr) logWaError("lembrete:erro-config", errInfo(cfgErr))
 
-    const valorDe = (chave: string) => cfg?.find((row) => row.chave === chave)?.valor
+    const valorDe = (chave: string) => configValue(cfg, chave)
     const hora = parseHora(valorDe(LEMBRETE_HORA_KEY))
     const rawMsg = valorDe(LEMBRETE_MSG_KEY)
     const template = rawMsg && rawMsg.trim() ? rawMsg : DEFAULT_LEMBRETE_MSG

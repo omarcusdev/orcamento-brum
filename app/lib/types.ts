@@ -29,8 +29,6 @@ export type Cliente = {
 
 export type DocumentoStatus = "pendente" | "enviado" | "verificado"
 
-export type ConsignadoStatus = "pendente" | "usado" | "devolvido"
-
 export type PedidoStatus =
   | "confirmado"
   | "enviar_para_entregador"
@@ -62,17 +60,6 @@ export type Pedido = {
   arquivado_em: string | null
   created_at: string
   updated_at: string
-}
-
-export type PedidoItem = {
-  id: string
-  pedido_id: string
-  produto_id: string
-  quantidade: number
-  preco_unitario: number
-  subtotal: number
-  is_consignado: boolean
-  consignado_status: ConsignadoStatus | null
 }
 
 export type PedidoEditLog = {

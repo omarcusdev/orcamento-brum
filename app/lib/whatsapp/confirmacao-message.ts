@@ -2,7 +2,7 @@
 // Formato "WhatsApp": linhas curtas + itens em lista (•), *negrito* nos rótulos — em vez de um bloco
 // corrido. Função pura/testada; o envio em si fica em notificacoes.ts.
 
-const formatEventDate = (iso: string) => new Date(iso + "T00:00:00").toLocaleDateString("pt-BR")
+import { formatEventDate, firstName, shortId, formatTime } from "@/lib/format"
 
 export const buildConfirmationMessage = (data: {
   clienteNome: string
@@ -11,17 +11,16 @@ export const buildConfirmationMessage = (data: {
   dataEvento: string
   horarioEvento: string
 }): string => {
-  const firstName = data.clienteNome.split(" ")[0]
   const itensList = data.itens
     .map((item) => `• ${item.quantidade}x ${item.marca} ${item.volume}L`)
     .join("\n")
   return [
-    `Olá, ${firstName}! 🍻 Recebemos seu pedido!`,
+    `Olá, ${firstName(data.clienteNome)}! 🍻 Recebemos seu pedido!`,
     ``,
-    `*Pedido #${data.pedidoId.slice(0, 8)}*`,
+    `*Pedido #${shortId(data.pedidoId)}*`,
     itensList,
     ``,
-    `📅 *Evento:* ${formatEventDate(data.dataEvento)} às ${data.horarioEvento.slice(0, 5)}`,
+    `📅 *Evento:* ${formatEventDate(data.dataEvento)} às ${formatTime(data.horarioEvento)}`,
     ``,
     `Já já confirmamos tudo com você por aqui 😊`,
     `— ALFA Chopp Delivery`,

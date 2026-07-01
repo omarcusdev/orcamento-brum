@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
+import { configValue } from "./config"
 import { logWa, logWaError, errInfo } from "./wa-log"
 import {
   BOT_SAUDACAO_FLAG_KEY,
@@ -29,7 +30,7 @@ export const maybeSendBotSaudacao = async (
       return // fail-closed: sem config confiável, não saúda
     }
 
-    const valorDe = (chave: string) => cfg?.find((row) => row.chave === chave)?.valor
+    const valorDe = (chave: string) => configValue(cfg, chave)
     if (!botSaudacaoAtivo(valorDe(BOT_SAUDACAO_FLAG_KEY))) return // só 'true' liga
 
     const janelaHoras = parseJanelaHoras(valorDe(BOT_SAUDACAO_JANELA_KEY))

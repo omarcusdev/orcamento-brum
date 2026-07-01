@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
-import { statusConfig } from "@/components/order-status-badge"
+import OrderStatusBadge, { statusConfig } from "@/components/order-status-badge"
 import { advanceOrderStatus, cancelOrder } from "@/lib/admin-actions"
 import DispatchModal from "@/components/admin/dispatch-modal"
 import RevertStatusModal from "@/components/admin/revert-status-modal"
+import { useConfirm } from "@/components/admin/confirm-provider"
 import { Button } from "@/components/ui"
 
 type StatusActionsProps = {
@@ -29,6 +29,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
   const [loading, setLoading] = useState(false)
   const [showDispatch, setShowDispatch] = useState(false)
   const [showRevert, setShowRevert] = useState(false)
+  const { confirm } = useConfirm()
 
   const nextStatus = nextStatusMap[currentStatus]
   const canShowRevert = currentStatus !== "confirmado" && currentStatus !== "cancelado"
@@ -38,14 +39,26 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
       setShowDispatch(true)
       return
     }
-    if (frete === 0 && !confirm("Frete nao definido. Deseja continuar sem frete?")) return
+    if (
+      frete === 0 &&
+      !(await confirm({ title: "Frete não definido", message: "Frete nao definido. Deseja continuar sem frete?", confirmLabel: "Continuar sem frete" }))
+    )
+      return
     setLoading(true)
     await advanceOrderStatus(pedidoId, currentStatus)
     setLoading(false)
   }
 
   const handleCancel = async () => {
-    if (!confirm("Tem certeza que deseja cancelar este pedido?")) return
+    if (
+      !(await confirm({
+        title: "Cancelar pedido",
+        message: "Tem certeza que deseja cancelar este pedido?",
+        confirmLabel: "Sim, cancelar",
+        variant: "danger",
+      }))
+    )
+      return
     setLoading(true)
     await cancelOrder(pedidoId)
     setLoading(false)
@@ -58,9 +71,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-brand-warm-gray">Status atual:</span>
-            <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium border tracking-wide ${statusConfig[currentStatus].color}`}>
-              {statusConfig[currentStatus].label}
-            </span>
+            <OrderStatusBadge status={currentStatus} />
           </div>
           <Button type="button" variant="secondary" fullWidth onClick={() => setShowRevert(true)}>
             Voltar status
@@ -83,9 +94,7 @@ const StatusActions = ({ pedidoId, currentStatus, documentoStatus, frete, dispat
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm text-brand-warm-gray">Status atual:</span>
-        <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium border tracking-wide ${statusConfig[currentStatus].color}`}>
-          {statusConfig[currentStatus].label}
-        </span>
+        <OrderStatusBadge status={currentStatus} />
       </div>
 
       {nextStatus && (

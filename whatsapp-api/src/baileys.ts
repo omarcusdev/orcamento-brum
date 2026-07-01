@@ -9,17 +9,15 @@ import { rm } from "node:fs/promises"
 import pino from "pino"
 import QRCode from "qrcode-terminal"
 import { extractInbound, forwardInbound } from "./inbound.js"
+import { idlePairingState } from "./pairing-state.js"
+import { postSigned } from "./webhook.js"
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 
 let socket: WASocket | null = null
 let connectionStatus: "disconnected" | "connecting" | "connected" = "disconnected"
 let paired = false
-let currentQr: string | null = null
-let currentCode: string | null = null
-let pairingMethod: "qr" | "code" | null = null
-let pairingPhone: string | null = null
-let codeRequested = false
+let pairing = idlePairingState()
 
 let alertSent = false
 let offlineTimer: ReturnType<typeof setTimeout> | null = null
@@ -41,14 +39,7 @@ const sendDownAlert = async (reason: "logged_out" | "offline"): Promise<void> =>
   }
 
   try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "x-alert-secret": secret,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ reason, since: new Date().toISOString() }),
-    })
+    await postSigned(webhookUrl, secret, "x-alert-secret", { reason, since: new Date().toISOString() })
   } catch (err) {
     console.error("Failed to deliver WhatsApp down alert:", err)
   }
@@ -67,11 +58,7 @@ const resetToIdle = (): void => {
   } catch {}
   socket = null
   connectionStatus = "disconnected"
-  currentQr = null
-  currentCode = null
-  pairingMethod = null
-  pairingPhone = null
-  codeRequested = false
+  pairing = idlePairingState()
   clearOfflineTimer()
 }
 
@@ -132,14 +119,14 @@ const createSocket = async (): Promise<WASocket> => {
 
     // The qr event signals the socket is ready to pair.
     if (qr) {
-      if (pairingMethod === "code") {
+      if (pairing.pairingMethod === "code") {
         // Request the 8-char code now that the connection is ready (calling it earlier throws).
-        if (pairingPhone && !codeRequested) {
-          codeRequested = true
+        if (pairing.pairingPhone && !pairing.codeRequested) {
+          pairing.codeRequested = true
           newSocket
-            .requestPairingCode(pairingPhone)
+            .requestPairingCode(pairing.pairingPhone)
             .then((code) => {
-              currentCode = code
+              pairing.currentCode = code
               console.log("WhatsApp pairing code:", code)
             })
             .catch((err) => {
@@ -147,8 +134,8 @@ const createSocket = async (): Promise<WASocket> => {
               resetToIdle()
             })
         }
-      } else if (pairingMethod === "qr") {
-        currentQr = qr
+      } else if (pairing.pairingMethod === "qr") {
+        pairing.currentQr = qr
         console.log("Scan this QR code to connect WhatsApp:")
         console.log("WA_QR " + qr)
         QRCode.generate(qr, { small: true })
@@ -174,9 +161,7 @@ const createSocket = async (): Promise<WASocket> => {
         console.log("Logged out. Re-pair via the admin WhatsApp page.")
         socket = null
         paired = false
-        currentQr = null
-        currentCode = null
-        pairingMethod = null
+        pairing = idlePairingState()
         clearOfflineTimer()
         if (wasPaired && !alertSent) {
           alertSent = true
@@ -201,17 +186,13 @@ const createSocket = async (): Promise<WASocket> => {
         // Unpaired pairing window closed without a scan/code: go idle, do NOT reconnect.
         console.log("Pairing attempt ended without pairing. Idle until next /connect.")
         socket = null
-        currentQr = null
-        currentCode = null
-        pairingMethod = null
+        pairing = idlePairingState()
         clearOfflineTimer()
       }
     } else if (connection === "open") {
       connectionStatus = "connected"
       paired = true
-      currentQr = null
-      currentCode = null
-      pairingMethod = null
+      pairing = idlePairingState()
       alertSent = false
       clearOfflineTimer()
       console.log("WhatsApp connected successfully!")
@@ -260,11 +241,13 @@ const startPairing = async (method: "qr" | "code", phone?: string): Promise<void
   }
   paired = false
 
-  pairingMethod = method
-  pairingPhone = method === "code" && phone ? normalizePhone(phone) : null
-  codeRequested = false
-  currentQr = null
-  currentCode = null
+  pairing = {
+    currentQr: null,
+    currentCode: null,
+    pairingMethod: method,
+    pairingPhone: method === "code" && phone ? normalizePhone(phone) : null,
+    codeRequested: false,
+  }
   connectionStatus = "connecting"
   // The pairing code (code mode) is requested inside the connection.update handler once the
   // socket is ready to pair — requesting it synchronously here throws (WS not yet established).
@@ -287,9 +270,7 @@ const logout = async (): Promise<void> => {
   socket = null
   connectionStatus = "disconnected"
   paired = false
-  currentQr = null
-  currentCode = null
-  pairingMethod = null
+  pairing = idlePairingState()
   alertSent = false
   clearOfflineTimer()
 }
@@ -321,8 +302,8 @@ const extractPhone = (jid: string | undefined): string | null => {
 const getConnectionInfo = () => ({
   status: connectionStatus,
   paired,
-  qr: connectionStatus === "connected" ? null : currentQr,
-  code: connectionStatus === "connected" ? null : currentCode,
+  qr: connectionStatus === "connected" ? null : pairing.currentQr,
+  code: connectionStatus === "connected" ? null : pairing.currentCode,
   me: connectionStatus === "connected" ? extractPhone(socket?.user?.id) : null,
 })
 

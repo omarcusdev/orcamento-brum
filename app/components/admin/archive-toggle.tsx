@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useConfirm } from "@/components/admin/confirm-provider"
 import { archiveOrder, unarchiveOrder } from "@/lib/admin-actions"
 
 type ArchiveToggleProps = {
@@ -12,9 +13,19 @@ type ArchiveToggleProps = {
 const ArchiveToggle = ({ pedidoId, arquivado }: ArchiveToggleProps) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { confirm } = useConfirm()
 
   const handle = async () => {
-    if (!arquivado && !confirm("Excluir este pedido da esteira? Ele vai pra aba 'Arquivados' e pode ser restaurado depois.")) return
+    if (
+      !arquivado &&
+      !(await confirm({
+        title: "Excluir pedido",
+        message: "Excluir este pedido da esteira? Ele vai pra aba 'Arquivados' e pode ser restaurado depois.",
+        confirmLabel: "Excluir",
+        variant: "danger",
+      }))
+    )
+      return
     setLoading(true)
     setError(null)
     try {

@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { isWhatsappFeatureEnabled, parseFlag } from "./features"
+import { configValue } from "./config"
 import { logWaError, errInfo } from "./wa-log"
 import {
   isNotifyStatus,
@@ -80,8 +81,8 @@ export const sendCustomerWhatsAppStatusUpdate = async (pedidoId: string, novoSta
       .select("chave, valor")
       .in("chave", [statusFlagKey(novoStatus), statusMsgKey(novoStatus)])
 
-    const statusOn = parseFlag(cfgRows?.find((r) => r.chave === statusFlagKey(novoStatus))?.valor)
-    const template = cfgRows?.find((r) => r.chave === statusMsgKey(novoStatus))?.valor ?? null
+    const statusOn = parseFlag(configValue(cfgRows, statusFlagKey(novoStatus)))
+    const template = configValue(cfgRows, statusMsgKey(novoStatus)) ?? null
 
     const { data: pedido, error: pedidoErr } = await supabase
       .from("pedidos")

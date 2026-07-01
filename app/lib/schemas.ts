@@ -53,10 +53,6 @@ export const entregadorSchema = z.object({
   telefone: z.string().regex(phoneRegex, "Telefone invalido"),
 })
 
-export type EntregadorInput = z.infer<typeof entregadorSchema>
-export type CreateOrderInput = z.infer<typeof createOrderSchema>
-export type ProductInput = z.infer<typeof productSchema>
-
 const enderecoCompletoSchema = z.object({
   rua: z.string(),
   numero: z.string(),

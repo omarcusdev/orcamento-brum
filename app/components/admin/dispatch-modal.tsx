@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useConfirm } from "@/components/admin/confirm-provider"
 import { dispatchToEntregador, fetchActiveEntregadores } from "@/lib/admin-actions"
 import { getWhatsappConnection } from "@/lib/whatsapp/admin-actions"
-import { Button, Select, fieldLabelClass } from "@/components/ui"
+import { Button, Modal, Select, fieldLabelClass } from "@/components/ui"
 
 type DispatchModalProps = {
   pedidoId: string
@@ -29,6 +29,7 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
   // null = ainda verificando a conexão; controla se o botão envia (conectado) ou copia (hoje).
   const [paired, setPaired] = useState<boolean | null>(null)
   const [result, setResult] = useState<"notified" | "copied" | "send-failed" | null>(null)
+  const { confirm } = useConfirm()
 
   useEffect(() => {
     fetchActiveEntregadores()
@@ -48,8 +49,24 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
 
   const handleConfirm = async () => {
     if (!selectedId) return
-    if (documentoStatus !== "verificado" && !confirm("Documentacao ainda nao verificada. Deseja despachar mesmo assim?")) return
-    if (frete === 0 && !confirm("Frete nao definido. Apos o despacho, o valor do frete nao podera mais ser alterado. Deseja continuar sem frete?")) return
+    if (
+      documentoStatus !== "verificado" &&
+      !(await confirm({
+        title: "Documentação não verificada",
+        message: "Documentacao ainda nao verificada. Deseja despachar mesmo assim?",
+        confirmLabel: "Despachar mesmo assim",
+      }))
+    )
+      return
+    if (
+      frete === 0 &&
+      !(await confirm({
+        title: "Frete não definido",
+        message: "Frete nao definido. Apos o despacho, o valor do frete nao podera mais ser alterado. Deseja continuar sem frete?",
+        confirmLabel: "Continuar sem frete",
+      }))
+    )
+      return
     setLoading(true)
     setError(null)
 
@@ -74,91 +91,71 @@ const DispatchModal = ({ pedidoId, dispatchText, frete, documentoStatus, onClose
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          onClick={(e) => e.stopPropagation()}
-          className="bg-brand-surface border border-white/10 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        >
-          <h3 className="font-display text-lg font-bold text-white tracking-wide mb-4">
-            ENVIAR PARA ENTREGADOR
-          </h3>
-
-          <div className="space-y-4">
-            <div>
-              <label className={fieldLabelClass}>Selecionar Entregador</label>
-              {loadingList ? (
-                <div className="px-4 py-3 rounded-lg border border-white/10 bg-brand-dark text-brand-warm-gray text-sm">
-                  Carregando...
-                </div>
-              ) : entregadores.length === 0 ? (
-                <div className="px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
-                  Nenhum entregador ativo. Cadastre um em Entregadores.
-                </div>
-              ) : (
-                <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-                  {entregadores.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nome} — {e.telefone}
-                    </option>
-                  ))}
-                </Select>
-              )}
+    <Modal onClose={onClose} maxWidth="lg" closeDisabled={loading} title="ENVIAR PARA ENTREGADOR">
+      <div className="space-y-4">
+        <div>
+          <label className={fieldLabelClass}>Selecionar Entregador</label>
+          {loadingList ? (
+            <div className="px-4 py-3 rounded-lg border border-white/10 bg-brand-dark text-brand-warm-gray text-sm">
+              Carregando...
             </div>
-
-            <div>
-              <label className={fieldLabelClass}>Resumo do Pedido</label>
-              <pre className="px-4 py-3 rounded-lg border border-white/10 bg-brand-dark text-brand-gray-light text-xs leading-relaxed whitespace-pre-wrap font-mono">
-                {dispatchText}
-              </pre>
+          ) : entregadores.length === 0 ? (
+            <div className="px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
+              Nenhum entregador ativo. Cadastre um em Entregadores.
             </div>
+          ) : (
+            <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+              {entregadores.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.nome} — {e.telefone}
+                </option>
+              ))}
+            </Select>
+          )}
+        </div>
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+        <div>
+          <label className={fieldLabelClass}>Resumo do Pedido</label>
+          <pre className="px-4 py-3 rounded-lg border border-white/10 bg-brand-dark text-brand-gray-light text-xs leading-relaxed whitespace-pre-wrap font-mono">
+            {dispatchText}
+          </pre>
+        </div>
 
-            {result ? (
-              <div className="space-y-3 pt-2">
-                {result === "notified" && (
-                  <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
-                    ✅ Entregador notificado no WhatsApp!
-                  </p>
-                )}
-                {result === "copied" && (
-                  <p className="text-sm text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 rounded-lg px-3 py-2">
-                    📋 Mensagem copiada! Cole no WhatsApp do entregador. (WhatsApp não conectado)
-                  </p>
-                )}
-                {result === "send-failed" && (
-                  <p className="text-sm text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 rounded-lg px-3 py-2">
-                    ⚠️ Não consegui enviar pelo WhatsApp — mensagem copiada, cole no WhatsApp do entregador.
-                  </p>
-                )}
-                <Button onClick={onClose} fullWidth>
-                  Fechar
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-                  Cancelar
-                </Button>
-                <Button onClick={handleConfirm} disabled={loading || !selectedId || loadingList} className="flex-[2]">
-                  {loading ? "Despachando..." : paired ? "📲 Enviar e Confirmar" : "📋 Copiar e Confirmar"}
-                </Button>
-              </div>
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+
+        {result ? (
+          <div className="space-y-3 pt-2">
+            {result === "notified" && (
+              <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
+                ✅ Entregador notificado no WhatsApp!
+              </p>
             )}
+            {result === "copied" && (
+              <p className="text-sm text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 rounded-lg px-3 py-2">
+                📋 Mensagem copiada! Cole no WhatsApp do entregador. (WhatsApp não conectado)
+              </p>
+            )}
+            {result === "send-failed" && (
+              <p className="text-sm text-brand-yellow bg-brand-yellow/10 border border-brand-yellow/30 rounded-lg px-3 py-2">
+                ⚠️ Não consegui enviar pelo WhatsApp — mensagem copiada, cole no WhatsApp do entregador.
+              </p>
+            )}
+            <Button onClick={onClose} fullWidth>
+              Fechar
+            </Button>
           </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        ) : (
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirm} disabled={loading || !selectedId || loadingList} className="flex-[2]">
+              {loading ? "Despachando..." : paired ? "📲 Enviar e Confirmar" : "📋 Copiar e Confirmar"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </Modal>
   )
 }
 

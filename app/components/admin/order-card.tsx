@@ -5,7 +5,9 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import type { PedidoStatus } from "@/lib/types"
 import OrderStatusBadge from "@/components/order-status-badge"
+import { useConfirm } from "@/components/admin/confirm-provider"
 import { archiveOrder, unarchiveOrder } from "@/lib/admin-actions"
+import { formatBRL, formatEventDate, metodoPagamentoLabel } from "@/lib/format"
 
 type OrderCardProps = {
   pedido: {
@@ -30,9 +32,6 @@ const docStatusConfig: Record<string, { label: string; className: string }> = {
   verificado: { label: "Docs verificados", className: "text-green-400 bg-green-400/10 border-green-400/30" },
 }
 
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
-
 const formatRecebidoEm = (isoDate: string) => {
   const created = new Date(isoDate)
   const diffMs = Date.now() - created.getTime()
@@ -50,12 +49,22 @@ const formatRecebidoEm = (isoDate: string) => {
 const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
   const [busy, setBusy] = useState(false)
   const arquivado = !!pedido.arquivado_em
+  const { confirm, alert } = useConfirm()
 
   const handleArchiveClick = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
     if (busy) return
-    if (!arquivado && !confirm(`Excluir o pedido de ${pedido.clientes.nome} da esteira? Vai pra aba 'Arquivados' e pode ser restaurado.`)) return
+    if (
+      !arquivado &&
+      !(await confirm({
+        title: "Excluir pedido",
+        message: `Excluir o pedido de ${pedido.clientes.nome} da esteira? Vai pra aba 'Arquivados' e pode ser restaurado.`,
+        confirmLabel: "Excluir",
+        variant: "danger",
+      }))
+    )
+      return
     setBusy(true)
     try {
       if (arquivado) {
@@ -64,7 +73,7 @@ const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
         await archiveOrder(pedido.id)
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao processar")
+      await alert({ title: "Erro", message: err instanceof Error ? err.message : "Erro ao processar" })
     } finally {
       setBusy(false)
     }
@@ -94,15 +103,20 @@ const OrderCard = ({ pedido, index = 0 }: OrderCardProps) => {
         </div>
         <div className="flex items-center justify-between text-sm text-brand-gray-light">
           <span>
-            {new Date(pedido.data_evento + "T00:00:00").toLocaleDateString("pt-BR")} as {pedido.horario_evento.slice(0, 5)}
+            {formatEventDate(pedido.data_evento)} as {pedido.horario_evento.slice(0, 5)}
           </span>
-          <span className="font-bold text-brand-yellow">{formatPrice(pedido.total)}</span>
+          <span className="font-bold text-brand-yellow">{formatBRL(pedido.total)}</span>
         </div>
         <p className="text-xs text-brand-warm-gray mt-1 truncate">{pedido.endereco}</p>
         <div className="mt-2 flex items-center gap-2">
           <span className={`text-xs px-2 py-0.5 rounded-full border ${docStatusConfig[pedido.documento_status]?.className ?? ""}`}>
             {docStatusConfig[pedido.documento_status]?.label ?? pedido.documento_status}
           </span>
+          {pedido.metodo_pagamento && (
+            <span className="text-xs px-2 py-0.5 rounded-full border border-white/15 text-brand-gray-light bg-white/5">
+              {metodoPagamentoLabel(pedido.metodo_pagamento)}
+            </span>
+          )}
           {arquivado && (
             <span className="text-xs px-2 py-0.5 rounded-full border border-white/15 text-brand-warm-gray bg-white/5">
               Arquivado

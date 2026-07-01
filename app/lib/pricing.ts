@@ -37,15 +37,6 @@ export const calculateLine = (
   }
 }
 
-export const calculateLineUnitPrice = (
-  produto: Pick<Produto, "preco_avista" | "preco_cartao" | "preco_segundo_barril">,
-  quantidade: number,
-  metodoPagamento: PaymentMethod = "pix",
-) => {
-  const { total } = calculateLine(produto, quantidade, metodoPagamento)
-  return quantidade > 0 ? total / quantidade : 0
-}
-
 export type ManualLineInput = {
   produto_id: string
   quantidade: number
@@ -68,6 +59,11 @@ const unitPricesFor = (produto: ProdutoForPricing, metodoPagamento: PaymentMetho
   const promoApplies = segundoBarril != null && segundoBarril < firstUnitPrice
   return { firstUnitPrice, secondUnitPrice: promoApplies ? segundoBarril! : firstUnitPrice }
 }
+
+// Public wrapper over unitPricesFor — returns the guarded per-barrel prices so callers
+// (like addPedidoItem) don't re-implement the "2º-barril must be cheaper than à vista" rule.
+export const barrelUnitPrices = (produto: ProdutoForPricing, metodoPagamento: PaymentMethod = "pix") =>
+  unitPricesFor(produto, metodoPagamento)
 
 type BarrelWalk = {
   firmSeen: Record<string, number>

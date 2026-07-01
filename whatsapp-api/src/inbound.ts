@@ -1,4 +1,5 @@
 import { normalizeMessageContent } from "@whiskeysockets/baileys"
+import { postSigned } from "./webhook.js"
 
 type Direcao = "entrada" | "saida"
 
@@ -76,11 +77,7 @@ export const forwardInbound = async (payload: InboundPayload): Promise<void> => 
     return
   }
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "x-inbound-secret": secret, "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    })
+    const res = await postSigned(url, secret, "x-inbound-secret", payload)
     if (!res.ok) {
       console.error("forwardInbound non-2xx:", res.status)
     }
