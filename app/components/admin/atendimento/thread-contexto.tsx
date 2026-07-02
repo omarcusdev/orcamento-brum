@@ -126,7 +126,8 @@ const ThreadContexto = ({ conversa, onVinculo }: Props) => {
             trocar cliente
           </button>
         ) : (
-          !buscaAberta && (
+          !buscaAberta &&
+          !conversa.sistema && (
             <Button variant="ghost" size="sm" onClick={() => setBuscaAberta(true)}>
               Vincular a um cliente
             </Button>
@@ -136,7 +137,9 @@ const ThreadContexto = ({ conversa, onVinculo }: Props) => {
 
       {!clienteId && !buscaAberta && (
         <p className="text-xs text-brand-warm-gray mt-1">
-          Sem cadastro — vincule a um cliente para ver os pedidos.
+          {conversa.sistema
+            ? "Aviso do sistema — não é uma conversa de cliente."
+            : "Sem cadastro — vincule a um cliente para ver os pedidos."}
         </p>
       )}
 
