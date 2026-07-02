@@ -3,6 +3,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { sendWhatsAppMessage } from "@/lib/whatsapp"
 import { sanitizeTermoBusca } from "@/lib/whatsapp/pedido-contexto"
+import { isTransbordoNotice } from "@/lib/whatsapp/transbordo"
 
 export type ConversaResumo = {
   id: string
@@ -12,6 +13,7 @@ export type ConversaResumo = {
   naoLidas: number
   ultimaEm: string | null
   clienteId: string | null
+  sistema: boolean
 }
 
 export type MensagemChat = {
@@ -21,11 +23,30 @@ export type MensagemChat = {
   ocorridaEm: string
 }
 
+// Conversa-level "sistema" flag — STRICT rule (plan `2026-07-02-whatsapp-inbox-media.md`,
+// Task A2 / Global Constraints): a conversa is "sistema" only when it has ZERO inbound
+// ("entrada") messages AND every message it does have matches the message-level transbordo
+// rule (direcao='saida' + both TRANSBORDO_MARKERS present in corpo — see `isTransbordoNotice`
+// in ./transbordo, the single source of truth for the marker strings). This keeps mixed
+// threads (>=1 real inbound + a notice) classified as normal customer threads.
+// SQL-equivalent over mensagens_conversa_whatsapp for this predicate (kept here in prose
+// since the TS helper can't run inside Postgres):
+//   NOT EXISTS (msg WHERE direcao = 'entrada')
+//   AND NOT EXISTS (msg WHERE NOT (corpo LIKE '%AVISO DE TRANSBORDO%' AND corpo LIKE '%Anotei aqui%'))
+// A conversa with no messages at all is never "sistema" (empty-array vacuous-truth guard).
+const isConversaSistema = (mensagens: { direcao: string; corpo: string }[]): boolean => {
+  if (mensagens.length === 0) return false
+  if (mensagens.some((m) => m.direcao === "entrada")) return false
+  return mensagens.every((m) => m.direcao === "saida" && isTransbordoNotice(m.corpo))
+}
+
 export const getConversas = async (): Promise<ConversaResumo[]> => {
   const { supabase } = await requireAdmin()
   const { data } = await supabase
     .from("conversas_whatsapp")
-    .select("id, telefone, nome_exibicao, ultima_mensagem_preview, nao_lidas, ultima_mensagem_em, cliente_id")
+    .select(
+      "id, telefone, nome_exibicao, ultima_mensagem_preview, nao_lidas, ultima_mensagem_em, cliente_id, mensagens_conversa_whatsapp(direcao, corpo)",
+    )
     .order("ultima_mensagem_em", { ascending: false, nullsFirst: false })
 
   return (data ?? []).map((r) => ({
@@ -36,6 +57,7 @@ export const getConversas = async (): Promise<ConversaResumo[]> => {
     naoLidas: r.nao_lidas,
     ultimaEm: r.ultima_mensagem_em,
     clienteId: r.cliente_id,
+    sistema: isConversaSistema(((r.mensagens_conversa_whatsapp as unknown[]) ?? []) as { direcao: string; corpo: string }[]),
   }))
 }
 
