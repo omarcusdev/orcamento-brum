@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest"
-import { render, screen, cleanup } from "@testing-library/react"
+import { render, screen, cleanup, waitFor } from "@testing-library/react"
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -71,6 +71,18 @@ const mensagemSaida = (corpo: string): MensagemChat => ({
   direcao: "saida",
   corpo,
   ocorridaEm: "2026-07-01T12:00:00.000Z",
+  midiaTipo: null,
+  midiaUrl: null,
+})
+
+const mensagemMidia = (over: Partial<MensagemChat>): MensagemChat => ({
+  id: "mm",
+  direcao: "entrada",
+  corpo: "",
+  ocorridaEm: "2026-07-01T12:00:00.000Z",
+  midiaTipo: null,
+  midiaUrl: null,
+  ...over,
 })
 
 describe("AtendimentoClient — cartão de aviso do sistema vs balão do cliente", () => {
@@ -138,5 +150,70 @@ describe("AtendimentoClient — thread de sistema não permite resposta nem vín
 
     expect(screen.queryByPlaceholderText("Responder…")).not.toBeInTheDocument()
     expect(screen.queryByText("Vincular a um cliente")).not.toBeInTheDocument()
+  })
+})
+
+describe("AtendimentoClient — renderização de mídia por tipo", () => {
+  it("mídia de imagem com URL assinada renderiza um <img> com essa URL", async () => {
+    vi.mocked(getConversas).mockResolvedValue([conversaCliente])
+    vi.mocked(getConversaMensagens).mockResolvedValue([
+      mensagemMidia({ midiaTipo: "image", midiaUrl: "https://signed.example/img.jpg", corpo: "🖼️ Imagem recebida" }),
+    ])
+
+    render(<AtendimentoClient initial={[conversaCliente]} />)
+
+    const img = await screen.findByRole("img")
+    expect(img).toHaveAttribute("src", "https://signed.example/img.jpg")
+  })
+
+  it("mídia de áudio com URL assinada renderiza um <audio controls> com essa URL", async () => {
+    vi.mocked(getConversas).mockResolvedValue([conversaCliente])
+    vi.mocked(getConversaMensagens).mockResolvedValue([
+      mensagemMidia({ midiaTipo: "audio", midiaUrl: "https://signed.example/audio.ogg", corpo: "🎤 Áudio recebido" }),
+    ])
+
+    const { container } = render(<AtendimentoClient initial={[conversaCliente]} />)
+
+    await waitFor(() => expect(container.querySelector("audio")).not.toBeNull())
+    const audio = container.querySelector("audio") as HTMLAudioElement
+    expect(audio).toHaveAttribute("controls")
+    expect(audio).toHaveAttribute("src", "https://signed.example/audio.ogg")
+  })
+
+  it("mídia de vídeo com URL assinada renderiza um <video controls> com essa URL", async () => {
+    vi.mocked(getConversas).mockResolvedValue([conversaCliente])
+    vi.mocked(getConversaMensagens).mockResolvedValue([
+      mensagemMidia({ midiaTipo: "video", midiaUrl: "https://signed.example/v.mp4", corpo: "🎬 Vídeo recebido" }),
+    ])
+
+    const { container } = render(<AtendimentoClient initial={[conversaCliente]} />)
+
+    await waitFor(() => expect(container.querySelector("video")).not.toBeNull())
+    expect(container.querySelector("video")).toHaveAttribute("src", "https://signed.example/v.mp4")
+  })
+
+  it("documento com URL assinada renderiza um link de download com essa URL", async () => {
+    vi.mocked(getConversas).mockResolvedValue([conversaCliente])
+    vi.mocked(getConversaMensagens).mockResolvedValue([
+      mensagemMidia({ midiaTipo: "document", midiaUrl: "https://signed.example/doc.pdf", corpo: "📎 Documento recebido" }),
+    ])
+
+    render(<AtendimentoClient initial={[conversaCliente]} />)
+
+    const link = await screen.findByRole("link")
+    expect(link).toHaveAttribute("href", "https://signed.example/doc.pdf")
+  })
+
+  it("sem midia_path (URL nula) cai no texto placeholder rotulado, sem elemento de mídia", async () => {
+    vi.mocked(getConversas).mockResolvedValue([conversaCliente])
+    vi.mocked(getConversaMensagens).mockResolvedValue([
+      mensagemMidia({ midiaTipo: "video", midiaUrl: null, corpo: "🎬 Vídeo recebido" }),
+    ])
+
+    const { container } = render(<AtendimentoClient initial={[conversaCliente]} />)
+
+    expect(await screen.findByText("🎬 Vídeo recebido")).toBeInTheDocument()
+    expect(container.querySelector("video")).toBeNull()
+    expect(container.querySelector("img")).toBeNull()
   })
 })

@@ -19,6 +19,33 @@ const formatContato = (c: ConversaResumo) => c.nome ?? `+${c.telefone}`
 const formatHora = (iso: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""
 
+// Conteúdo de uma mensagem: mídia inline quando há URL assinada (bucket privado), senão o
+// texto — que pode ser uma legenda ou o placeholder rotulado do EC2 ("🎤 Áudio recebido" etc.)
+// quando os bytes não vieram (mídia grande/tipo sem suporte, ou payload antigo sem mídia).
+const MidiaConteudo = ({ mensagem }: { mensagem: MensagemChat }) => {
+  const { midiaTipo, midiaUrl, corpo } = mensagem
+  if (midiaUrl) {
+    if (midiaTipo === "image" || midiaTipo === "sticker") {
+      // eslint-disable-next-line @next/next/no-img-element -- URL assinada efêmera; next/image não agrega aqui
+      return <img src={midiaUrl} alt={corpo || "Imagem recebida"} className="rounded-lg max-w-full max-h-64 object-contain" />
+    }
+    if (midiaTipo === "audio") {
+      return <audio controls src={midiaUrl} className="max-w-full" />
+    }
+    if (midiaTipo === "video") {
+      return <video controls src={midiaUrl} className="rounded-lg max-w-full max-h-64" />
+    }
+    if (midiaTipo === "document") {
+      return (
+        <a href={midiaUrl} target="_blank" rel="noreferrer" className="underline break-all">
+          {corpo || "Baixar documento"}
+        </a>
+      )
+    }
+  }
+  return <>{corpo}</>
+}
+
 const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
   const searchParams = useSearchParams()
   const [conversas, setConversas] = useState(initial)
@@ -182,7 +209,7 @@ const AtendimentoClient = ({ initial }: { initial: ConversaResumo[] }) => {
                         : "self-start bg-white/10 text-white"
                     }`}
                   >
-                    {m.corpo}
+                    <MidiaConteudo mensagem={m} />
                     <span className="block text-[10px] opacity-60 mt-1">{formatHora(m.ocorridaEm)}</span>
                   </div>
                 )
