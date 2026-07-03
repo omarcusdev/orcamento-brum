@@ -4,10 +4,34 @@ import { formatBRL } from "@/lib/format"
 export const AGENTE_FLAG_KEY = "whatsapp_bot_agente_ativo" as const
 export const AGENTE_FAQ_KEY = "whatsapp_bot_agente_faq" as const
 
-// Texto que o servidor (whatsapp-api/src/inbound.ts) grava no lugar de mídia (áudio/imagem/etc.),
-// já que o bot não baixa nem transcreve mídia. Mantido em sincronia com o EC2 e coberto por teste.
-// O em-dash é U+2014 — não redigite à mão, mantenha o literal idêntico ao do EC2.
+// Texto genérico que o EC2 (whatsapp-api/src/inbound.ts) gravava no lugar de QUALQUER mídia antes
+// da Task B3. Hoje o EC2 grava um placeholder rotulado por tipo (LABELED_MEDIA_PLACEHOLDERS abaixo);
+// este literal genérico só continua existindo para reconhecer linhas HISTÓRICAS já gravadas no banco.
+// O em-dash é U+2014 — não redigite à mão, mantenha o literal idêntico ao que está no banco.
 export const MEDIA_PLACEHOLDER = "[mídia recebida — ver no celular]" as const
+
+// Placeholders que o EC2 grava por tipo de mídia desde a Task B3 (mediaPlaceholder() e
+// otherContentPlaceholder() em whatsapp-api/src/inbound.ts) quando a mensagem não tem legenda.
+// Espelhado à mão — mantenha os dois arquivos em sincronia se um dos lados mudar o texto/emoji.
+export const LABELED_MEDIA_PLACEHOLDERS = [
+  "🖼️ Imagem recebida",
+  "🎤 Áudio recebido",
+  "🎵 Áudio recebido",
+  "🎥 Vídeo recebido",
+  "📄 Documento recebido",
+  "💟 Figurinha recebida",
+  "📍 Localização recebida",
+  "👤 Contato recebido",
+  "📊 Enquete recebida",
+] as const
+
+// Sinal por TEXTO de que `corpo` é um placeholder de mídia (não a mensagem real do cliente): o
+// literal genérico histórico OU qualquer um dos rotulados por tipo. Comparação por lista exata (não
+// substring solta) de propósito — um cliente pode escrever "recebido" numa frase de verdade
+// ("já recebido, valeu!") e isso não deve ser tratado como mídia. Este é só UM dos dois sinais que
+// ehMidia (bot-agente.ts) combina; o outro é o `midiaTipo` estruturado, quando disponível.
+export const ehPlaceholderDeMidia = (corpo: string): boolean =>
+  corpo === MEDIA_PLACEHOLDER || (LABELED_MEDIA_PLACEHOLDERS as readonly string[]).includes(corpo)
 
 // Resposta quando o cliente manda áudio/mídia: o bot não "ouve" nem "vê", então pede texto
 // em vez de improvisar uma resposta confusa em cima do placeholder.

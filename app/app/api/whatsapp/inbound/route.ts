@@ -98,7 +98,12 @@ export async function POST(request: Request) {
   // senão, cai na saudação rule-based. Tudo via after(), pós-resposta; flags checadas lá dentro.
   if (payload.direcao === "entrada") {
     after(async () => {
-      const { handled } = await maybeReplyWithAgent(telefoneE164, payload.waMessageId, payload.corpo)
+      const { handled } = await maybeReplyWithAgent(
+        telefoneE164,
+        payload.waMessageId,
+        payload.corpo,
+        payload.midiaTipo ?? null,
+      )
       logWa("inbound:coordenador", {
         tel4: telefoneE164.slice(-4),
         waMessageId: payload.waMessageId,
