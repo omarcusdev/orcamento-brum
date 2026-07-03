@@ -80,6 +80,13 @@ $$;
 -- SECURITY DEFINER bypassa RLS: só o service role pode chamar (padrão da migration 004/022).
 -- Re-issued for the NEW 10-arg signature — the revoke tied to the dropped 7-arg one went with it.
 revoke execute on function register_inbound_whatsapp(text, uuid, text, text, text, text, timestamptz, text, text, text) from anon, authenticated;
+-- Hardening BEYOND migration 022: `create function` grants EXECUTE to PUBLIC by default, which
+-- anon/authenticated inherit even after the revoke above (verified on staging: they could still
+-- execute). This RPC is SECURITY DEFINER (bypasses RLS), so leaving it PUBLIC-callable lets anyone
+-- holding the public anon key inject rows into the admin inbox. Revoke PUBLIC and grant only
+-- service_role (the app's inbound webhook calls it via the service-role client).
+revoke execute on function register_inbound_whatsapp(text, uuid, text, text, text, text, timestamptz, text, text, text) from public;
+grant execute on function register_inbound_whatsapp(text, uuid, text, text, text, text, timestamptz, text, text, text) to service_role;
 
 -- 3. Private Storage bucket for inbound media bytes. RLS admin-only, mirroring how `documentos`
 --    is used (service-role upload from the app route bypasses RLS entirely; these policies gate
