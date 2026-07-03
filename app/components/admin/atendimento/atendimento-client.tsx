@@ -17,7 +17,9 @@ import ThreadContexto from "@/components/admin/atendimento/thread-contexto"
 
 const formatContato = (c: ConversaResumo) => c.nome ?? `+${c.telefone}`
 const formatHora = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : ""
+  // timeZone fixo: sem ele o SSR (UTC) e o browser (BR) formatam horas diferentes para o mesmo
+  // timestamp → mismatch de hidratação (React #418). Espelha horaEmSaoPaulo em lib/whatsapp/lembrete-message.ts.
+  iso ? new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : ""
 
 // Conteúdo de uma mensagem: mídia inline quando há URL assinada (bucket privado), senão o
 // texto — que pode ser uma legenda ou o placeholder rotulado do EC2 ("🎤 Áudio recebido" etc.)
