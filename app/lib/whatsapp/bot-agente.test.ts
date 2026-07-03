@@ -8,7 +8,7 @@ import { createServiceClient } from "@/lib/supabase/service"
 import { sendWhatsAppMessage } from "."
 import { askClaude } from "./bedrock"
 import { maybeReplyWithAgent } from "./bot-agente"
-import { MEDIA_PLACEHOLDER, MIDIA_NAO_SUPORTADA_MSG } from "./bot-agente-kb"
+import { MEDIA_PLACEHOLDER, MIDIA_NAO_SUPORTADA_MSG, LABELED_MEDIA_PLACEHOLDERS } from "./bot-agente-kb"
 
 const clientMock = vi.mocked(createServiceClient)
 const sendMock = vi.mocked(sendWhatsAppMessage)
@@ -149,7 +149,7 @@ describe("maybeReplyWithAgent", () => {
     expect(insertSpy).toHaveBeenCalledTimes(1)
   })
 
-  it("mídia/áudio (placeholder) -> responde enlatado SEM chamar o Bedrock e grava a saida", async () => {
+  it("mídia/áudio (placeholder genérico histórico) -> responde enlatado SEM chamar o Bedrock e grava a saida", async () => {
     const { client, insertSpy } = fakeClient({
       cfgRows: [ON],
       conversa: { id: "conv-1", nome_exibicao: "Marcus" },
@@ -165,6 +165,64 @@ describe("maybeReplyWithAgent", () => {
     expect(insertSpy).toHaveBeenCalledWith(
       expect.objectContaining({ conversa_id: "conv-1", direcao: "saida", corpo: MIDIA_NAO_SUPORTADA_MSG }),
     )
+  })
+
+  it.each(LABELED_MEDIA_PLACEHOLDERS)(
+    "placeholder rotulado por tipo (%s, pós Task B3) -> responde enlatado SEM chamar o Bedrock",
+    async (placeholder) => {
+      const { client, insertSpy } = fakeClient({
+        cfgRows: [ON],
+        conversa: { id: "conv-1", nome_exibicao: "Marcus" },
+        thread: [{ direcao: "entrada", corpo: placeholder }],
+      })
+      clientMock.mockReturnValue(client as never)
+
+      const r = await maybeReplyWithAgent("5521999990000", "wamid-1", placeholder)
+
+      expect(r).toEqual({ handled: true })
+      expect(askMock).not.toHaveBeenCalled()
+      expect(sendMock).toHaveBeenCalledWith("5521999990000", MIDIA_NAO_SUPORTADA_MSG)
+      expect(insertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ conversa_id: "conv-1", direcao: "saida", corpo: MIDIA_NAO_SUPORTADA_MSG }),
+      )
+    },
+  )
+
+  it("mídia COM legenda (corpo não bate em nenhum placeholder) mas midiaTipo setado -> ainda responde enlatado", async () => {
+    // Quando a mensagem tem legenda, o EC2 grava a legenda como corpo (não um placeholder) — só o
+    // sinal ESTRUTURADO midiaTipo permite detectar que isto é mídia, não uma pergunta de texto.
+    const legenda = "Segue a foto do local pra entrega!"
+    const { client, insertSpy } = fakeClient({
+      cfgRows: [ON],
+      conversa: { id: "conv-1", nome_exibicao: "Marcus" },
+      thread: [{ direcao: "entrada", corpo: legenda }],
+    })
+    clientMock.mockReturnValue(client as never)
+
+    const r = await maybeReplyWithAgent("5521999990000", "wamid-1", legenda, "image")
+
+    expect(r).toEqual({ handled: true })
+    expect(askMock).not.toHaveBeenCalled()
+    expect(sendMock).toHaveBeenCalledWith("5521999990000", MIDIA_NAO_SUPORTADA_MSG)
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ conversa_id: "conv-1", direcao: "saida", corpo: MIDIA_NAO_SUPORTADA_MSG }),
+    )
+  })
+
+  it("corpo contém a palavra 'recebido' numa frase normal, sem midiaTipo -> NÃO é tratado como mídia (sem falso-positivo)", async () => {
+    const { client } = fakeClient({
+      cfgRows: [ON],
+      conversa: { id: "conv-1", nome_exibicao: null },
+      thread: [{ direcao: "entrada", corpo: "Já recebido, valeu!" }],
+      produtos: [],
+    })
+    clientMock.mockReturnValue(client as never)
+    askMock.mockResolvedValue("Que bom! Qualquer coisa é só chamar 🍻")
+
+    const r = await maybeReplyWithAgent("5521999990000", "wamid-1", "Já recebido, valeu!", null)
+
+    expect(r).toEqual({ handled: true })
+    expect(askMock).toHaveBeenCalledTimes(1) // segue o fluxo normal do agente, não o enlatado de mídia
   })
 
   it("humano assumiu (saida sem prefixo agente-) -> agente cala, não chama Bedrock nem envia", async () => {

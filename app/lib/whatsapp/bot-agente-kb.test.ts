@@ -5,6 +5,8 @@ import {
   buildSystemPrompt,
   threadToMessages,
   MEDIA_PLACEHOLDER,
+  LABELED_MEDIA_PLACEHOLDERS,
+  ehPlaceholderDeMidia,
   type CardapioItem,
 } from "./bot-agente-kb"
 
@@ -127,7 +129,29 @@ describe("threadToMessages (turnos reais p/ o Bedrock)", () => {
 })
 
 describe("MEDIA_PLACEHOLDER", () => {
-  it("é o literal exato que o EC2 grava para mídia (sincronizado com whatsapp-api/src/inbound.ts)", () => {
+  it("é o literal exato do placeholder genérico histórico (sincronizado com whatsapp-api/src/inbound.ts)", () => {
     expect(MEDIA_PLACEHOLDER).toBe("[mídia recebida — ver no celular]")
+  })
+})
+
+describe("ehPlaceholderDeMidia", () => {
+  it("reconhece o placeholder genérico histórico", () => {
+    expect(ehPlaceholderDeMidia(MEDIA_PLACEHOLDER)).toBe(true)
+  })
+
+  it("reconhece cada placeholder rotulado por tipo (pós Task B3)", () => {
+    for (const placeholder of LABELED_MEDIA_PLACEHOLDERS) {
+      expect(ehPlaceholderDeMidia(placeholder)).toBe(true)
+    }
+  })
+
+  it("NÃO reconhece uma mensagem normal do cliente, mesmo contendo 'recebido'", () => {
+    expect(ehPlaceholderDeMidia("Já recebido, valeu!")).toBe(false)
+    expect(ehPlaceholderDeMidia("oi, tudo bem?")).toBe(false)
+    expect(ehPlaceholderDeMidia("")).toBe(false)
+  })
+
+  it("é comparação exata, não substring — texto que apenas CONTÉM um placeholder não conta", () => {
+    expect(ehPlaceholderDeMidia(`${LABELED_MEDIA_PLACEHOLDERS[0]} (encaminhada)`)).toBe(false)
   })
 })

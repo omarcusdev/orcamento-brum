@@ -99,13 +99,20 @@ const createSocket = async (): Promise<WASocket> => {
 
   newSocket.ev.on("creds.update", saveCreds)
 
-  newSocket.ev.on("messages.upsert", ({ messages, type }) => {
+  newSocket.ev.on("messages.upsert", async ({ messages, type }) => {
     if (socket !== newSocket) return       // ignore superseded sockets (same guard as connection.update)
     if (type !== "notify") return          // skip 'append' backfill (only live messages)
     for (const msg of messages) {
-      const payload = extractInbound(msg)
-      if (payload) {
-        forwardInbound(payload).catch((err) => console.error("inbound forward error:", err))
+      try {
+        // Thread the live socket so extractInbound can download media (needs updateMediaMessage
+        // for re-upload). extractInbound is resilient — a download failure falls back to a
+        // labeled placeholder rather than throwing — but guard here anyway.
+        const payload = await extractInbound(msg, newSocket)
+        if (payload) {
+          forwardInbound(payload).catch((err) => console.error("inbound forward error:", err))
+        }
+      } catch (err) {
+        console.error("inbound extract error:", err)
       }
     }
   })

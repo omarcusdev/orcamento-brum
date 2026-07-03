@@ -7,9 +7,9 @@ import {
   AGENTE_FLAG_KEY,
   AGENTE_FAQ_KEY,
   DEFAULT_AGENTE_FAQ,
-  MEDIA_PLACEHOLDER,
   MIDIA_NAO_SUPORTADA_MSG,
   agenteAtivo,
+  ehPlaceholderDeMidia,
   formatCardapio,
   threadToMessages,
   buildSystemPrompt,
@@ -74,10 +74,15 @@ type ThreadRow = {
 // Retorna { handled: true } sempre que a flag do agente está ligada (tenha enviado ou não) —
 // assim o coordenador suprime a saudação rule-based. { handled: false } = flag off (ou config
 // ilegível) => o coordenador cai na saudação da etapa 1.
+// `midiaTipo` é o sinal ESTRUTURADO vindo do payload inbound (route.ts repassa payload.midiaTipo) —
+// setado pelo EC2 pós-Task B3. Opcional/nullable porque (a) chega undefined em payloads pré-B3 ou
+// pré-deploy do EC2, e (b) mídia com LEGENDA grava a legenda como corpo, não um placeholder — nesse
+// caso o texto sozinho não daria pra detectar mídia; só o midiaTipo resolve.
 export const maybeReplyWithAgent = async (
   telefone: string,
   waMessageId: string,
   corpo: string,
+  midiaTipo?: string | null,
 ): Promise<{ handled: boolean }> => {
   try {
     const supabase = createServiceClient()
@@ -95,7 +100,10 @@ export const maybeReplyWithAgent = async (
     if (!agenteAtivo(valorDe(AGENTE_FLAG_KEY))) return { handled: false }
 
     // Daqui pra baixo o agente "é dono" do turno (handled:true), mesmo que fique em silêncio.
-    const ehMidia = corpo === MEDIA_PLACEHOLDER
+    // Dois sinais independentes, OR: o estruturado (midiaTipo != null) e o textual (placeholder
+    // exato, genérico histórico ou rotulado por tipo) — NÃO comparação exata contra um único literal,
+    // que já não cobre os placeholders rotulados por tipo da Task B3.
+    const ehMidia = midiaTipo != null || ehPlaceholderDeMidia(corpo)
     logWa("agente:ativacao", { tel4: last4(telefone), waMessageId, ehMidia, corpoLen: corpo.length })
 
     const rawFaq = valorDe(AGENTE_FAQ_KEY)

@@ -50,6 +50,31 @@ export async function POST(request: Request) {
     clienteMatch: Boolean(match),
   })
 
+  // Inbound media (Task B2): when the EC2 (Task B3) inlined the bytes, persist them to the private
+  // whatsapp-media bucket and hand the RPC the object path. Path is keyed by the E164 digits +
+  // wa_message_id, so it is deterministic and idempotent (upsert absorbs echo/reentrega). An upload
+  // failure must NOT drop the message — we log it and still register the row with the media type +
+  // mime, so the UI shows a labeled placeholder instead of nothing.
+  let midiaPath: string | null = null
+  if (payload.midiaBase64) {
+    const path = `${telefoneE164}/${payload.waMessageId}`
+    const { error: uploadError } = await supabase.storage
+      .from("whatsapp-media")
+      .upload(path, Buffer.from(payload.midiaBase64, "base64"), {
+        contentType: payload.mimeType,
+        upsert: true,
+      })
+    if (uploadError) {
+      logWaError("inbound:midia-upload-falhou", {
+        waMessageId: payload.waMessageId,
+        midiaTipo: payload.midiaTipo,
+        ...errInfo(uploadError),
+      })
+    } else {
+      midiaPath = path
+    }
+  }
+
   const { error } = await supabase.rpc("register_inbound_whatsapp", {
     p_telefone: telefoneE164,
     p_cliente_id: match?.id ?? null,
@@ -58,6 +83,9 @@ export async function POST(request: Request) {
     p_direcao: payload.direcao,
     p_corpo: payload.corpo,
     p_ocorrida_em: payload.ocorridaEm,
+    p_midia_tipo: payload.midiaTipo ?? null,
+    p_midia_path: midiaPath,
+    p_mime_type: payload.mimeType ?? null,
   })
 
   if (error) {
@@ -70,7 +98,12 @@ export async function POST(request: Request) {
   // senão, cai na saudação rule-based. Tudo via after(), pós-resposta; flags checadas lá dentro.
   if (payload.direcao === "entrada") {
     after(async () => {
-      const { handled } = await maybeReplyWithAgent(telefoneE164, payload.waMessageId, payload.corpo)
+      const { handled } = await maybeReplyWithAgent(
+        telefoneE164,
+        payload.waMessageId,
+        payload.corpo,
+        payload.midiaTipo ?? null,
+      )
       logWa("inbound:coordenador", {
         tel4: telefoneE164.slice(-4),
         waMessageId: payload.waMessageId,
