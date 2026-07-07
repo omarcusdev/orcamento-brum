@@ -18,7 +18,7 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
 
     const { data: pedido, error: pedidoErr } = await supabase
       .from("pedidos")
-      .select("data_evento, horario_evento, clientes(nome, telefone)")
+      .select("data_evento, horario_evento, total, metodo_pagamento, clientes(nome, telefone)")
       .eq("id", pedidoId)
       .single()
 
@@ -54,6 +54,8 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
       itens,
       dataEvento: pedido.data_evento,
       horarioEvento: pedido.horario_evento,
+      total: pedido.total,
+      metodoPagamento: pedido.metodo_pagamento,
     })
 
     const result = await sendWhatsAppMessage(telefone, mensagem)

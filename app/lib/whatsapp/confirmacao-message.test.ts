@@ -10,6 +10,8 @@ const base = {
   ],
   dataEvento: "2026-07-15",
   horarioEvento: "13:00:00",
+  total: 550.5,
+  metodoPagamento: "pix",
 }
 
 describe("buildConfirmationMessage", () => {
@@ -41,5 +43,18 @@ describe("buildConfirmationMessage", () => {
   it("um único item também vira lista", () => {
     const msg = buildConfirmationMessage({ ...base, itens: [{ quantidade: 3, marca: "Brahma", volume: 30 }] })
     expect(msg).toContain("• 3x Brahma 30L")
+  })
+
+  it("mostra o valor total formatado em R$", () => {
+    expect(buildConfirmationMessage(base)).toContain("*Valor total:* R$ 550,50")
+  })
+
+  it("mostra a forma de pagamento com label amigável", () => {
+    expect(buildConfirmationMessage(base)).toContain("*Pagamento:* Pix")
+  })
+
+  it("mostra — quando a forma de pagamento ainda não foi definida", () => {
+    const msg = buildConfirmationMessage({ ...base, metodoPagamento: null })
+    expect(msg).toContain("*Pagamento:* —")
   })
 })
