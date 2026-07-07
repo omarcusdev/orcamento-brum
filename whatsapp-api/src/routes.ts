@@ -68,7 +68,8 @@ const registerRoutes = (app: FastifyInstance) => {
     try {
       await sendMessage(telefone, mensagem)
       return { success: true, telefone }
-    } catch {
+    } catch (err) {
+      request.log.error({ err }, "send-message failed")
       return reply.code(500).send({ error: "Failed to send message" })
     }
   })
