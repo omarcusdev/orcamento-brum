@@ -70,7 +70,13 @@ export const createOrder = async (input: unknown): Promise<{ pedidoId: string; c
       .insert({ nome: data.nome, telefone: data.telefone, email: data.email || null, cpf: cpfDigits })
       .select("id")
       .single()
-    if (clientError || !newClient) return { error: "Erro ao criar cliente" }
+    if (clientError || !newClient) {
+      // Log the real cause (else it's invisible). Most common: returning customer whose telefone
+      // already exists but whose CPF is new/mistyped -> 23505 on clientes_telefone_key, since the
+      // pre-lookup above matches CPF only. Not a crash (query builder returns error, no throw).
+      console.error("[createOrder] cliente insert failed", clientError)
+      return { error: "Erro ao criar cliente" }
+    }
     clienteId = newClient.id
   }
 

@@ -207,7 +207,11 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
         frete,
       }
 
-      await createManualOrder(input)
+      const result = await createManualOrder(input)
+      if (result && "error" in result) {
+        setError(result.error ?? "Erro ao criar pedido")
+        return
+      }
       resetForm()
       onClose()
     } catch (err) {

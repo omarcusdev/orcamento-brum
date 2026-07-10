@@ -46,7 +46,10 @@ export const searchClientes = async (query: string) => {
   const sanitized = trimmed.replace(/\D/g, "")
   const filters: string[] = [`nome.ilike.%${trimmed}%`]
   if (sanitized.length >= 2) {
-    filters.push(`telefone.ilike.%${sanitized}%`)
+    // Match on telefone_digits (generated digits-only mirror), not the raw telefone column —
+    // else masked-format records ("(21) 99999-9999") never match a digit-only query, and the
+    // admin fails to find a repeat customer and creates a colliding duplicate.
+    filters.push(`telefone_digits.ilike.%${sanitized}%`)
     filters.push(`cpf.ilike.%${sanitized}%`)
   }
   const { data, error } = await supabase
@@ -145,7 +148,22 @@ export const createManualOrder = async (input: ManualOrderInput) => {
     p_itens: itemRows,
     p_user: user.id,
   })
-  if (rpcErr || !pedidoId) throw new Error(`Erro ao criar pedido: ${rpcErr?.message ?? "desconhecido"}`)
+  if (rpcErr || !pedidoId) {
+    // Next prod redacts a thrown Server Action message to the generic "Server Components render"
+    // digest — undiagnosable. Log the real cause server-side (lands in Vercel logs) and RETURN a
+    // friendly retryable message (a returned value survives to the drawer, a throw does not).
+    // Post-migration 032 the duplicate-phone/CPF case reuses instead of erroring, so this now
+    // only fires on genuinely unexpected RPC failures.
+    console.error("[createManualOrder] create_manual_order RPC failed", {
+      message: rpcErr?.message,
+      code: rpcErr?.code,
+      details: rpcErr?.details,
+      hint: rpcErr?.hint,
+      pedidoId,
+      clienteKind: data.cliente.kind,
+    })
+    return { error: "Nao foi possivel criar o pedido agora. Tente novamente; se persistir, avise o suporte." }
+  }
 
   revalidatePath("/admin")
   revalidatePath("/admin/pedidos")
