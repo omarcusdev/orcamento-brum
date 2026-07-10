@@ -156,3 +156,30 @@ export const calculateStoredTotals = (
   const total = round2(subtotal - desconto + frete)
   return { subtotal, total }
 }
+
+export type ConsignadoSplit = {
+  firmes: number
+  consignado: number
+  aPagar: number
+  totalCheio: number
+  hasConsignado: boolean
+}
+
+// Separa, para EXIBIÇÃO, o valor firme (pago com certeza) do consignado (paga só se usar).
+// aPagar = totalCheio − consignado é a única definição — idêntica no drawer e na mensagem, para
+// tela e WhatsApp sempre baterem. Não altera o valor cheio armazenado no pedido.
+export const consignadoSplit = (
+  items: OrderItemForTotals[],
+  frete: number,
+  desconto: number,
+): ConsignadoSplit => {
+  const consignado = round2(
+    items
+      .filter((i) => i.is_consignado && i.consignado_status !== "devolvido")
+      .reduce((sum, i) => sum + i.subtotal, 0),
+  )
+  const { total: totalCheio } = calculateStoredTotals(items, frete, desconto)
+  const aPagar = round2(totalCheio - consignado)
+  const firmes = round2(aPagar - frete + desconto)
+  return { firmes, consignado, aPagar, totalCheio, hasConsignado: consignado > 0 }
+}

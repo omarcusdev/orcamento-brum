@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { calculateLine, getBasePrice, calculateOrderTotals, calculateStoredTotals, priceManualOrderLines } from "./pricing"
+import { calculateLine, getBasePrice, calculateOrderTotals, calculateStoredTotals, priceManualOrderLines, consignadoSplit } from "./pricing"
 import { barrelUnitPrices } from "./pricing"
 
 const baseProduct = {
@@ -274,5 +274,42 @@ describe("barrelUnitPrices (guarded 2º barril)", () => {
   })
   it("usa preco_cartao como base no cartão", () => {
     expect(barrelUnitPrices({ id: "x", preco_avista: 500, preco_cartao: 530, preco_segundo_barril: 385 }, "cartao")).toEqual({ firstUnitPrice: 530, secondUnitPrice: 385 })
+  })
+})
+
+describe("consignadoSplit", () => {
+  const item = (subtotal: number, is_consignado = false, consignado_status: string | null = null) => ({
+    subtotal,
+    is_consignado,
+    consignado_status,
+  })
+
+  it("sem consignado: firmes = subtotal, consignado = 0, hasConsignado false", () => {
+    const r = consignadoSplit([item(500), item(500)], 50, 0)
+    expect(r).toEqual({ firmes: 1000, consignado: 0, aPagar: 1050, totalCheio: 1050, hasConsignado: false })
+  })
+
+  it("misto (1 firme + 2 consignado): separa a pagar do consignado", () => {
+    const r = consignadoSplit([item(550), item(400, true, "pendente"), item(400, true, "pendente")], 30, 0)
+    expect(r).toEqual({ firmes: 550, consignado: 800, aPagar: 580, totalCheio: 1380, hasConsignado: true })
+  })
+
+  it("todo consignado: a pagar = so o frete", () => {
+    const r = consignadoSplit(
+      [item(550, true, "pendente"), item(400, true, "pendente"), item(400, true, "pendente")],
+      30,
+      0,
+    )
+    expect(r).toEqual({ firmes: 0, consignado: 1350, aPagar: 30, totalCheio: 1380, hasConsignado: true })
+  })
+
+  it("desconto abate do a pagar (firme), nao do consignado", () => {
+    const r = consignadoSplit([item(550), item(400, true, "pendente")], 0, 50)
+    expect(r).toEqual({ firmes: 550, consignado: 400, aPagar: 500, totalCheio: 900, hasConsignado: true })
+  })
+
+  it("consignado devolvido nao conta como consignado nem como a pagar", () => {
+    const r = consignadoSplit([item(550), item(400, true, "devolvido")], 0, 0)
+    expect(r).toEqual({ firmes: 550, consignado: 0, aPagar: 550, totalCheio: 550, hasConsignado: false })
   })
 })
