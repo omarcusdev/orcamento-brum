@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { buildConfirmationMessage } from "./confirmacao-message"
+import { buildConfirmationMessage, summarizeConfirmationItens } from "./confirmacao-message"
 
 const base = {
   clienteNome: "Vitória Magalhães",
@@ -56,5 +56,96 @@ describe("buildConfirmationMessage", () => {
   it("mostra — quando a forma de pagamento ainda não foi definida", () => {
     const msg = buildConfirmationMessage({ ...base, metodoPagamento: null })
     expect(msg).toContain("*Pagamento:* —")
+  })
+})
+
+describe("summarizeConfirmationItens", () => {
+  const row = (
+    produto_id: string,
+    quantidade: number,
+    subtotal: number,
+    is_consignado: boolean,
+    marca: string,
+    volume: number,
+  ) => ({ produto_id, quantidade, subtotal, is_consignado, marca, volume })
+
+  it("agrupa barris consignados do mesmo produto em uma linha e soma o valor", () => {
+    const { itens, consignadoTotal } = summarizeConfirmationItens([
+      row("p1", 1, 550, true, "Donzela", 50),
+      row("p1", 1, 400, true, "Donzela", 50),
+      row("p1", 1, 400, true, "Donzela", 50),
+    ])
+    expect(itens).toEqual([{ quantidade: 3, marca: "Donzela", volume: 50, is_consignado: true }])
+    expect(consignadoTotal).toBe(1350)
+  })
+
+  it("mantem firme e consignado do mesmo produto em linhas separadas, na ordem de entrada", () => {
+    const { itens, consignadoTotal } = summarizeConfirmationItens([
+      row("p1", 1, 550, false, "Donzela", 50),
+      row("p1", 1, 400, true, "Donzela", 50),
+      row("p1", 1, 400, true, "Donzela", 50),
+    ])
+    expect(itens).toEqual([
+      { quantidade: 1, marca: "Donzela", volume: 50, is_consignado: false },
+      { quantidade: 2, marca: "Donzela", volume: 50, is_consignado: true },
+    ])
+    expect(consignadoTotal).toBe(800)
+  })
+
+  it("consignadoTotal e 0 quando nao ha consignado", () => {
+    const { itens, consignadoTotal } = summarizeConfirmationItens([
+      row("p1", 2, 1000, false, "Vila Imperio", 50),
+    ])
+    expect(itens).toEqual([{ quantidade: 2, marca: "Vila Imperio", volume: 50, is_consignado: false }])
+    expect(consignadoTotal).toBe(0)
+  })
+})
+
+describe("buildConfirmationMessage — consignado", () => {
+  const base = {
+    clienteNome: "Joao Silva",
+    pedidoId: "3b3a7901-aaaa-bbbb-cccc-dddddddddddd",
+    dataEvento: "2026-07-25",
+    horarioEvento: "17:00:00",
+    metodoPagamento: "pix",
+  }
+
+  it("quebra A pagar + Consignado, anota o item consignado e mostra o rodape", () => {
+    const msg = buildConfirmationMessage({
+      ...base,
+      itens: [
+        { quantidade: 1, marca: "Donzela", volume: 50, is_consignado: false },
+        { quantidade: 2, marca: "Donzela", volume: 50, is_consignado: true },
+      ],
+      total: 1380,
+      consignadoTotal: 800,
+    })
+    expect(msg).toContain("• 1x Donzela 50L\n• 2x Donzela 50L (consignado)")
+    expect(msg).toContain("💰 *A pagar:* R$ 580,00")
+    expect(msg).toContain("📦 *Consignado (paga só se usar):* R$ 800,00")
+    expect(msg).toContain("_Total se usar tudo: R$ 1.380,00_")
+    expect(msg).not.toContain("*Valor total:*")
+  })
+
+  it("sem consignadoTotal: formato antigo (Valor total, sem rodape nem 'A pagar')", () => {
+    const msg = buildConfirmationMessage({
+      ...base,
+      itens: [{ quantidade: 2, marca: "Vila Imperio", volume: 50, is_consignado: false }],
+      total: 1000,
+    })
+    expect(msg).toContain("💰 *Valor total:* R$ 1.000,00")
+    expect(msg).not.toContain("A pagar")
+    expect(msg).not.toContain("Total se usar tudo")
+  })
+
+  it("todo consignado: a pagar mostra so o frete embutido no total", () => {
+    const msg = buildConfirmationMessage({
+      ...base,
+      itens: [{ quantidade: 3, marca: "Donzela", volume: 50, is_consignado: true }],
+      total: 1380,
+      consignadoTotal: 1350,
+    })
+    expect(msg).toContain("💰 *A pagar:* R$ 30,00")
+    expect(msg).toContain("📦 *Consignado (paga só se usar):* R$ 1.350,00")
   })
 })

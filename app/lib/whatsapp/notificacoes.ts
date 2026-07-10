@@ -9,7 +9,7 @@ import {
   statusFlagKey,
   statusMsgKey,
 } from "./status-messages"
-import { buildConfirmationMessage } from "./confirmacao-message"
+import { buildConfirmationMessage, summarizeConfirmationItens } from "./confirmacao-message"
 
 export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
   if (!(await isWhatsappFeatureEnabled("whatsapp_confirmacao_ativo"))) return
@@ -36,17 +36,22 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
 
     const { data: rawItems } = await supabase
       .from("pedido_itens")
-      .select("quantidade, produtos(marca, volume_litros)")
+      .select("produto_id, quantidade, subtotal, is_consignado, produtos(marca, volume_litros)")
       .eq("pedido_id", pedidoId)
 
-    const itens = (rawItems ?? []).map((row) => {
+    const rows = (rawItems ?? []).map((row) => {
       const produto = Array.isArray(row.produtos) ? row.produtos[0] : row.produtos
       return {
+        produto_id: row.produto_id,
         quantidade: row.quantidade,
+        subtotal: Number(row.subtotal),
+        is_consignado: !!row.is_consignado,
         marca: produto?.marca ?? "Item",
         volume: produto?.volume_litros ?? 0,
       }
     })
+
+    const { itens, consignadoTotal } = summarizeConfirmationItens(rows)
 
     const mensagem = buildConfirmationMessage({
       clienteNome: cliente?.nome ?? "Cliente",
@@ -54,8 +59,9 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
       itens,
       dataEvento: pedido.data_evento,
       horarioEvento: pedido.horario_evento,
-      total: pedido.total,
+      total: Number(pedido.total),
       metodoPagamento: pedido.metodo_pagamento,
+      consignadoTotal,
     })
 
     const result = await sendWhatsAppMessage(telefone, mensagem)
