@@ -180,6 +180,6 @@ export const consignadoSplit = (
   )
   const { total: totalCheio } = calculateStoredTotals(items, frete, desconto)
   const aPagar = round2(totalCheio - consignado)
-  const firmes = round2(aPagar - frete + desconto)
+  const firmes = round2(items.filter((i) => !i.is_consignado).reduce((sum, i) => sum + i.subtotal, 0))
   return { firmes, consignado, aPagar, totalCheio, hasConsignado: consignado > 0 }
 }

@@ -312,4 +312,9 @@ describe("consignadoSplit", () => {
     const r = consignadoSplit([item(550), item(400, true, "devolvido")], 0, 0)
     expect(r).toEqual({ firmes: 550, consignado: 0, aPagar: 550, totalCheio: 550, hasConsignado: false })
   })
+
+  it("consignado usado conta como consignado, nao como firme", () => {
+    const r = consignadoSplit([item(550), item(400, true, "usado")], 0, 0)
+    expect(r).toEqual({ firmes: 550, consignado: 400, aPagar: 550, totalCheio: 950, hasConsignado: true })
+  })
 })
