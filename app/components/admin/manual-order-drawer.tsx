@@ -8,7 +8,7 @@ import { addressDataToEnderecoCompleto } from "@/lib/address"
 import { AddressSearchToggle } from "@/components/admin/address-search-toggle"
 import type { Produto } from "@/lib/types"
 import type { ManualOrderInput } from "@/lib/schemas"
-import { calculateOrderTotals, priceManualOrderLines } from "@/lib/pricing"
+import { calculateOrderTotals, priceManualOrderLines, consignadoSplit } from "@/lib/pricing"
 import { formatBRL } from "@/lib/format"
 import {
   Button,
@@ -150,8 +150,6 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     setItems((prev) => prev.filter((_, i) => i !== idx))
   }
 
-  const hasConsignado = items.some((i) => i.is_consignado)
-
   const pricedLines = priceManualOrderLines(items, produtos, metodoPagamento)
 
   const itemRowsForTotals = pricedLines.flatMap((line) =>
@@ -165,8 +163,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   )
 
   const totals = calculateOrderTotals(itemRowsForTotals)
-  // Valor cheio: consignado conta no total (abatido só no acerto), então mostramos o máximo — não R$ 0.
-  const total = totals.subtotalMax + frete
+  // Resumo: separa "a pagar agora" (firmes + frete) do consignado. Valor cheio segue em split.totalCheio.
+  const split = consignadoSplit(itemRowsForTotals, frete, 0)
 
   const canSubmit =
     !submitting &&
@@ -417,22 +415,47 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
               <MoneyInput value={frete} onChange={setFrete} min={0} aria-label="Frete" />
             </div>
             <div className="bg-brand-dark border border-white/10 rounded-lg p-3 text-sm space-y-1">
-              <div className="flex justify-between text-brand-warm-gray">
-                <span>Subtotal</span>
-                <span className="tabular-nums">{formatBRL(totals.subtotalMax)}</span>
-              </div>
-              <div className="flex justify-between text-brand-warm-gray">
-                <span>Frete</span>
-                <span className="tabular-nums">{formatBRL(frete)}</span>
-              </div>
-              <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
-                <span>Total</span>
-                <span className="text-brand-yellow tabular-nums">{formatBRL(total)}</span>
-              </div>
-              {hasConsignado && (
-                <p className="text-[11px] text-brand-warm-gray pt-1">
-                  Consignado entra no total; no acerto a gente abate os barris devolvidos.
-                </p>
+              {split.hasConsignado ? (
+                <>
+                  <div className="flex justify-between text-white font-bold">
+                    <span>A pagar agora</span>
+                    <span className="text-brand-yellow tabular-nums">{formatBRL(split.aPagar)}</span>
+                  </div>
+                  <div className="flex justify-between text-brand-warm-gray text-xs">
+                    <span className="pl-2">Firmes</span>
+                    <span className="tabular-nums">{formatBRL(split.firmes)}</span>
+                  </div>
+                  <div className="flex justify-between text-brand-warm-gray text-xs">
+                    <span className="pl-2">Frete</span>
+                    <span className="tabular-nums">{formatBRL(frete)}</span>
+                  </div>
+                  <div className="flex justify-between text-brand-warm-gray">
+                    <span>Consignado (só se usar)</span>
+                    <span className="tabular-nums">{formatBRL(split.consignado)}</span>
+                  </div>
+                  <div className="flex justify-between text-white border-t border-white/10 pt-1.5 mt-1">
+                    <span>Total se usar tudo</span>
+                    <span className="tabular-nums">{formatBRL(split.totalCheio)}</span>
+                  </div>
+                  <p className="text-[11px] text-brand-warm-gray pt-1">
+                    No acerto a gente abate os barris devolvidos.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between text-brand-warm-gray">
+                    <span>Subtotal</span>
+                    <span className="tabular-nums">{formatBRL(totals.subtotalMax)}</span>
+                  </div>
+                  <div className="flex justify-between text-brand-warm-gray">
+                    <span>Frete</span>
+                    <span className="tabular-nums">{formatBRL(frete)}</span>
+                  </div>
+                  <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
+                    <span>Total</span>
+                    <span className="text-brand-yellow tabular-nums">{formatBRL(split.totalCheio)}</span>
+                  </div>
+                </>
               )}
             </div>
           </div>
