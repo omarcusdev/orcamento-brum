@@ -47,13 +47,21 @@ export const searchClientes = async (query: string) => {
   // silêncio (era o "não busca pelo telefone"). Telefone/CPF sempre por dígitos (telefone_digits).
   const orFilter = buildClienteSearchOr(query)
   if (!orFilter) return []
+  // Traz o endereço do ÚLTIMO pedido do cliente (clientes não tem endereço próprio — ele mora em
+  // pedidos) para o admin distinguir clientes na busca: telefone + endereço são o que a operação
+  // mais usa. Ordena os pedidos embutidos por created_at desc e pega só 1.
   const { data, error } = await supabase
     .from("clientes")
-    .select("id, nome, telefone, cpf, email, documento_verificado")
+    .select("id, nome, telefone, cpf, email, documento_verificado, pedidos(endereco, created_at)")
     .or(orFilter)
+    .order("created_at", { referencedTable: "pedidos", ascending: false })
+    .limit(1, { referencedTable: "pedidos" })
     .limit(8)
   if (error) throw error
-  return data ?? []
+  return (data ?? []).map(({ pedidos, ...cliente }) => {
+    const ultimo = Array.isArray(pedidos) ? pedidos[0] : pedidos
+    return { ...cliente, ultimo_endereco: ultimo?.endereco ?? null }
+  })
 }
 
 export const createManualOrder = async (input: ManualOrderInput) => {

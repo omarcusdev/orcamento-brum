@@ -30,6 +30,7 @@ type ClienteResult = {
   cpf: string | null
   email: string | null
   documento_verificado: boolean | null
+  ultimo_endereco: string | null
 }
 
 type DraftItem = {
@@ -260,9 +261,10 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
               />
               {selectedCliente ? (
                 <div className="bg-brand-dark border border-brand-yellow/30 rounded-lg p-3 text-sm flex items-center justify-between">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-white font-medium">{selectedCliente.nome}</p>
                     <p className="text-brand-warm-gray text-xs">{selectedCliente.telefone} {selectedCliente.cpf ? `· ${selectedCliente.cpf}` : ""}</p>
+                    {selectedCliente.ultimo_endereco && <p className="text-brand-warm-gray text-xs truncate">📍 {selectedCliente.ultimo_endereco}</p>}
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { setSelectedCliente(null); setClienteQuery("") }}>
                     Trocar
@@ -279,6 +281,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                       >
                         <p className="text-white">{c.nome}</p>
                         <p className="text-brand-warm-gray text-xs">{c.telefone} {c.cpf ? `· ${c.cpf}` : ""}</p>
+                        {c.ultimo_endereco && <p className="text-brand-warm-gray text-xs truncate">📍 {c.ultimo_endereco}</p>}
                       </button>
                     </li>
                   ))}
