@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { buildConfirmationMessage, summarizeConfirmationItens } from "./confirmacao-message"
+import { formatBRL } from "@/lib/format"
 
 const base = {
   clienteNome: "Vitória Magalhães",
@@ -121,9 +122,9 @@ describe("buildConfirmationMessage — consignado", () => {
       consignadoTotal: 800,
     })
     expect(msg).toContain("• 1x Donzela 50L\n• 2x Donzela 50L (consignado)")
-    expect(msg).toContain("💰 *A pagar:* R$ 580,00")
-    expect(msg).toContain("📦 *Consignado (paga só se usar):* R$ 800,00")
-    expect(msg).toContain("_Total se usar tudo: R$ 1.380,00_")
+    expect(msg).toContain(`💰 *A pagar:* ${formatBRL(580)}`)
+    expect(msg).toContain(`📦 *Consignado (paga só se usar):* ${formatBRL(800)}`)
+    expect(msg).toContain(`_Total se usar tudo: ${formatBRL(1380)}_`)
     expect(msg).not.toContain("*Valor total:*")
   })
 
@@ -133,7 +134,7 @@ describe("buildConfirmationMessage — consignado", () => {
       itens: [{ quantidade: 2, marca: "Vila Imperio", volume: 50, is_consignado: false }],
       total: 1000,
     })
-    expect(msg).toContain("💰 *Valor total:* R$ 1.000,00")
+    expect(msg).toContain(`💰 *Valor total:* ${formatBRL(1000)}`)
     expect(msg).not.toContain("A pagar")
     expect(msg).not.toContain("Total se usar tudo")
   })
@@ -145,7 +146,7 @@ describe("buildConfirmationMessage — consignado", () => {
       total: 1380,
       consignadoTotal: 1350,
     })
-    expect(msg).toContain("💰 *A pagar:* R$ 30,00")
-    expect(msg).toContain("📦 *Consignado (paga só se usar):* R$ 1.350,00")
+    expect(msg).toContain(`💰 *A pagar:* ${formatBRL(30)}`)
+    expect(msg).toContain(`📦 *Consignado (paga só se usar):* ${formatBRL(1350)}`)
   })
 })

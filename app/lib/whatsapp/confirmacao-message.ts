@@ -22,13 +22,6 @@ export type ConfirmationItem = {
 
 const round2 = (value: number) => Number(value.toFixed(2))
 
-// formatBRL produces U+00A0 (nbsp) but tests expect U+0020 (regular space)
-const formatBRLNormalized = (value: number) => {
-  const nbsp = String.fromCharCode(0xa0)
-  const space = String.fromCharCode(0x20)
-  return formatBRL(value).split(nbsp).join(space)
-}
-
 // Consignado é gravado 1 linha por barril; agrupa por (produto, consignado) somando a quantidade
 // para uma lista limpa ("2x Donzela (consignado)" em vez de "1x" três vezes), e soma o valor
 // consignado a partir das linhas CRUAS (antes do agrupamento).
@@ -76,12 +69,12 @@ export const buildConfirmationMessage = (data: {
 
   const valorLinhas = hasConsignado
     ? [
-        `💰 *A pagar:* ${formatBRLNormalized(aPagar)}`,
-        `📦 *Consignado (paga só se usar):* ${formatBRLNormalized(consignado)}`,
+        `💰 *A pagar:* ${formatBRL(aPagar)}`,
+        `📦 *Consignado (paga só se usar):* ${formatBRL(consignado)}`,
       ]
-    : [`💰 *Valor total:* ${formatBRLNormalized(data.total)}`]
+    : [`💰 *Valor total:* ${formatBRL(data.total)}`]
 
-  const rodapeConsignado = hasConsignado ? [``, `_Total se usar tudo: ${formatBRLNormalized(data.total)}_`] : []
+  const rodapeConsignado = hasConsignado ? [``, `_Total se usar tudo: ${formatBRL(data.total)}_`] : []
 
   return [
     `Olá, ${firstName(data.clienteNome)}! 🍻 Recebemos seu pedido!`,
