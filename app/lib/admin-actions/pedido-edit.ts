@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
 import { calculateStoredTotals, priceManualOrderLines, barrelUnitPrices } from "@/lib/pricing"
+import { buildClienteSearchOr } from "@/lib/cliente-search"
 import { LOCKED_EDIT_STATUSES, isFreteLocked } from "@/lib/admin-status"
 import { after } from "next/server"
 import { sendCustomerWhatsAppConfirmation } from "@/lib/whatsapp/notificacoes"
@@ -41,21 +42,15 @@ export const updateFrete = async (pedidoId: string, frete: number) => {
 
 export const searchClientes = async (query: string) => {
   const { supabase } = await requireAdmin()
-  const trimmed = query.trim()
-  if (trimmed.length < 2) return []
-  const sanitized = trimmed.replace(/\D/g, "")
-  const filters: string[] = [`nome.ilike.%${trimmed}%`]
-  if (sanitized.length >= 2) {
-    // Match on telefone_digits (generated digits-only mirror), not the raw telefone column —
-    // else masked-format records ("(21) 99999-9999") never match a digit-only query, and the
-    // admin fails to find a repeat customer and creates a colliding duplicate.
-    filters.push(`telefone_digits.ilike.%${sanitized}%`)
-    filters.push(`cpf.ilike.%${sanitized}%`)
-  }
+  // buildClienteSearchOr sanitiza a query antes do .or(): um telefone mascarado "(21) 9..." não pode
+  // vazar os metacaracteres ( ) , pro parser do PostgREST — senão a busca inteira retorna 0 em
+  // silêncio (era o "não busca pelo telefone"). Telefone/CPF sempre por dígitos (telefone_digits).
+  const orFilter = buildClienteSearchOr(query)
+  if (!orFilter) return []
   const { data, error } = await supabase
     .from("clientes")
     .select("id, nome, telefone, cpf, email, documento_verificado")
-    .or(filters.join(","))
+    .or(orFilter)
     .limit(8)
   if (error) throw error
   return data ?? []
