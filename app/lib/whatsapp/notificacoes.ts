@@ -51,6 +51,9 @@ export const sendCustomerWhatsAppConfirmation = async (pedidoId: string) => {
       }
     })
 
+    // "A pagar" na mensagem = pedido.total − consignadoTotal, espelhando consignadoSplit no drawer:
+    // ambos dependem de pedido.total ser o valor cheio (consignado contado como usado). A confirmação
+    // só roda na criação (after() do insert), então nenhum barril está "devolvido" quando isto executa.
     const { itens, consignadoTotal } = summarizeConfirmationItens(rows)
 
     const mensagem = buildConfirmationMessage({
