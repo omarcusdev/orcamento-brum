@@ -15,7 +15,7 @@ export const createOrderSchema = z.object({
     today.setHours(0, 0, 0, 0)
     return event >= today
   }, "Data do evento nao pode ser no passado"),
-  horario_evento: z.string().regex(/^\d{2}:\d{2}$/),
+  horario_evento: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   endereco_rua: z.string().max(300).optional().or(z.literal("")),
   endereco_numero: z.string().max(20).optional().or(z.literal("")),
   endereco_bairro: z.string().min(1).max(200),

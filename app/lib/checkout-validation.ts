@@ -15,6 +15,10 @@ export const isBeforeMinLeadTime = (
   now: Date = new Date(),
 ): boolean => {
   const eventAt = new Date(`${dataEvento}T${horarioEvento}:00${BRAZIL_UTC_OFFSET}`)
+  // Fail closed: um instante inparseável conta como "cedo demais" em vez de ser
+  // liberado silenciosamente (defensivo — a UI não emite isso, mas um request
+  // forjado poderia pular o guard).
+  if (Number.isNaN(eventAt.getTime())) return true
   return eventAt.getTime() - now.getTime() < MIN_LEAD_TIME_HOURS * 3_600_000
 }
 

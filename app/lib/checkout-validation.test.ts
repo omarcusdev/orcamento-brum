@@ -38,7 +38,8 @@ describe("validateCheckout", () => {
     expect(validateCheckout({ ...base, dataEvento: "2026-07-03", horarioEvento: "12:00" })).toBeNull()
   })
   it("pula o check de 24h quando o horario esta vazio", () => {
-    expect(validateCheckout({ ...base, dataEvento: "2026-07-03", horarioEvento: "" })).toBeNull()
+    // Mesmo dia que base.now (seria < 24h se tivesse horario) — vazio => pula => null.
+    expect(validateCheckout({ ...base, dataEvento: "2026-07-01", horarioEvento: "" })).toBeNull()
   })
 })
 
@@ -65,5 +66,9 @@ describe("isBeforeMinLeadTime", () => {
   it("expõe a constante e a mensagem", () => {
     expect(MIN_LEAD_TIME_HOURS).toBe(24)
     expect(minLeadTimeMessage).toBe("Pedidos exigem no minimo 24h de antecedencia")
+  })
+  it("fail-closed: retorna true para horario invalido/inparseavel", () => {
+    const now = new Date("2026-07-13T18:00:00Z")
+    expect(isBeforeMinLeadTime("2026-07-14", "25:00", now)).toBe(true)
   })
 })
