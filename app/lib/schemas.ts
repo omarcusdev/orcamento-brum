@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { validateCpf } from "@/lib/cpf"
+import { isBeforeMinLeadTime, minLeadTimeMessage } from "@/lib/checkout-validation"
 
 const phoneRegex = /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/
 
@@ -14,7 +15,7 @@ export const createOrderSchema = z.object({
     today.setHours(0, 0, 0, 0)
     return event >= today
   }, "Data do evento nao pode ser no passado"),
-  horario_evento: z.string().regex(/^\d{2}:\d{2}$/),
+  horario_evento: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   endereco_rua: z.string().max(300).optional().or(z.literal("")),
   endereco_numero: z.string().max(20).optional().or(z.literal("")),
   endereco_bairro: z.string().min(1).max(200),
@@ -36,6 +37,14 @@ export const createOrderSchema = z.object({
       })
     )
     .min(1, "Pedido deve ter pelo menos um item"),
+}).superRefine((val, ctx) => {
+  if (isBeforeMinLeadTime(val.data_evento, val.horario_evento)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["horario_evento"],
+      message: minLeadTimeMessage,
+    })
+  }
 })
 
 export const productSchema = z.object({
