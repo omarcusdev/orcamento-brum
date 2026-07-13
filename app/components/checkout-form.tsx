@@ -106,6 +106,7 @@ const CheckoutForm = ({ deliveryConfig, exclusionZones }: CheckoutFormProps) => 
       address: address ? { numero: address.numero } : null,
       addressInArea,
       dataEvento,
+      horarioEvento,
       tipoChopeira,
       temRampas,
     })

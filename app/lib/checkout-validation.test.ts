@@ -5,9 +5,10 @@ const base = {
   address: { numero: "10" },
   addressInArea: true as boolean | null,
   dataEvento: "2026-07-15",
+  horarioEvento: "12:00",
   tipoChopeira: "gelo" as const,
   temRampas: "nao" as const,
-  now: new Date("2026-07-01T12:00:00"),
+  now: new Date("2026-07-01T12:00:00Z"),
 }
 
 describe("validateCheckout", () => {
@@ -28,6 +29,16 @@ describe("validateCheckout", () => {
   })
   it("rejects missing rampas info when an address is set", () => {
     expect(validateCheckout({ ...base, temRampas: "" })).toBe("Informe se o local possui rampas ou escadas")
+  })
+  it("rejeita evento a menos de 24h", () => {
+    expect(validateCheckout({ ...base, dataEvento: "2026-07-01", horarioEvento: "18:00" }))
+      .toBe("Pedidos exigem no minimo 24h de antecedencia")
+  })
+  it("aceita evento a mais de 24h", () => {
+    expect(validateCheckout({ ...base, dataEvento: "2026-07-03", horarioEvento: "12:00" })).toBeNull()
+  })
+  it("pula o check de 24h quando o horario esta vazio", () => {
+    expect(validateCheckout({ ...base, dataEvento: "2026-07-03", horarioEvento: "" })).toBeNull()
   })
 })
 

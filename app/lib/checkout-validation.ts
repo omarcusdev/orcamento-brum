@@ -23,6 +23,7 @@ export const validateCheckout = (input: {
   address: { numero: string } | null
   addressInArea: boolean | null
   dataEvento: string
+  horarioEvento: string
   tipoChopeira: "gelo" | "eletrica" | ""
   temRampas: "sim" | "nao" | ""
   now?: Date
@@ -34,6 +35,9 @@ export const validateCheckout = (input: {
   const today = new Date(input.now ?? new Date())
   today.setHours(0, 0, 0, 0)
   if (eventDate < today) return "A data do evento nao pode ser no passado"
+
+  if (input.horarioEvento && isBeforeMinLeadTime(input.dataEvento, input.horarioEvento, input.now))
+    return minLeadTimeMessage
 
   if (!input.tipoChopeira) return "Selecione o tipo de chopeira"
   if (input.address && !input.temRampas) return "Informe se o local possui rampas ou escadas"
