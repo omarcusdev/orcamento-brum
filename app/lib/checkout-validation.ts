@@ -1,3 +1,23 @@
+export const MIN_LEAD_TIME_HOURS = 24
+
+export const minLeadTimeMessage = `Pedidos exigem no minimo ${MIN_LEAD_TIME_HOURS}h de antecedencia`
+
+// Brasil não tem horário de verão desde 2019, então o offset é fixo -03:00.
+// Ancorar aqui torna o cálculo determinístico independente do timezone do runtime
+// (browser do cliente em BRT; server na Vercel em UTC).
+const BRAZIL_UTC_OFFSET = "-03:00"
+
+// true quando o instante do evento (data + horário, horário de parede BR) está a
+// menos de MIN_LEAD_TIME_HOURS de now. Fronteira exata (== 24h) retorna false.
+export const isBeforeMinLeadTime = (
+  dataEvento: string,
+  horarioEvento: string,
+  now: Date = new Date(),
+): boolean => {
+  const eventAt = new Date(`${dataEvento}T${horarioEvento}:00${BRAZIL_UTC_OFFSET}`)
+  return eventAt.getTime() - now.getTime() < MIN_LEAD_TIME_HOURS * 3_600_000
+}
+
 // Pure mirror of the checkout submit guards, in the same order, with the same messages.
 export const validateCheckout = (input: {
   address: { numero: string } | null
