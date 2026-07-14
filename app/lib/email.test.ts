@@ -42,3 +42,14 @@ describe("email renderers (golden)", () => {
     })
   }
 })
+
+describe("renderCustomerHtml — desconto", () => {
+  it("mostra a linha de Desconto quando desconto > 0 (breakdown reconcilia)", () => {
+    const html = renderCustomerHtml({ ...orderPayload, desconto: 50, total: 1430 })
+    expect(html).toContain("Desconto")
+    expect(html).toContain("50,00")
+  })
+  it("nao mostra linha de Desconto quando desconto e 0/ausente", () => {
+    expect(renderCustomerHtml(orderPayload)).not.toContain("Desconto")
+  })
+})
