@@ -8,7 +8,7 @@ import { addressDataToEnderecoCompleto } from "@/lib/address"
 import { AddressSearchToggle } from "@/components/admin/address-search-toggle"
 import type { Produto } from "@/lib/types"
 import type { ManualOrderInput } from "@/lib/schemas"
-import { calculateOrderTotals, priceManualOrderLines, consignadoSplit, hasFirmeItem, REQUIRE_FIRME_MESSAGE } from "@/lib/pricing"
+import { calculateOrderTotals, priceManualOrderLines, consignadoSplit, hasFirmeItem, REQUIRE_FIRME_MESSAGE, priceBarrels } from "@/lib/pricing"
 import { formatBRL } from "@/lib/format"
 import {
   Button,
@@ -35,8 +35,7 @@ type ClienteResult = {
 
 type DraftItem = {
   produto_id: string
-  quantidade: number
-  is_consignado: boolean
+  barrels: boolean[] // cada = isConsignado; barril novo nasce firme (false)
 }
 
 type Props = {
@@ -46,15 +45,6 @@ type Props = {
 }
 
 const sectionHeaderClass = "text-xs font-semibold uppercase tracking-[0.18em] text-brand-yellow/80 mb-3 pb-1.5 border-b border-white/10"
-
-const describeBarrels = (barrelPrices: number[]) => {
-  if (barrelPrices.length <= 1) return formatBRL(barrelPrices[0] ?? 0)
-  const [first, ...rest] = barrelPrices
-  const allEqual = rest.every((price) => price === first)
-  return allEqual
-    ? `${barrelPrices.length}x ${formatBRL(first)}`
-    : `${formatBRL(first)} + ${rest.length}x ${formatBRL(rest[0])}`
-}
 
 const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   const [clienteMode, setClienteMode] = useState<"search" | "new">("search")
@@ -135,23 +125,42 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
 
   const addItem = () => {
     if (produtos.length === 0) return
-    setItems((prev) => [...prev, { produto_id: produtos[0].id, quantidade: 1, is_consignado: false }])
+    setItems((prev) => [...prev, { produto_id: produtos[0].id, barrels: [false] }])
   }
 
-  const updateItem = (idx: number, patch: Partial<DraftItem>) => {
-    setItems((prev) => prev.map((item, i) => {
-      if (i !== idx) return item
-      const next = { ...item, ...patch }
-      if (next.quantidade < 1) next.quantidade = 1
-      return next
+  const setItemProduto = (idx: number, produto_id: string) =>
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, produto_id } : it)))
+
+  const setItemQty = (idx: number, qty: number) =>
+    setItems((prev) => prev.map((it, i) => {
+      if (i !== idx) return it
+      const next = Math.max(1, Math.min(100, Math.floor(qty)))
+      const barrels = it.barrels.slice(0, next)
+      while (barrels.length < next) barrels.push(false) // barris novos nascem firme
+      return { ...it, barrels }
     }))
-  }
+
+  const setBarrelConsignado = (idx: number, barrelIdx: number, isConsignado: boolean) =>
+    setItems((prev) => prev.map((it, i) =>
+      i === idx ? { ...it, barrels: it.barrels.map((b, bi) => (bi === barrelIdx ? isConsignado : b)) } : it,
+    ))
 
   const removeItem = (idx: number) => {
     setItems((prev) => prev.filter((_, i) => i !== idx))
   }
 
-  const pricedLines = priceManualOrderLines(items, produtos, metodoPagamento)
+  // Achata cada produto (barrels[]) pros itens-wire {produto_id, quantidade, is_consignado}
+  // que o server/pricing já consomem — agrupando firmes e consignado da linha.
+  const wireItems = items.flatMap((item) => {
+    const firmeCount = item.barrels.filter((b) => !b).length
+    const consignadoCount = item.barrels.length - firmeCount
+    const lines: ManualOrderInput["items"] = []
+    if (firmeCount > 0) lines.push({ produto_id: item.produto_id, quantidade: firmeCount, is_consignado: false })
+    if (consignadoCount > 0) lines.push({ produto_id: item.produto_id, quantidade: consignadoCount, is_consignado: true })
+    return lines
+  })
+
+  const pricedLines = priceManualOrderLines(wireItems, produtos, metodoPagamento)
 
   const itemRowsForTotals = pricedLines.flatMap((line) =>
     line.is_consignado
@@ -170,8 +179,8 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   const canSubmit =
     !submitting &&
     items.length > 0 &&
-    items.every((i) => i.quantidade >= 1) &&
-    hasFirmeItem(items) &&
+    items.every((i) => i.barrels.length >= 1) &&
+    hasFirmeItem(wireItems) &&
     !!enderecoText &&
     !!dataEvento &&
     !!horarioEvento &&
@@ -201,7 +210,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
         tipo_chopeira: tipoChopeira,
         rampas_escadas: rampasEscadas || null,
         observacoes: observacoes || null,
-        items,
+        items: wireItems,
         metodo_pagamento: metodoPagamento,
         pago,
         frete,
@@ -352,17 +361,18 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
           <div className="space-y-3">
             {items.map((item, idx) => {
               const produto = produtos.find((p) => p.id === item.produto_id)
-              const hasSegundoBarril = produto?.preco_segundo_barril != null
-              const calc = pricedLines[idx]
+              const barrelPrices = produto
+                ? priceBarrels(produto, item.barrels, metodoPagamento)
+                : item.barrels.map((b) => ({ is_consignado: b, preco: 0 }))
               return (
                 <div key={idx} className="bg-brand-dark border border-white/10 rounded-lg p-3 space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <Select value={item.produto_id} onChange={(e) => updateItem(idx, { produto_id: e.target.value })} className="flex-1">
+                    <Select value={item.produto_id} onChange={(e) => setItemProduto(idx, e.target.value)} className="flex-1">
                       {produtos.map((p) => <option key={p.id} value={p.id}>{p.marca} {p.volume_litros}L</option>)}
                     </Select>
                     <NumberStepper
-                      value={item.quantidade}
-                      onChange={(next) => updateItem(idx, { quantidade: next })}
+                      value={item.barrels.length}
+                      onChange={(next) => setItemQty(idx, next)}
                       min={1}
                       max={100}
                     />
@@ -375,22 +385,26 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  {hasSegundoBarril && (
-                    <Checkbox
-                      checked={item.is_consignado}
-                      onChange={(e) => updateItem(idx, { is_consignado: e.target.checked })}
-                      label={
-                        <>
-                          Consignado <span className="text-brand-warm-gray italic">(paga só se usar)</span>
-                        </>
-                      }
-                    />
+                  <div className="space-y-1.5">
+                    {item.barrels.map((isConsignado, barrelIdx) => (
+                      <div key={barrelIdx} className="flex items-center gap-2">
+                        <span className="text-xs text-brand-warm-gray w-16 shrink-0">Barril {barrelIdx + 1}</span>
+                        <Segmented
+                          value={isConsignado ? "consignado" : "firme"}
+                          onChange={(v) => setBarrelConsignado(idx, barrelIdx, v === "consignado")}
+                          ariaLabel={`Barril ${barrelIdx + 1}: firme ou consignado`}
+                          options={[
+                            { value: "firme", label: "Firme" },
+                            { value: "consignado", label: "Consignado" },
+                          ]}
+                        />
+                        <span className="text-xs tabular-nums text-brand-warm-gray ml-auto shrink-0">{formatBRL(barrelPrices[barrelIdx]?.preco ?? 0)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {item.barrels.some((b) => b) && (
+                    <p className="text-[11px] text-brand-warm-gray italic">Consignado: paga só se usar.</p>
                   )}
-                  <p className="text-xs text-brand-warm-gray">
-                    {item.is_consignado
-                      ? `${describeBarrels(calc.barrelPrices)}${item.quantidade > 1 ? ` = ${formatBRL(calc.subtotal)}` : ""} (consignado)`
-                      : formatBRL(calc.subtotal)}
-                  </p>
                 </div>
               )
             })}
@@ -465,7 +479,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
           </div>
         </section>
 
-        {items.length > 0 && !hasFirmeItem(items) && (
+        {items.length > 0 && !hasFirmeItem(wireItems) && (
           <p className="text-sm text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
             {REQUIRE_FIRME_MESSAGE}
           </p>
