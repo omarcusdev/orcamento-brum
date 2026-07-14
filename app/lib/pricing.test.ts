@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { calculateLine, getBasePrice, calculateOrderTotals, calculateStoredTotals, priceManualOrderLines, consignadoSplit, hasFirmeItem, REQUIRE_FIRME_MESSAGE } from "./pricing"
-import { barrelUnitPrices } from "./pricing"
+import { barrelUnitPrices, priceBarrels } from "./pricing"
 
 const baseProduct = {
   preco_avista: 500,
@@ -332,5 +332,46 @@ describe("hasFirmeItem", () => {
   })
   it("expoe a mensagem padrao da trava", () => {
     expect(REQUIRE_FIRME_MESSAGE).toMatch(/firme/i)
+  })
+})
+
+describe("priceBarrels", () => {
+  const brahma = { id: "b", preco_avista: 880, preco_cartao: null, preco_segundo_barril: 750 }
+  it("1 firme = preco cheio", () => {
+    expect(priceBarrels(brahma, [false])).toEqual([{ is_consignado: false, preco: 880 }])
+  })
+  it("2 firme = cheio + 2o barril", () => {
+    expect(priceBarrels(brahma, [false, false])).toEqual([
+      { is_consignado: false, preco: 880 },
+      { is_consignado: false, preco: 750 },
+    ])
+  })
+  it("1 firme + 1 consignado = firme cheio, consignado 2o", () => {
+    expect(priceBarrels(brahma, [false, true])).toEqual([
+      { is_consignado: false, preco: 880 },
+      { is_consignado: true, preco: 750 },
+    ])
+  })
+  it("firme leva o preco cheio mesmo com consignado antes na ordem da UI", () => {
+    expect(priceBarrels(brahma, [true, false])).toEqual([
+      { is_consignado: true, preco: 750 },
+      { is_consignado: false, preco: 880 },
+    ])
+  })
+  it("tudo consignado: 1o consignado cheio, resto 2o barril", () => {
+    expect(priceBarrels(brahma, [true, true])).toEqual([
+      { is_consignado: true, preco: 880 },
+      { is_consignado: true, preco: 750 },
+    ])
+  })
+  it("soma bate com priceManualOrderLines no mesmo conjunto achatado (misto)", () => {
+    const barrels = [false, true, true]
+    const perBarrel = priceBarrels(brahma, barrels).reduce((s, b) => s + b.preco, 0)
+    const wire = [
+      { produto_id: "b", quantidade: 1, is_consignado: false },
+      { produto_id: "b", quantidade: 2, is_consignado: true },
+    ]
+    const viaLines = priceManualOrderLines(wire, [brahma]).reduce((s, l) => s + l.subtotal, 0)
+    expect(perBarrel).toBe(viaLines)
   })
 })
