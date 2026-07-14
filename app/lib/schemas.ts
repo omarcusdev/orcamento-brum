@@ -107,6 +107,7 @@ export const manualOrderInputSchema = z.object({
   metodo_pagamento: z.enum(["pix", "cartao", "dinheiro"]),
   pago: z.boolean(),
   frete: z.number().nonnegative(),
+  desconto: z.number().nonnegative(),
 }).superRefine((val, ctx) => {
   // Trava: pedido 100% consignado é inválido — exige ao menos 1 barril firme.
   if (!hasFirmeItem(val.items)) {

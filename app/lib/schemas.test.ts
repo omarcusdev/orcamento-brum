@@ -45,6 +45,7 @@ const validManualOrder = {
   metodo_pagamento: "pix" as const,
   pago: false,
   frete: 20,
+  desconto: 0,
 }
 
 describe("manualOrderInputSchema — trava >=1 firme", () => {
@@ -68,5 +69,16 @@ describe("manualOrderInputSchema — trava >=1 firme", () => {
     if (!result.success) {
       expect(result.error.issues.some((i) => i.path.includes("items") && i.message === REQUIRE_FIRME_MESSAGE)).toBe(true)
     }
+  })
+})
+
+describe("manualOrderInputSchema — desconto", () => {
+  it("aceita desconto valido e o preserva", () => {
+    const result = manualOrderInputSchema.safeParse({ ...validManualOrder, desconto: 50 })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.desconto).toBe(50)
+  })
+  it("rejeita desconto negativo", () => {
+    expect(manualOrderInputSchema.safeParse({ ...validManualOrder, desconto: -10 }).success).toBe(false)
   })
 })
