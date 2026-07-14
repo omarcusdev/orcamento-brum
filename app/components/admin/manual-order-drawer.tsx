@@ -65,6 +65,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
   const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao" | "dinheiro">("pix")
   const [pago, setPago] = useState(false)
   const [frete, setFrete] = useState(0)
+  const [desconto, setDesconto] = useState(0)
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +109,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     setMetodoPagamento("pix")
     setPago(false)
     setFrete(0)
+    setDesconto(0)
     setError(null)
   }
 
@@ -174,7 +176,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
 
   const totals = calculateOrderTotals(itemRowsForTotals)
   // Resumo: separa "a pagar agora" (firmes + frete) do consignado. Valor cheio segue em split.totalCheio.
-  const split = consignadoSplit(itemRowsForTotals, frete, 0)
+  const split = consignadoSplit(itemRowsForTotals, frete, desconto)
 
   const canSubmit =
     !submitting &&
@@ -214,6 +216,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
         metodo_pagamento: metodoPagamento,
         pago,
         frete,
+        desconto,
       }
 
       const result = await createManualOrder(input)
@@ -428,9 +431,15 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
               ]}
             />
             <Checkbox checked={pago} onChange={(e) => setPago(e.target.checked)} label="Cliente já pagou" />
-            <div>
-              <label className={fieldLabelClass}>Frete</label>
-              <MoneyInput value={frete} onChange={setFrete} min={0} aria-label="Frete" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={fieldLabelClass}>Frete</label>
+                <MoneyInput value={frete} onChange={setFrete} min={0} aria-label="Frete" />
+              </div>
+              <div>
+                <label className={fieldLabelClass}>Desconto</label>
+                <MoneyInput value={desconto} onChange={setDesconto} min={0} aria-label="Desconto" />
+              </div>
             </div>
             <div className="bg-brand-dark border border-white/10 rounded-lg p-3 text-sm space-y-1">
               {split.hasConsignado ? (
@@ -447,6 +456,12 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                     <span className="pl-2">Frete</span>
                     <span className="tabular-nums">{formatBRL(frete)}</span>
                   </div>
+                  {desconto > 0 && (
+                    <div className="flex justify-between text-brand-warm-gray text-xs">
+                      <span className="pl-2">Desconto</span>
+                      <span className="tabular-nums">− {formatBRL(desconto)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-brand-warm-gray">
                     <span>Consignado (só se usar)</span>
                     <span className="tabular-nums">{formatBRL(split.consignado)}</span>
@@ -469,6 +484,12 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
                     <span>Frete</span>
                     <span className="tabular-nums">{formatBRL(frete)}</span>
                   </div>
+                  {desconto > 0 && (
+                    <div className="flex justify-between text-brand-warm-gray">
+                      <span>Desconto</span>
+                      <span className="tabular-nums">− {formatBRL(desconto)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-white font-bold border-t border-white/10 pt-1.5 mt-1">
                     <span>Total</span>
                     <span className="text-brand-yellow tabular-nums">{formatBRL(split.totalCheio)}</span>
