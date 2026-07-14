@@ -313,49 +313,6 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
         </section>
 
         <section>
-          <h3 className={sectionHeaderClass}>Endereço</h3>
-          <div className="space-y-2">
-            <Textarea
-              value={enderecoText}
-              onChange={(e) => setEnderecoText(e.target.value)}
-              placeholder="Rua, número, bairro, cidade, UF, CEP"
-              className="h-20"
-            />
-            <AddressSearchToggle onSelect={handleAddressSelect} openLabel="Buscar via Google" />
-          </div>
-        </section>
-
-        <section>
-          <h3 className={sectionHeaderClass}>Evento</h3>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={fieldLabelClass}>Data</label>
-                <Input type="date" value={dataEvento} onChange={(e) => setDataEvento(e.target.value)} />
-              </div>
-              <div>
-                <label className={fieldLabelClass}>Horário</label>
-                <Input type="time" value={horarioEvento} onChange={(e) => setHorarioEvento(e.target.value)} />
-              </div>
-            </div>
-            <div>
-              <label className={fieldLabelClass}>Chopeira</label>
-              <Segmented
-                value={tipoChopeira}
-                onChange={setTipoChopeira}
-                ariaLabel="Tipo de chopeira"
-                options={[
-                  { value: "gelo", label: "Gelo" },
-                  { value: "eletrica", label: "Elétrica" },
-                ]}
-              />
-            </div>
-            <Textarea placeholder="Rampas, escadas, instruções de acesso (opcional)" value={rampasEscadas} onChange={(e) => setRampasEscadas(e.target.value)} className="h-16" />
-            <Textarea placeholder="Observações (opcional)" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className="h-16" />
-          </div>
-        </section>
-
-        <section>
           <h3 className={sectionHeaderClass}>Itens</h3>
           {items.length === 0 && <p className="text-xs text-brand-warm-gray mb-3">Nenhum item ainda.</p>}
           <div className="space-y-3">
@@ -412,6 +369,49 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
           <Button variant="ghost-yellow" fullWidth onClick={addItem} className="mt-3">
             + Adicionar item
           </Button>
+        </section>
+
+        <section>
+          <h3 className={sectionHeaderClass}>Endereço</h3>
+          <div className="space-y-2">
+            <Textarea
+              value={enderecoText}
+              onChange={(e) => setEnderecoText(e.target.value)}
+              placeholder="Rua, número, bairro, cidade, UF, CEP"
+              className="h-20"
+            />
+            <AddressSearchToggle onSelect={handleAddressSelect} openLabel="Buscar via Google" />
+          </div>
+        </section>
+
+        <section>
+          <h3 className={sectionHeaderClass}>Evento</h3>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={fieldLabelClass}>Data</label>
+                <Input type="date" value={dataEvento} onChange={(e) => setDataEvento(e.target.value)} />
+              </div>
+              <div>
+                <label className={fieldLabelClass}>Horário</label>
+                <Input type="time" value={horarioEvento} onChange={(e) => setHorarioEvento(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label className={fieldLabelClass}>Chopeira</label>
+              <Segmented
+                value={tipoChopeira}
+                onChange={setTipoChopeira}
+                ariaLabel="Tipo de chopeira"
+                options={[
+                  { value: "gelo", label: "Gelo" },
+                  { value: "eletrica", label: "Elétrica" },
+                ]}
+              />
+            </div>
+            <Textarea placeholder="Rampas, escadas, instruções de acesso (opcional)" value={rampasEscadas} onChange={(e) => setRampasEscadas(e.target.value)} className="h-16" />
+            <Textarea placeholder="Observações (opcional)" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className="h-16" />
+          </div>
         </section>
 
         <section>
