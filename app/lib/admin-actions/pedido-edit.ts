@@ -315,10 +315,13 @@ export const addPedidoItem = async (
   // Trava defensiva: adicionar consignado a um pedido sem nenhum item firme o deixaria 100% consignado.
   // Adicionar item firme é sempre permitido.
   if (isConsignado) {
-    const { data: existentes } = await supabase
+    // Propaga o erro de leitura em vez de coagir null para [] — senão uma falha transitória
+    // vira uma mensagem "firme obrigatório" enganosa num pedido que tem firmes, mascarando o erro real.
+    const { data: existentes, error: existentesErr } = await supabase
       .from("pedido_itens")
       .select("is_consignado")
       .eq("pedido_id", pedidoId)
+    if (existentesErr) throw existentesErr
     if (!hasFirmeItem(existentes ?? [])) {
       throw new Error(REQUIRE_FIRME_MESSAGE)
     }
@@ -445,11 +448,14 @@ export const removePedidoItem = async (itemId: string) => {
 
   // Trava: remover o último barril firme deixaria o pedido 100% consignado. Bloqueia.
   // (Esvaziar o pedido até 0 itens continua permitido — remaining vazio não dispara.)
-  const { data: remaining } = await supabase
+  // Propaga o erro de leitura: sem isso, uma falha transitória volta remaining=null, o guard
+  // é pulado e o delete prossegue — fail-OPEN que deixaria o pedido só-consignado sem aviso.
+  const { data: remaining, error: remainingErr } = await supabase
     .from("pedido_itens")
     .select("is_consignado")
     .eq("pedido_id", item.pedido_id)
     .neq("id", itemId)
+  if (remainingErr) throw remainingErr
   if (remaining && remaining.length > 0 && !hasFirmeItem(remaining)) {
     throw new Error(REQUIRE_FIRME_MESSAGE)
   }
