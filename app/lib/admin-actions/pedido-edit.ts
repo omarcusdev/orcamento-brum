@@ -113,7 +113,8 @@ export const createManualOrder = async (input: ManualOrderInput) => {
         }],
   )
 
-  // Valor cheio: consignado conta como usado até ser devolvido (não nasce R$ 0). desconto=0 no manual.
+  // Valor cheio: consignado conta como usado até ser devolvido (não nasce R$ 0). Desconto aplicado
+  // na criação (data.desconto) pro total já sair abatido e chegar certo ao cliente na confirmação.
   const { subtotal, total } = calculateStoredTotals(
     itemRows.map((r) => ({
       subtotal: r.subtotal,
@@ -121,7 +122,7 @@ export const createManualOrder = async (input: ManualOrderInput) => {
       consignado_status: r.consignado_status,
     })),
     data.frete,
-    0,
+    data.desconto,
   )
 
   // Discriminated union is read-only — build explicit payload so CPF is digit-only for new clientes.
@@ -142,7 +143,7 @@ export const createManualOrder = async (input: ManualOrderInput) => {
       rampas_escadas: data.rampas_escadas,
       observacoes: data.observacoes,
       subtotal,
-      desconto: 0,
+      desconto: data.desconto,
       frete: data.frete,
       total,
       metodo_pagamento: data.metodo_pagamento,
