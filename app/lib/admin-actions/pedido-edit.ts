@@ -3,7 +3,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import { manualOrderInputSchema, updatePedidoSchema, updatePedidoItemSchema, type ManualOrderInput, type UpdatePedidoInput, type UpdatePedidoItemInput } from "@/lib/schemas"
-import { calculateStoredTotals, priceManualOrderLines, barrelUnitPrices } from "@/lib/pricing"
+import { calculateStoredTotals, priceManualOrderLines, barrelUnitPrices, hasFirmeItem, REQUIRE_FIRME_MESSAGE } from "@/lib/pricing"
 import { buildClienteSearchOr } from "@/lib/cliente-search"
 import { LOCKED_EDIT_STATUSES, isFreteLocked } from "@/lib/admin-status"
 import { after } from "next/server"
@@ -312,6 +312,21 @@ export const addPedidoItem = async (
   if (!pedido) throw new Error("Pedido nao encontrado")
   if (LOCKED_EDIT_STATUSES.includes(pedido.status)) throw new Error("Pedido travado")
 
+  // Trava defensiva: adicionar consignado a um pedido sem nenhum item firme o deixaria 100% consignado.
+  // Adicionar item firme é sempre permitido.
+  if (isConsignado) {
+    // Propaga o erro de leitura em vez de coagir null para [] — senão uma falha transitória
+    // vira uma mensagem "firme obrigatório" enganosa num pedido que tem firmes, mascarando o erro real.
+    const { data: existentes, error: existentesErr } = await supabase
+      .from("pedido_itens")
+      .select("is_consignado")
+      .eq("pedido_id", pedidoId)
+    if (existentesErr) throw existentesErr
+    if (!hasFirmeItem(existentes ?? [])) {
+      throw new Error(REQUIRE_FIRME_MESSAGE)
+    }
+  }
+
   const { data: produto } = await supabase
     .from("produtos")
     .select("preco_avista, preco_cartao, preco_segundo_barril")
@@ -430,6 +445,20 @@ export const removePedidoItem = async (itemId: string) => {
   if (!item) throw new Error("Item nao encontrado")
   const pedidoStatus = Array.isArray(item.pedidos) ? item.pedidos[0]?.status : (item.pedidos as { status?: string } | null)?.status
   if (pedidoStatus && LOCKED_EDIT_STATUSES.includes(pedidoStatus)) throw new Error("Pedido travado")
+
+  // Trava: remover o último barril firme deixaria o pedido 100% consignado. Bloqueia.
+  // (Esvaziar o pedido até 0 itens continua permitido — remaining vazio não dispara.)
+  // Propaga o erro de leitura: sem isso, uma falha transitória volta remaining=null, o guard
+  // é pulado e o delete prossegue — fail-OPEN que deixaria o pedido só-consignado sem aviso.
+  const { data: remaining, error: remainingErr } = await supabase
+    .from("pedido_itens")
+    .select("is_consignado")
+    .eq("pedido_id", item.pedido_id)
+    .neq("id", itemId)
+  if (remainingErr) throw remainingErr
+  if (remaining && remaining.length > 0 && !hasFirmeItem(remaining)) {
+    throw new Error(REQUIRE_FIRME_MESSAGE)
+  }
 
   const { error: delErr } = await supabase.from("pedido_itens").delete().eq("id", itemId)
   if (delErr) throw delErr

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { calculateLine, getBasePrice, calculateOrderTotals, calculateStoredTotals, priceManualOrderLines, consignadoSplit } from "./pricing"
+import { calculateLine, getBasePrice, calculateOrderTotals, calculateStoredTotals, priceManualOrderLines, consignadoSplit, hasFirmeItem, REQUIRE_FIRME_MESSAGE } from "./pricing"
 import { barrelUnitPrices } from "./pricing"
 
 const baseProduct = {
@@ -316,5 +316,21 @@ describe("consignadoSplit", () => {
   it("consignado usado conta como consignado, nao como firme", () => {
     const r = consignadoSplit([item(550), item(400, true, "usado")], 0, 0)
     expect(r).toEqual({ firmes: 550, consignado: 400, aPagar: 550, totalCheio: 950, hasConsignado: true })
+  })
+})
+
+describe("hasFirmeItem", () => {
+  it("true quando ha ao menos um item firme", () => {
+    expect(hasFirmeItem([{ is_consignado: false }])).toBe(true)
+    expect(hasFirmeItem([{ is_consignado: true }, { is_consignado: false }])).toBe(true)
+  })
+  it("false quando todos os itens sao consignado", () => {
+    expect(hasFirmeItem([{ is_consignado: true }, { is_consignado: true }])).toBe(false)
+  })
+  it("false para lista vazia", () => {
+    expect(hasFirmeItem([])).toBe(false)
+  })
+  it("expoe a mensagem padrao da trava", () => {
+    expect(REQUIRE_FIRME_MESSAGE).toMatch(/firme/i)
   })
 })

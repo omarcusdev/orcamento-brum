@@ -183,3 +183,10 @@ export const consignadoSplit = (
   const firmes = round2(items.filter((i) => !i.is_consignado).reduce((sum, i) => sum + i.subtotal, 0))
   return { firmes, consignado, aPagar, totalCheio, hasConsignado: consignado > 0 }
 }
+
+// Regra de negócio: todo pedido precisa de ao menos 1 barril firme (não-consignado).
+// Um pedido 100% consignado deixa o cliente pagando só o frete — bloqueado em todos os guards.
+export const REQUIRE_FIRME_MESSAGE = "Pedido precisa de ao menos 1 item nao-consignado (firme)"
+
+export const hasFirmeItem = (items: readonly { is_consignado: boolean }[]): boolean =>
+  items.some((i) => !i.is_consignado)

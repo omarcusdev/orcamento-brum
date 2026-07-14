@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
-import { createOrderSchema } from "./schemas"
+import { createOrderSchema, manualOrderInputSchema } from "./schemas"
+import { REQUIRE_FIRME_MESSAGE } from "./pricing"
 
 // CPF válido pelo algoritmo (validado em lib/cpf.ts).
 const validPayload = {
@@ -27,6 +28,45 @@ describe("createOrderSchema — 24h min lead time", () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.issues.some((i) => i.path.includes("horario_evento"))).toBe(true)
+    }
+  })
+})
+
+const validManualOrder = {
+  cliente: { kind: "existing" as const, id: "00000000-0000-0000-0000-000000000000" },
+  endereco: "Rua X, 123",
+  endereco_completo: null,
+  data_evento: "2099-01-01",
+  horario_evento: "12:00",
+  tipo_chopeira: "gelo" as const,
+  rampas_escadas: null,
+  observacoes: null,
+  items: [{ produto_id: "00000000-0000-0000-0000-000000000000", quantidade: 1, is_consignado: false }],
+  metodo_pagamento: "pix" as const,
+  pago: false,
+  frete: 20,
+}
+
+describe("manualOrderInputSchema — trava >=1 firme", () => {
+  it("aceita pedido com ao menos um item firme", () => {
+    expect(manualOrderInputSchema.safeParse(validManualOrder).success).toBe(true)
+  })
+  it("aceita misto (firme + consignado)", () => {
+    const input = { ...validManualOrder, items: [
+      { produto_id: "00000000-0000-0000-0000-000000000000", quantidade: 1, is_consignado: false },
+      { produto_id: "11111111-1111-4111-8111-111111111111", quantidade: 1, is_consignado: true },
+    ] }
+    expect(manualOrderInputSchema.safeParse(input).success).toBe(true)
+  })
+  it("rejeita pedido 100% consignado com issue em items", () => {
+    const input = { ...validManualOrder, items: [
+      { produto_id: "00000000-0000-0000-0000-000000000000", quantidade: 1, is_consignado: true },
+      { produto_id: "11111111-1111-4111-8111-111111111111", quantidade: 2, is_consignado: true },
+    ] }
+    const result = manualOrderInputSchema.safeParse(input)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes("items") && i.message === REQUIRE_FIRME_MESSAGE)).toBe(true)
     }
   })
 })

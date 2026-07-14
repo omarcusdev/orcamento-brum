@@ -8,7 +8,7 @@ import { addressDataToEnderecoCompleto } from "@/lib/address"
 import { AddressSearchToggle } from "@/components/admin/address-search-toggle"
 import type { Produto } from "@/lib/types"
 import type { ManualOrderInput } from "@/lib/schemas"
-import { calculateOrderTotals, priceManualOrderLines, consignadoSplit } from "@/lib/pricing"
+import { calculateOrderTotals, priceManualOrderLines, consignadoSplit, hasFirmeItem, REQUIRE_FIRME_MESSAGE } from "@/lib/pricing"
 import { formatBRL } from "@/lib/format"
 import {
   Button,
@@ -171,6 +171,7 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
     !submitting &&
     items.length > 0 &&
     items.every((i) => i.quantidade >= 1) &&
+    hasFirmeItem(items) &&
     !!enderecoText &&
     !!dataEvento &&
     !!horarioEvento &&
@@ -463,6 +464,12 @@ const ManualOrderDrawer = ({ open, onClose, produtos }: Props) => {
             </div>
           </div>
         </section>
+
+        {items.length > 0 && !hasFirmeItem(items) && (
+          <p className="text-sm text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+            {REQUIRE_FIRME_MESSAGE}
+          </p>
+        )}
 
         {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{error}</p>}
       </div>
