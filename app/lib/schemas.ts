@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { validateCpf } from "@/lib/cpf"
 import { isBeforeMinLeadTime, minLeadTimeMessage } from "@/lib/checkout-validation"
+import { hasFirmeItem, REQUIRE_FIRME_MESSAGE } from "@/lib/pricing"
 
 const phoneRegex = /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/
 
@@ -106,6 +107,15 @@ export const manualOrderInputSchema = z.object({
   metodo_pagamento: z.enum(["pix", "cartao", "dinheiro"]),
   pago: z.boolean(),
   frete: z.number().nonnegative(),
+}).superRefine((val, ctx) => {
+  // Trava: pedido 100% consignado é inválido — exige ao menos 1 barril firme.
+  if (!hasFirmeItem(val.items)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["items"],
+      message: REQUIRE_FIRME_MESSAGE,
+    })
+  }
 })
 
 export type ManualOrderInput = z.infer<typeof manualOrderInputSchema>
