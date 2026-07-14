@@ -65,6 +65,26 @@ const unitPricesFor = (produto: ProdutoForPricing, metodoPagamento: PaymentMetho
 export const barrelUnitPrices = (produto: ProdutoForPricing, metodoPagamento: PaymentMethod = "pix") =>
   unitPricesFor(produto, metodoPagamento)
 
+export type BarrelPrice = { is_consignado: boolean; preco: number }
+
+// Preço de cada barril na ORDEM DA UI, consistente com priceManualOrderLines: firme-first por
+// produto — o 1º barril do produto custa o preço cheio, o 2º+ custa o preço de 2º-barril.
+// firmeCount empurra os consignado pra depois dos firmes; se firmeCount===0 o 1º consignado é o cheio.
+export const priceBarrels = (
+  produto: ProdutoForPricing,
+  barrels: readonly boolean[],
+  metodoPagamento: PaymentMethod = "pix",
+): BarrelPrice[] => {
+  const { firstUnitPrice, secondUnitPrice } = barrelUnitPrices(produto, metodoPagamento)
+  const firmeCount = barrels.filter((isConsignado) => !isConsignado).length
+  let firmeSeen = 0
+  let consignadoSeen = 0
+  return barrels.map((isConsignado) => {
+    const position = isConsignado ? firmeCount + consignadoSeen++ : firmeSeen++
+    return { is_consignado: isConsignado, preco: position === 0 ? firstUnitPrice : secondUnitPrice }
+  })
+}
+
 type BarrelWalk = {
   firmSeen: Record<string, number>
   consignadoSeen: Record<string, number>
