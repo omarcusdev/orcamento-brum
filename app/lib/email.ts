@@ -27,10 +27,22 @@ type OrderEmailData = {
   itens: OrderEmailItem[]
   subtotal: number
   frete: number
+  desconto?: number
   total: number
   metodoPagamento: string | null
   observacoes: string | null
 }
+
+// Linha "Desconto" pro breakdown reconciliar (Subtotal − Desconto + Frete = Total). Só quando > 0.
+// Retorna "" sem whitespace extra pra não alterar o e-mail dos pedidos sem desconto.
+const descontoRowHtml = (desconto?: number) =>
+  (desconto ?? 0) > 0
+    ? `
+              <tr>
+                <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Desconto</td>
+                <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">− ${formatBRL(desconto ?? 0)}</td>
+              </tr>`
+    : ""
 
 const chopeiraLabel = (tipo: string) => (tipo === "eletrica" ? "Elétrica" : "Gelo")
 
@@ -83,7 +95,7 @@ export const renderHtml = (data: OrderEmailData & { clienteTelefone: string }) =
               <tr>
                 <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Frete</td>
                 <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${freteLine}</td>
-              </tr>
+              </tr>${descontoRowHtml(data.desconto)}
               <tr>
                 <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#1a1a1a;font-weight:bold;">Total</td>
                 <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:20px;color:#d4a017;font-weight:bold;text-align:right;">${formatBRL(data.total)}</td>
@@ -125,6 +137,7 @@ const renderText = (data: OrderEmailData & { clienteTelefone: string }) => {
     "",
     `Subtotal: ${formatBRL(data.subtotal)}`,
     `Frete: ${freteLine}`,
+    ...((data.desconto ?? 0) > 0 ? [`Desconto: − ${formatBRL(data.desconto ?? 0)}`] : []),
     `Total: ${formatBRL(data.total)}`,
   ]
   if (data.observacoes) lines.push("", `Observações: ${data.observacoes}`)
@@ -199,6 +212,7 @@ export const sendNewOrderEmail = async (pedidoId: string) => {
       itens,
       subtotal: pedido.subtotal,
       frete: pedido.frete,
+      desconto: pedido.desconto,
       total: pedido.total,
       metodoPagamento: pedido.metodo_pagamento,
       observacoes: pedido.observacoes,
@@ -286,7 +300,7 @@ export const renderCustomerHtml = (data: OrderEmailData) => {
               <tr>
                 <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;">Frete</td>
                 <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#555555;text-align:right;">${freteLine}</td>
-              </tr>
+              </tr>${descontoRowHtml(data.desconto)}
               <tr>
                 <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#1a1a1a;font-weight:bold;">Total</td>
                 <td style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:20px;color:#d4a017;font-weight:bold;text-align:right;">${formatBRL(data.total)}</td>
@@ -333,6 +347,7 @@ const renderCustomerText = (data: OrderEmailData) => {
     "",
     `Subtotal: ${formatBRL(data.subtotal)}`,
     `Frete: ${freteLine}`,
+    ...((data.desconto ?? 0) > 0 ? [`Desconto: − ${formatBRL(data.desconto ?? 0)}`] : []),
     `Total: ${formatBRL(data.total)}`,
   ]
   if (data.observacoes) lines.push("", `Observações: ${data.observacoes}`)
@@ -468,6 +483,7 @@ export const sendCustomerOrderConfirmation = async (pedidoId: string) => {
       itens,
       subtotal: pedido.subtotal,
       frete: pedido.frete,
+      desconto: pedido.desconto,
       total: pedido.total,
       metodoPagamento: pedido.metodo_pagamento,
       observacoes: pedido.observacoes,
